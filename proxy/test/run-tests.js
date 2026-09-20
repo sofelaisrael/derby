@@ -408,6 +408,90 @@ async function run() {
     });
   });
 
+  {
+    console.log('\n  Report API endpoint');
+
+    const reportHandler = require('../api/report');
+    const origEnv = process.env.REPORT_SCRIPT_URL;
+
+    function mockReq(method, body) {
+      const r = { method, on: (evt, cb) => { if (evt === 'data') cb(body ? JSON.stringify(body) : ''); if (evt === 'end') cb(); } };
+      return r;
+    }
+
+    function mockRes() {
+      const r = { _status: 200, _headers: {}, _body: null };
+      r.setHeader = (k, v) => { r._headers[k] = v; };
+      r.status = (s) => { r._status = s; return r; };
+      r.json = (d) => { r._body = d; return r; };
+      r.end = () => r;
+      return r;
+    }
+
+    await itAsync('OPTIONS returns 204', async () => {
+      const req = { method: 'OPTIONS' };
+      const res = mockRes();
+      await reportHandler(req, res);
+      assert.strictEqual(res._status, 204);
+    });
+
+    await itAsync('GET returns 405', async () => {
+      const req = { method: 'GET' };
+      const res = mockRes();
+      await reportHandler(req, res);
+      assert.strictEqual(res._status, 405);
+      assert.strictEqual(res._body.error, 'method_not_allowed');
+    });
+
+    await itAsync('POST with bad JSON returns 400', async () => {
+      const req = { method: 'POST', on: (evt, cb) => { if (evt === 'data') cb('not json'); if (evt === 'end') cb(); } };
+      const res = mockRes();
+      await reportHandler(req, res);
+      assert.strictEqual(res._status, 400);
+      assert.strictEqual(res._body.error, 'bad_json');
+    });
+
+    await itAsync('POST missing name returns 400', async () => {
+      const req = mockReq('POST', { email: 'test@test.com' });
+      const res = mockRes();
+      await reportHandler(req, res);
+      assert.strictEqual(res._status, 400);
+      assert.strictEqual(res._body.field, 'name');
+    });
+
+    await itAsync('POST missing email returns 400', async () => {
+      const req = mockReq('POST', { name: 'Test' });
+      const res = mockRes();
+      await reportHandler(req, res);
+      assert.strictEqual(res._status, 400);
+      assert.strictEqual(res._body.field, 'email');
+    });
+
+    await itAsync('POST invalid email returns 400', async () => {
+      const req = mockReq('POST', { name: 'Test', email: 'bad' });
+      const res = mockRes();
+      await reportHandler(req, res);
+      assert.strictEqual(res._status, 400);
+      assert.strictEqual(res._body.field, 'email');
+    });
+
+    await itAsync('POST honeypot filled returns 200 silently', async () => {
+      const req = mockReq('POST', { name: 'Bot', email: 'bot@bot.com', hp: 'spam' });
+      const res = mockRes();
+      await reportHandler(req, res);
+      assert.strictEqual(res._status, 200);
+    });
+
+    await itAsync('POST without REPORT_SCRIPT_URL returns 503', async () => {
+      delete process.env.REPORT_SCRIPT_URL;
+      const req = mockReq('POST', { name: 'Test', email: 'test@test.com' });
+      const res = mockRes();
+      await reportHandler(req, res);
+      assert.strictEqual(res._status, 503);
+      if (origEnv) process.env.REPORT_SCRIPT_URL = origEnv;
+    });
+  }
+
   console.log(`\n  ${passes} passed, ${failures} failed\n`);
   process.exit(failures > 0 ? 1 : 0);
 }
