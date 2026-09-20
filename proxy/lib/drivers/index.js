@@ -1,7 +1,16 @@
 const derbyDriver = require('./derby');
 const erewashDriver = require('./erewash');
+const ambervalleyDriver = require('./ambervalley');
+const highpeakDriver = require('./highpeak');
+const derbyshiredalesDriver = require('./derbyshiredales');
+const bolsoverDriver = require('./bolsover');
+const chesterfieldDriver = require('./chesterfield');
+const southderbyshireDriver = require('./southderbyshire');
 
-const COUNCILS = [derbyDriver, erewashDriver];
+const COUNCILS = [
+  derbyDriver, erewashDriver, ambervalleyDriver, highpeakDriver,
+  derbyshiredalesDriver, bolsoverDriver, chesterfieldDriver, southderbyshireDriver,
+];
 
 const drivers = {};
 const slugMap = {};

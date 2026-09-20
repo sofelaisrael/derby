@@ -19,9 +19,9 @@ async function run() {
 
     const drivers = listDrivers();
 
-    it('listDrivers returns array with length >= 2', () => {
+    it('listDrivers returns array with length >= 8', () => {
       assert.ok(Array.isArray(drivers), 'should be an array');
-      assert.ok(drivers.length >= 2, `expected >= 2, got ${drivers.length}`);
+      assert.ok(drivers.length >= 8, `expected >= 8, got ${drivers.length}`);
     });
 
     it('each item has id, name, slug properties', () => {
@@ -44,6 +44,42 @@ async function run() {
       assert.ok(d, 'erewash driver not found');
       assert.strictEqual(d.id, 'erewash');
       assert.strictEqual(d.name, 'Erewash Borough Council');
+    });
+
+    it('ambervalley is in the list', () => {
+      const d = getDriver('ambervalley');
+      assert.ok(d, 'ambervalley driver not found');
+      assert.strictEqual(d.name, 'Amber Valley Borough Council');
+    });
+
+    it('highpeak is in the list', () => {
+      const d = getDriver('highpeak');
+      assert.ok(d, 'highpeak driver not found');
+      assert.strictEqual(d.name, 'High Peak Borough Council');
+    });
+
+    it('derbyshiredales is in the list', () => {
+      const d = getDriver('derbyshiredales');
+      assert.ok(d, 'derbyshiredales driver not found');
+      assert.strictEqual(d.name, 'Derbyshire Dales District Council');
+    });
+
+    it('bolsover is in the list', () => {
+      const d = getDriver('bolsover');
+      assert.ok(d, 'bolsover driver not found');
+      assert.strictEqual(d.name, 'Bolsover District Council');
+    });
+
+    it('chesterfield is in the list', () => {
+      const d = getDriver('chesterfield');
+      assert.ok(d, 'chesterfield driver not found');
+      assert.strictEqual(d.name, 'Chesterfield Borough Council');
+    });
+
+    it('southderbyshire is in the list', () => {
+      const d = getDriver('southderbyshire');
+      assert.ok(d, 'southderbyshire driver not found');
+      assert.strictEqual(d.name, 'South Derbyshire District Council');
     });
 
     it('getDriver("Derby City Council") returns truthy (name lookup)', () => {
@@ -133,6 +169,121 @@ async function run() {
     });
   });
 
+  describe('Amber Valley driver', () => {
+    const av = require('../lib/drivers/ambervalley');
+
+    it('has correct id, slug, name', () => {
+      assert.strictEqual(av.id, 'ambervalley');
+      assert.strictEqual(av.slug, 'ambervalley');
+      assert.strictEqual(av.name, 'Amber Valley Borough Council');
+    });
+
+    it('has lookupAddresses and getCollections methods', () => {
+      assert.strictEqual(typeof av.lookupAddresses, 'function');
+      assert.strictEqual(typeof av.getCollections, 'function');
+    });
+
+    it('getCollections(null) returns []', async () => {
+      const result = await av.getCollections(null);
+      assert.deepStrictEqual(result, []);
+    });
+  });
+
+  describe('High Peak driver', () => {
+    const hp = require('../lib/drivers/highpeak');
+
+    it('has correct id, slug, name', () => {
+      assert.strictEqual(hp.id, 'highpeak');
+      assert.strictEqual(hp.slug, 'highpeak');
+      assert.strictEqual(hp.name, 'High Peak Borough Council');
+    });
+
+    it('has lookupAddresses and getCollections methods', () => {
+      assert.strictEqual(typeof hp.lookupAddresses, 'function');
+      assert.strictEqual(typeof hp.getCollections, 'function');
+    });
+
+    it('getCollections(null) returns []', async () => {
+      const result = await hp.getCollections(null);
+      assert.deepStrictEqual(result, []);
+    });
+  });
+
+  describe('Derbyshire Dales driver', () => {
+    const dd = require('../lib/drivers/derbyshiredales');
+
+    it('has correct id, slug, name', () => {
+      assert.strictEqual(dd.id, 'derbyshiredales');
+      assert.strictEqual(dd.slug, 'derbyshiredales');
+      assert.strictEqual(dd.name, 'Derbyshire Dales District Council');
+    });
+
+    it('has lookupAddresses and getCollections methods', () => {
+      assert.strictEqual(typeof dd.lookupAddresses, 'function');
+      assert.strictEqual(typeof dd.getCollections, 'function');
+    });
+
+    it('getCollections(null) returns []', async () => {
+      const result = await dd.getCollections(null);
+      assert.deepStrictEqual(result, []);
+    });
+  });
+
+  describe('Bolsover driver', () => {
+    const bol = require('../lib/drivers/bolsover');
+
+    it('has correct id, slug, name', () => {
+      assert.strictEqual(bol.id, 'bolsover');
+      assert.strictEqual(bol.slug, 'bolsover');
+      assert.strictEqual(bol.name, 'Bolsover District Council');
+    });
+
+    it('has lookupAddresses and getCollections methods', () => {
+      assert.strictEqual(typeof bol.lookupAddresses, 'function');
+      assert.strictEqual(typeof bol.getCollections, 'function');
+    });
+  });
+
+  describe('Chesterfield driver', () => {
+    const che = require('../lib/drivers/chesterfield');
+
+    it('has correct id, slug, name', () => {
+      assert.strictEqual(che.id, 'chesterfield');
+      assert.strictEqual(che.slug, 'chesterfield');
+      assert.strictEqual(che.name, 'Chesterfield Borough Council');
+    });
+
+    it('has lookupAddresses and getCollections methods', () => {
+      assert.strictEqual(typeof che.lookupAddresses, 'function');
+      assert.strictEqual(typeof che.getCollections, 'function');
+    });
+
+    it('getCollections(null) returns []', async () => {
+      const result = await che.getCollections(null);
+      assert.deepStrictEqual(result, []);
+    });
+  });
+
+  describe('South Derbyshire driver', () => {
+    const sd = require('../lib/drivers/southderbyshire');
+
+    it('has correct id, slug, name', () => {
+      assert.strictEqual(sd.id, 'southderbyshire');
+      assert.strictEqual(sd.slug, 'southderbyshire');
+      assert.strictEqual(sd.name, 'South Derbyshire District Council');
+    });
+
+    it('has lookupAddresses and getCollections methods', () => {
+      assert.strictEqual(typeof sd.lookupAddresses, 'function');
+      assert.strictEqual(typeof sd.getCollections, 'function');
+    });
+
+    it('getCollections(null) returns []', async () => {
+      const result = await sd.getCollections(null);
+      assert.deepStrictEqual(result, []);
+    });
+  });
+
   {
     console.log('\n  Bins API endpoint');
 
@@ -211,7 +362,7 @@ async function run() {
   }
 
   describe('Shared utilities', () => {
-    const { httpGet } = require('../lib/drivers/shared');
+    const { httpGet, httpPost, cookieJarFrom, cookieHeader, encodeForm } = require('../lib/drivers/shared');
 
     it('httpGet is a function', () => {
       assert.strictEqual(typeof httpGet, 'function');
@@ -221,6 +372,39 @@ async function run() {
       const p = httpGet('https://example.com');
       assert.ok(p instanceof Promise, 'httpGet should return a Promise');
       p.catch(() => {});
+    });
+
+    it('httpPost is a function', () => {
+      assert.strictEqual(typeof httpPost, 'function');
+    });
+
+    it('cookieJarFrom is a function', () => {
+      assert.strictEqual(typeof cookieJarFrom, 'function');
+    });
+
+    it('cookieHeader is a function', () => {
+      assert.strictEqual(typeof cookieHeader, 'function');
+    });
+
+    it('encodeForm is a function', () => {
+      assert.strictEqual(typeof encodeForm, 'function');
+    });
+
+    it('encodeForm encodes key-value pairs', () => {
+      const result = encodeForm({ foo: 'bar', baz: '123' });
+      assert.strictEqual(result, 'foo=bar&baz=123');
+    });
+
+    it('cookieJarFrom parses set-cookie header', () => {
+      const jar = cookieJarFrom({ 'set-cookie': ['token=abc123; Path=/', 'other=xyz; Path=/'] });
+      assert.strictEqual(jar.token, 'abc123');
+      assert.strictEqual(jar.other, 'xyz');
+    });
+
+    it('cookieHeader builds cookie string', () => {
+      const header = cookieHeader({ token: 'abc', other: 'xyz' });
+      assert.ok(header.includes('token=abc'));
+      assert.ok(header.includes('other=xyz'));
     });
   });
 

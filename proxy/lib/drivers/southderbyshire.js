@@ -1,0 +1,120 @@
+const https = require('https');
+const { lookupAddressesOsPlaces } = require('./shared');
+
+const API_URL = 'https://maps.southderbyshire.gov.uk/iShareLIVE.web/getdata.aspx?RequestType=LocalInfo&ms=mapsources/MyHouse&format=JSON&group=Recycling%20Bins%20and%20Waste|Next%20Bin%20Collections&uid=';
+
+const STREAM_MAP = { black: 'general', green: 'recycling', brown: 'garden', podback: 'food' };
+const LABELS = { general: 'Black bin', recycling: 'Green bin', garden: 'Brown bin', food: 'Podback' };
+
+function httpGet(urlStr) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(urlStr);
+    const opts = {
+      method: 'GET', hostname: url.hostname, path: url.pathname + url.search,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', Accept: 'application/json' },
+      timeout: 30000,
+    };
+    const req = https.request(opts, (resp) => {
+      let body = '';
+      resp.on('data', c => body += c);
+      resp.on('end', () => resolve({ status: resp.statusCode, body }));
+    });
+    req.on('error', reject);
+    req.setTimeout(30000, () => { req.destroy(new Error('timeout')); });
+    req.end();
+  });
+}
+
+function extractDate(text) {
+  const m = text.match(/(\d{2})\s+(\w+)\s+(\d{4})/);
+  if (!m) return null;
+  const months = { January: 0, February: 1, March: 2, April: 3, May: 4, June: 5, July: 6, August: 7, September: 8, October: 9, November: 10, December: 11 };
+  const month = months[m[2]];
+  if (month === undefined) return null;
+  return new Date(parseInt(m[3]), month, parseInt(m[1]));
+}
+
+function formatDate(d) {
+  if (!d || !(d instanceof Date) || isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function deriveFrequency(dates) {
+  if (dates.length < 2) return 'fortnightly';
+  const gaps = [];
+  for (let i = 1; i < dates.length; i++) gaps.push(Math.round((dates[i] - dates[i - 1]) / 86400000));
+  const counts = {};
+  for (const g of gaps) counts[g] = (counts[g] || 0) + 1;
+  const mode = parseInt(Object.keys(counts).reduce((a, b) => counts[a] >= counts[b] ? a : b));
+  if (mode <= 10) return 'weekly';
+  if (mode <= 18) return 'fortnightly';
+  if (mode <= 25) return 'threeWeekly';
+  if (mode <= 35) return 'fourWeekly';
+  if (mode <= 50) return 'sixWeekly';
+  if (mode <= 70) return 'eightWeekly';
+  return 'twelveWeekly';
+}
+
+module.exports = {
+  id: 'southderbyshire',
+  slug: 'southderbyshire',
+  name: 'South Derbyshire District Council',
+
+  async lookupAddresses(postcode) {
+    const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!normalized) return [];
+    try { return await lookupAddressesOsPlaces(normalized); } catch (e) { return []; }
+  },
+
+  async getCollections(uprn, postcode) {
+    if (!uprn) return [];
+    try {
+      const r = await httpGet(`${API_URL}${encodeURIComponent(uprn)}`);
+      if (r.status !== 200) throw Object.assign(new Error(`API returned ${r.status}`), { code: 'UPSTREAM_ERROR' });
+
+      let data;
+      try { data = JSON.parse(r.body); } catch (e) { throw Object.assign(new Error('Invalid JSON'), { code: 'PARSE_ERROR' }); }
+
+      const htmlContent = data.Results && data.Results.Next_Bin_Collections && data.Results.Next_Bin_Collections._;
+      if (!htmlContent) return [];
+
+      const binTypes = htmlContent.match(/Green|Brown|Black|Podback/gi) || [];
+      const dates = htmlContent.match(/\d{2}\s+\w+\s+\d{4}/g) || [];
+
+      const byStream = {};
+      const seen = new Set();
+      for (let i = 0; i < binTypes.length; i++) {
+        const rawType = binTypes[i].toLowerCase();
+        const stream = STREAM_MAP[rawType];
+        if (!stream) continue;
+        const date = dates.length > 0 ? extractDate(dates[0]) : null;
+        if (!date) continue;
+        const key = `${stream}:${formatDate(date)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (!byStream[stream]) byStream[stream] = [];
+        byStream[stream].push(date);
+      }
+
+      const results = [];
+      for (const [stream, streamDates] of Object.entries(byStream)) {
+        streamDates.sort((a, b) => a - b);
+        const anchor = streamDates[0];
+        const freq = deriveFrequency(streamDates);
+        const nextCollections = streamDates.map(d => ({
+          date: formatDate(d),
+          stream,
+          label: LABELS[stream] || stream,
+        }));
+        results.push({
+          stream,
+          dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
+          frequency: freq,
+          anchorDate: formatDate(anchor),
+          nextCollections,
+        });
+      }
+      return results;
+    } catch (e) { return []; }
+  },
+};
