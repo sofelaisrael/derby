@@ -30,8 +30,15 @@ function parseCalendarPage(html) {
   let tableMatch;
   while ((tableMatch = tableRe.exec(html)) !== null) {
     const tableHtml = tableMatch[1];
-    const headingMatch = tableHtml.match(/<caption[^>]*>([\s\S]*?)<\/caption>/i) ||
-      (() => { const prev = html.substring(0, html.indexOf(tableMatch[0])); const h = prev.match(/<h2[^>]*>([\s\S]*?)<\/h2>\s*$/i); return h; })();
+    let headingMatch = tableHtml.match(/<caption[^>]*>([\s\S]*?)<\/caption>/i);
+    if (!headingMatch) {
+      const prev = html.substring(0, html.indexOf(tableMatch[0]));
+      const allH2 = [];
+      const h2Re = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+      let hm;
+      while ((hm = h2Re.exec(prev)) !== null) allH2.push(hm);
+      if (allH2.length > 0) headingMatch = allH2[allH2.length - 1];
+    }
     let month = 0, year = 0;
     if (headingMatch) {
       const text = headingMatch[1].replace(/<[^>]+>/g, '').trim();

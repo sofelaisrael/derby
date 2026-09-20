@@ -60,6 +60,19 @@ function deriveFrequency(dates) {
   return 'twelveWeekly';
 }
 
+async function postAndFollow(jar, url, body) {
+  const r = await httpPost(url, body, { Cookie: cookieHeader(jar) });
+  jar = Object.assign(jar, cookieJarFrom(r.headers));
+  if (r.status >= 300 && r.status < 400 && r.headers && r.headers.location) {
+    let loc = r.headers.location;
+    if (loc.startsWith('/')) loc = 'https://bins.highpeak.gov.uk' + loc;
+    const r2 = await httpGet(loc, { Cookie: cookieHeader(jar) });
+    jar = Object.assign(jar, cookieJarFrom(r2.headers));
+    return { response: r2, jar };
+  }
+  return { response: r, jar };
+}
+
 module.exports = {
   id: 'highpeak',
   slug: 'highpeak',
@@ -76,8 +89,7 @@ module.exports = {
       if (!token) return [];
 
       const body = encodeForm({ __RequestVerificationToken: token, SelectedPostcode: normalized });
-      const r2 = await httpPost(`${BASE}?handler=SearchPostcode`, body, { Cookie: cookieHeader(jar) });
-      Object.assign(jar, cookieJarFrom(r2.headers));
+      const { response: r2, jar: jar2 } = await postAndFollow(jar, `${BASE}?handler=SearchPostcode`, body);
 
       const blocks = extractJsonBlocks(r2.body);
       const premisesBlock = blocks.find(b => b.length > 0 && b[0].UPRN);
@@ -111,9 +123,9 @@ module.exports = {
 
       if (normalized) {
         const body = encodeForm({ __RequestVerificationToken: token, SelectedPostcode: normalized });
-        const r2 = await httpPost(`${BASE}?handler=SearchPostcode`, body, { Cookie: cookieHeader(jar) });
-        jar = Object.assign(jar, cookieJarFrom(r2.headers));
-        token = extractToken(r2.body);
+        const { response: r2, jar: jar2 } = await postAndFollow(jar, `${BASE}?handler=SearchPostcode`, body);
+        jar = jar2;
+        token = extractToken(r2.body) || token;
       }
 
       const selectBody = encodeForm({
@@ -121,7 +133,7 @@ module.exports = {
         SelectedPostcode: normalized,
         SelectedPremises: uprn,
       });
-      const r3 = await httpPost(`${BASE}?handler=SelectPrem`, selectBody, { Cookie: cookieHeader(jar) });
+      const { response: r3 } = await postAndFollow(jar, `${BASE}?handler=SelectPrem`, selectBody);
 
       const blocks = extractJsonBlocks(r3.body);
       const scheduleBlock = blocks.find(b => b.length > 0 && b[0].Subject);

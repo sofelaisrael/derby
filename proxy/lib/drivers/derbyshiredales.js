@@ -1,4 +1,4 @@
-const { httpGet, httpPost, encodeForm, lookupAddressesOsPlaces } = require('./shared');
+const { httpGet, httpPost, encodeForm, cookieJarFrom, cookieHeader, lookupAddressesOsPlaces } = require('./shared');
 
 const FORM_URL = 'https://selfserve.derbyshiredales.gov.uk/renderform?k=9644C066D2168A4C21BCDA351DA2642526359DFF&t=103';
 const RENDER_URL = 'https://selfserve.derbyshiredales.gov.uk/RenderForm';
@@ -14,6 +14,21 @@ function extractHiddenInputs(html) {
     if (nameMatch) inputs[nameMatch[1]] = valueMatch ? valueMatch[1] : '';
   }
   return inputs;
+}
+
+function extractFormFields(html) {
+  const fields = [];
+  const inputRe = /<input[^>]*>/gi;
+  let m;
+  while ((m = inputRe.exec(html)) !== null) {
+    const tag = m[0];
+    const nameMatch = tag.match(/name="([^"]*)"/i);
+    const valueMatch = tag.match(/value="([^"]*?)"/i);
+    if (nameMatch && nameMatch[1]) {
+      fields.push({ name: nameMatch[1], value: valueMatch ? valueMatch[1] : '' });
+    }
+  }
+  return fields;
 }
 
 function parseRows(html) {
@@ -89,20 +104,27 @@ module.exports = {
       const r1 = await httpGet(FORM_URL);
       if (r1.status !== 200) throw Object.assign(new Error(`Form page returned ${r1.status}`), { code: 'UPSTREAM_ERROR' });
 
-      const formInputs = extractHiddenInputs(r1.body);
+      const jar = cookieJarFrom(r1.headers);
+      const formFields = extractFormFields(r1.body);
+      const formInputs = {};
+      for (const f of formFields) {
+        formInputs[f.name] = f.value;
+      }
+
       if (!formInputs.__RequestVerificationToken || !formInputs.FormGuid) return [];
 
-      const payload = {
-        __RequestVerificationToken: formInputs.__RequestVerificationToken,
-        FormGuid: formInputs.FormGuid,
-        ObjectTemplateID: formInputs.ObjectTemplateID || '',
-        Trigger: 'submit',
-        CurrentSectionID: formInputs.CurrentSectionID || '',
-        FF2924: uprn,
-        'FF2924lbltxt': 'Collection Address',
-        'FF2924-text': 'False',
-      };
-      const r2 = await httpPost(RENDER_URL, encodeForm(payload));
+      const payload = {};
+      for (const f of formFields) {
+        if (f.name === 'FF2924') {
+          payload[f.name] = uprn;
+        } else if (f.name === 'FF2924-text') {
+          payload[f.name] = '';
+        } else if (f.name) {
+          payload[f.name] = f.value;
+        }
+      }
+
+      const r2 = await httpPost(RENDER_URL, encodeForm(payload), { Cookie: cookieHeader(jar) });
       if (r2.status !== 200) return [];
 
       const collections = parseRows(r2.body);

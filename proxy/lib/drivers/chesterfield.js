@@ -10,10 +10,17 @@ function httpGet(urlStr) {
     const url = new URL(urlStr);
     const opts = {
       method: 'GET', hostname: url.hostname, path: url.pathname + url.search,
-      headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json, text/html' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', Accept: 'application/json, text/html' },
       timeout: 30000,
+      rejectUnauthorized: false,
     };
     const req = https.request(opts, (resp) => {
+      if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
+        let loc = resp.headers.location;
+        if (loc.startsWith('/')) loc = url.protocol + '//' + url.hostname + loc;
+        resolve(httpGet(loc));
+        return;
+      }
       let body = '';
       resp.on('data', c => body += c);
       resp.on('end', () => resolve({ status: resp.statusCode, body, headers: resp.headers }));
@@ -30,12 +37,13 @@ function httpPost(urlStr, bodyData, headers) {
     const opts = {
       method: 'POST', hostname: url.hostname, port: 443, path: url.pathname + url.search,
       headers: {
-        'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Accept': 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(bodyData),
         ...(headers || {}),
       },
       timeout: 30000,
+      rejectUnauthorized: false,
     };
     const req = https.request(opts, (resp) => {
       let body = '';

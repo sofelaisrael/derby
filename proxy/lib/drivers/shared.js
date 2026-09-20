@@ -2,20 +2,20 @@ const https = require('https');
 
 const OS_PLACES_API = 'https://api.os.uk/search/places/v1';
 
-function httpGet(urlStr) {
+function httpGet(urlStr, extraHeaders) {
   return new Promise((resolve, reject) => {
     const url = new URL(urlStr);
     const opts = {
       method: 'GET',
       hostname: url.hostname,
       path: url.pathname + url.search,
-      headers: { 'User-Agent': 'derby-bin-proxy/1.0', Accept: 'application/json' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', Accept: '*/*', ...(extraHeaders || {}) },
       timeout: 30000,
     };
     const req = https.request(opts, (resp) => {
       let body = '';
       resp.on('data', c => body += c);
-      resp.on('end', () => resolve({ status: resp.statusCode, body }));
+      resp.on('end', () => resolve({ status: resp.statusCode, body, headers: resp.headers }));
     });
     req.on('error', reject);
     req.setTimeout(30000, () => { req.destroy(new Error('timeout')); });

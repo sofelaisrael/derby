@@ -9,9 +9,21 @@ const MONTHS = {
 
 const STREAM_MAP = {
   'Black bin': 'general',
+  'Black Bin': 'general',
+  'black bin': 'general',
   'Blue bin': 'recycling',
+  'Blue Bin': 'recycling',
+  'blue bin': 'recycling',
   'Brown bin': 'garden',
+  'Brown Bin': 'garden',
+  'brown bin': 'garden',
   'Food bin': 'food',
+  'Food Bin': 'food',
+  'food bin': 'food',
+  'General waste': 'general',
+  'Recycling': 'recycling',
+  'Garden waste': 'garden',
+  'Food waste': 'food',
 };
 
 const LABELS = {
@@ -66,7 +78,7 @@ function httpGet(urlStr) {
       method: 'GET',
       hostname: url.hostname,
       path: url.pathname + url.search,
-      headers: { 'User-Agent': 'derby-bin-proxy/1.0', Accept: 'text/html' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', Accept: 'text/html' },
       timeout: 30000,
     };
     const req = https.request(opts, (resp) => {
@@ -78,6 +90,48 @@ function httpGet(urlStr) {
     req.setTimeout(30000, () => { req.destroy(new Error('timeout')); });
     req.end();
   });
+}
+
+function extractFromBinresults(html) {
+  const results = [];
+  const binresultRe = /<div[^>]*class="[^"]*\bbinresult\b[^"]*"[\s\S]*?<\/div>\s*<\/div>/gi;
+  let block;
+  while ((block = binresultRe.exec(html)) !== null) {
+    const chunk = block[0];
+    const strongMatch = chunk.match(/<strong>([\s\S]*?)<\/strong>/i);
+    const imgMatch = chunk.match(/<img[^>]*alt="([^"]*)"[^>]*>/i);
+    if (!strongMatch || !imgMatch) continue;
+    const dateText = strongMatch[1].trim();
+    const binType = imgMatch[1].trim();
+    if (!binType || binType === 'No bins') continue;
+    const date = parseDerbyDate(dateText);
+    if (!date) continue;
+    results.push({ binType, date });
+  }
+  return results;
+}
+
+function extractFromStrongAndImg(html) {
+  const results = [];
+  const section = html.match(/<div[^>]*class="[^"]*\bapplicationwrapper\b[^"]*"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/i);
+  const scope = section ? section[0] : html;
+
+  const dateRe = /<strong>([\s\S]*?)<\/strong>/gi;
+  const typeRe = /<img[^>]*alt="([^"]*)"[^>]*>/gi;
+  const dates = [];
+  const types = [];
+  let m;
+  while ((m = dateRe.exec(scope)) !== null) dates.push(m[1].trim());
+  while ((m = typeRe.exec(scope)) !== null) types.push(m[1].trim());
+
+  for (let i = 0; i < dates.length; i++) {
+    const binType = types[i];
+    if (!binType || binType === 'No bins' || binType === 'Household waste bin') continue;
+    const date = parseDerbyDate(dates[i]);
+    if (!date) continue;
+    results.push({ binType, date });
+  }
+  return results;
 }
 
 module.exports = {
@@ -99,39 +153,30 @@ module.exports = {
   async getCollections(uprn, postcode) {
     if (!uprn) return [];
     try {
-      const url = `https://secure.derby.gov.uk/binday/Bindays/${encodeURIComponent(uprn)}`;
+      const url = `https://secure.derby.gov.uk/binday/BinDays/${encodeURIComponent(uprn)}`;
       const result = await httpGet(url);
       if (result.status !== 200) {
         throw Object.assign(new Error(`Derby API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
       }
 
       const html = result.body;
-      const container = html.match(/<div id="bindays-container">([\s\S]*?)(<\/div>\s*<\/div>\s*<\/div>|<hr|$)/i);
-      const section = container ? container[0] : html;
-      const dates = [];
-      const types = [];
-      const dateRe = /<strong>([\s\S]*?)<\/strong>/gi;
-      const typeRe = /<img[^>]*alt="([^"]*)"[^>]*>/gi;
-      let m;
-      while ((m = dateRe.exec(section)) !== null) dates.push(m[1]);
-      while ((m = typeRe.exec(section)) !== null) types.push(m[1]);
-      if (dates.length === 0) return [];
+
+      let parsed = extractFromBinresults(html);
+      if (parsed.length === 0) {
+        parsed = extractFromStrongAndImg(html);
+      }
+      if (parsed.length === 0) return [];
 
       const byStream = {};
 
-      for (let i = 0; i < dates.length; i++) {
-        const binLabel = types[i];
-        if (!binLabel) continue;
-        const stream = STREAM_MAP[binLabel];
+      for (const entry of parsed) {
+        const stream = STREAM_MAP[entry.binType];
         if (!stream) continue;
 
-        const date = parseDerbyDate(dates[i]);
-        if (!date) continue;
-
         if (!byStream[stream]) byStream[stream] = { stream, dates: [] };
-        const dateStr = formatDate(date);
+        const dateStr = formatDate(entry.date);
         if (byStream[stream].dates.some(d => formatDate(d) === dateStr)) continue;
-        byStream[stream].dates.push(date);
+        byStream[stream].dates.push(entry.date);
       }
 
       const results = [];
