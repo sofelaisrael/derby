@@ -211,15 +211,8 @@ module.exports = {
         throw Object.assign(new Error(`Erewash postcode lookup returned ${postcodeRes.status}`), { code: 'UPSTREAM_ERROR' });
       }
 
-      // Merge cookies from step 2 response so step 3 gets fresh session cookies
       const jar2 = cookieJarFrom(postcodeRes.headers);
-      const mergedJar = [...jar];
-      for (const c of jar2) {
-        const name = c.split('=')[0];
-        const idx = mergedJar.findIndex(e => e.split('=')[0] === name);
-        if (idx >= 0) mergedJar[idx] = c.split(';')[0];
-        else mergedJar.push(c.split(';')[0]);
-      }
+      const mergedJar = { ...jar, ...jar2 };
       cookies = cookieHeader(mergedJar);
 
       let postcodeData;
