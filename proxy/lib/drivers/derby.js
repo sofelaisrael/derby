@@ -1,5 +1,5 @@
 const https = require('https');
-const { httpPost } = require('./shared');
+const { httpGet, httpPost, cookieJarFrom, cookieHeader } = require('./shared');
 
 const MONTHS = {
   january: 0, february: 1, march: 2, april: 3,
@@ -71,27 +71,6 @@ function deriveFrequency(dates) {
   return 'twelveWeekly';
 }
 
-function httpGet(urlStr) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(urlStr);
-    const opts = {
-      method: 'GET',
-      hostname: url.hostname,
-      path: url.pathname + url.search,
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', Accept: 'text/html' },
-      timeout: 30000,
-    };
-    const req = https.request(opts, (resp) => {
-      let body = '';
-      resp.on('data', c => body += c);
-      resp.on('end', () => resolve({ status: resp.statusCode, body }));
-    });
-    req.on('error', reject);
-    req.setTimeout(30000, () => { req.destroy(new Error('timeout')); });
-    req.end();
-  });
-}
-
 function extractFromBinresults(html) {
   const results = [];
   const binresultRe = /<div[^>]*class="[^"]*\bbinresult\b[^"]*"[\s\S]*?<\/div>\s*<\/div>/gi;
@@ -143,10 +122,23 @@ module.exports = {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
     try {
-      const body = `Postcode=${encodeURIComponent(normalized)}`;
-      const result = await httpPost('https://secure.derby.gov.uk/binday', body);
-      if (result.status !== 200) return [];
-      const selectMatch = result.body.match(/<select[^>]*(?:id|name)="SelectedUprn"[^>]*>([\s\S]*?)<\/select>/i);
+      const pageRes = await httpGet('https://secure.derby.gov.uk/binday');
+      if (pageRes.status !== 200) return [];
+      const tokenMatch = pageRes.body.match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/i);
+      if (!tokenMatch) return [];
+      const jar = cookieJarFrom(pageRes.headers);
+      const cookies = cookieHeader(jar);
+      const body = `Postcode=${encodeURIComponent(normalized)}&__RequestVerificationToken=${encodeURIComponent(tokenMatch[1])}`;
+      const postRes = await httpPost('https://secure.derby.gov.uk/binday', body, { 'Cookie': cookies });
+      let html = postRes.body;
+      if (postRes.status === 302 && postRes.headers && postRes.headers.location) {
+        const redirectUrl = postRes.headers.location.startsWith('http')
+          ? postRes.headers.location
+          : `https://secure.derby.gov.uk${postRes.headers.location}`;
+        const redirRes = await httpGet(redirectUrl, { 'Cookie': cookies });
+        html = redirRes.body;
+      }
+      const selectMatch = html.match(/<select[^>]*(?:id|name)="SelectedUprn"[^>]*>([\s\S]*?)<\/select>/i);
       if (!selectMatch) return [];
       const options = [];
       const optionRe = /<option\s+value="([^"]*)"[^>]*>([\s\S]*?)<\/option>/gi;
