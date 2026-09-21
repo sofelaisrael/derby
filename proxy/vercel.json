@@ -2,10 +2,12 @@
   "version": 2,
   "routes": [
     { "src": "/addresses", "dest": "api/addresses.js" },
-    { "src": "/bins", "dest": "api/bins.js" }
+    { "src": "/bins", "dest": "api/bins.js" },
+    { "src": "/report", "dest": "api/report.js" }
   ],
   "functions": {
     "api/bins.js": { "maxDuration": 30 },
-    "api/addresses.js": { "maxDuration": 30 }
+    "api/addresses.js": { "maxDuration": 30 },
+    "api/report.js": { "maxDuration": 30 }
   }
 }
