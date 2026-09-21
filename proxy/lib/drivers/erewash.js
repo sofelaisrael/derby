@@ -1,16 +1,17 @@
-const https = require('https');
-const { lookupAddressesOsPlaces } = require('./shared');
+const { lookupAddressesOsPlaces, httpGet } = require('./shared');
 
 const SERVICE_MAP = {
   'domestic-waste-collection-service': 'general',
   'recycling-collection-service': 'recycling',
   'garden-waste-collection-service': 'garden',
+  'food-waste-collection-service': 'food',
 };
 
 const LABELS = {
   general: 'General Waste',
   recycling: 'Recycling',
   garden: 'Garden Waste',
+  food: 'Food Waste',
 };
 
 function formatDate(d) {
@@ -39,27 +40,6 @@ function deriveFrequency(dates) {
   return 'twelveWeekly';
 }
 
-function httpGet(urlStr) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(urlStr);
-    const opts = {
-      method: 'GET',
-      hostname: url.hostname,
-      path: url.pathname + url.search,
-      headers: { 'User-Agent': 'erewash-bin-proxy/1.0', Accept: 'application/json' },
-      timeout: 30000,
-    };
-    const req = https.request(opts, (resp) => {
-      let body = '';
-      resp.on('data', c => body += c);
-      resp.on('end', () => resolve({ status: resp.statusCode, body }));
-    });
-    req.on('error', reject);
-    req.setTimeout(30000, () => { req.destroy(new Error('timeout')); });
-    req.end();
-  });
-}
-
 module.exports = {
   id: 'erewash',
   slug: 'erewash',
@@ -80,7 +60,10 @@ module.exports = {
     if (!uprn) return [];
     try {
       const url = `https://www.erewash.gov.uk/bbd-whitespace/one-year-collection-dates?uprn=${encodeURIComponent(uprn)}&_wrapper_format=drupal_ajax`;
-      const result = await httpGet(url);
+      const result = await httpGet(url, {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      });
       if (result.status !== 200) {
         throw Object.assign(new Error(`Erewash API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
       }
@@ -92,51 +75,97 @@ module.exports = {
         throw Object.assign(new Error('Invalid JSON from Erewash API'), { code: 'PARSE_ERROR' });
       }
 
-      if (!Array.isArray(data) || data.length === 0) return [];
-      const settings = data[0] && data[0].settings && data[0].settings.collection_dates;
-      if (!settings || typeof settings !== 'object') return [];
+      if (Array.isArray(data)) {
+        const settingsEntry = data.find(d => d && d.settings && d.settings.collection_dates);
+        if (settingsEntry) {
+          const settings = settingsEntry.settings.collection_dates;
+          if (settings && typeof settings === 'object') {
+            const byStream = {};
 
-      const byStream = {};
+            for (const key of Object.keys(settings)) {
+              const collections = settings[key];
+              if (!Array.isArray(collections)) continue;
 
-      for (const key of Object.keys(settings)) {
-        const collections = settings[key];
-        if (!Array.isArray(collections)) continue;
+              for (const item of collections) {
+                const stream = SERVICE_MAP[item['service-identifier']];
+                if (!stream) continue;
+                if (!item.timestamp) continue;
 
-        for (const item of collections) {
-          const stream = SERVICE_MAP[item['service-identifier']];
-          if (!stream) continue;
-          if (!item.timestamp) continue;
+                const date = new Date(item.timestamp * 1000);
+                if (isNaN(date.getTime())) continue;
 
-          const date = new Date(item.timestamp * 1000);
-          if (isNaN(date.getTime())) continue;
+                if (!byStream[stream]) byStream[stream] = { stream, dates: [] };
+                byStream[stream].dates.push(date);
+              }
+            }
 
-          if (!byStream[stream]) byStream[stream] = { stream, dates: [] };
-          byStream[stream].dates.push(date);
+            const results = [];
+            for (const key of Object.keys(byStream)) {
+              const b = byStream[key];
+              if (b.dates.length === 0) continue;
+              b.dates.sort((a, c) => a - c);
+              const anchor = b.dates[0];
+              const freq = deriveFrequency(b.dates);
+              const nextCollections = b.dates.map(d => ({
+                date: formatDate(d),
+                stream: b.stream,
+                label: LABELS[b.stream] || b.stream,
+              }));
+              results.push({
+                stream: b.stream,
+                dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
+                frequency: freq,
+                anchorDate: formatDate(anchor),
+                nextCollections,
+              });
+            }
+
+            return results;
+          }
         }
       }
 
-      const results = [];
-      for (const key of Object.keys(byStream)) {
-        const b = byStream[key];
-        if (b.dates.length === 0) continue;
-        b.dates.sort((a, c) => a - c);
-        const anchor = b.dates[0];
-        const freq = deriveFrequency(b.dates);
-        const nextCollections = b.dates.map(d => ({
-          date: formatDate(d),
-          stream: b.stream,
-          label: LABELS[b.stream] || b.stream,
-        }));
-        results.push({
-          stream: b.stream,
-          dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
-          frequency: freq,
-          anchorDate: formatDate(anchor),
-          nextCollections,
-        });
+      if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+        const collections = data.collection_dates || data.dates || data.collections;
+        if (collections && typeof collections === 'object') {
+          const byStream = {};
+          const items = Array.isArray(collections) ? collections : Object.values(collections).flat();
+          for (const item of items) {
+            if (!item) continue;
+            const stream = SERVICE_MAP[item['service-identifier'] || item.service || item.type];
+            if (!stream) continue;
+            const ts = item.timestamp || item.date || item.collection_date;
+            if (!ts) continue;
+            const date = new Date(typeof ts === 'number' ? ts * 1000 : ts);
+            if (isNaN(date.getTime())) continue;
+            if (!byStream[stream]) byStream[stream] = { stream, dates: [] };
+            byStream[stream].dates.push(date);
+          }
+          const results = [];
+          for (const key of Object.keys(byStream)) {
+            const b = byStream[key];
+            if (b.dates.length === 0) continue;
+            b.dates.sort((a, c) => a - c);
+            const anchor = b.dates[0];
+            const freq = deriveFrequency(b.dates);
+            const nextCollections = b.dates.map(d => ({
+              date: formatDate(d),
+              stream: b.stream,
+              label: LABELS[b.stream] || b.stream,
+            }));
+            results.push({
+              stream: b.stream,
+              dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
+              frequency: freq,
+              anchorDate: formatDate(anchor),
+              nextCollections,
+            });
+          }
+          return results;
+        }
       }
 
-      return results;
+      return [];
     } catch (e) {
       console.error(`erewash getCollections error for uprn ${uprn}: ${e.message}`);
       return [];
