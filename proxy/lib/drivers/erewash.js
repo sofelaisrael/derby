@@ -1,4 +1,4 @@
-const { lookupAddressesOsPlaces, httpGet, httpPost, cookieJarFrom, cookieHeader, encodeForm } = require('./shared');
+const { httpGet, httpPost, cookieJarFrom, cookieHeader, encodeForm } = require('./shared');
 
 const SERVICE_MAP = {
   'domestic-waste-collection-service': 'general',
@@ -118,7 +118,55 @@ module.exports = {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
     try {
-      return await lookupAddressesOsPlaces(normalized);
+      const pageRes = await httpGet(PAGE_URL);
+      if (pageRes.status !== 200) {
+        throw Object.assign(new Error(`Erewash page returned ${pageRes.status}`), { code: 'UPSTREAM_ERROR' });
+      }
+
+      const jar = cookieJarFrom(pageRes.headers);
+      const cookies = cookieHeader(jar);
+      const formBuildId = extractBuildId(pageRes.body);
+      if (!formBuildId) {
+        throw Object.assign(new Error('Could not extract form_build_id from Erewash page'), { code: 'PARSE_ERROR' });
+      }
+
+      const postcodeBody = encodeForm({
+        postcode: normalized,
+        link_uri: 'entity:node/646',
+        link_text: 'View the calendar',
+        form_build_id: formBuildId,
+        form_id: 'bbd_whitespace_bbd_whitespace_address_search',
+        _triggering_element_name: 'postcode',
+        _drupal_ajax: '1',
+        op: 'Look up address',
+      });
+
+      const postcodeRes = await httpPost(AJAX_URL, postcodeBody, {
+        'Cookie': cookies,
+      });
+      if (postcodeRes.status !== 200) {
+        throw Object.assign(new Error(`Erewash postcode lookup returned ${postcodeRes.status}`), { code: 'UPSTREAM_ERROR' });
+      }
+
+      let postcodeData;
+      try {
+        postcodeData = JSON.parse(postcodeRes.body);
+      } catch (e) {
+        throw Object.assign(new Error('Invalid JSON from Erewash postcode lookup'), { code: 'PARSE_ERROR' });
+      }
+
+      if (!Array.isArray(postcodeData)) {
+        throw Object.assign(new Error('Expected array from Erewash postcode lookup'), { code: 'PARSE_ERROR' });
+      }
+
+      let addressHtml = '';
+      for (const cmd of postcodeData) {
+        if (cmd.command === 'insert' && cmd.data) {
+          addressHtml += cmd.data;
+        }
+      }
+
+      return parsePostcodeOptions(addressHtml);
     } catch (e) {
       console.error(`erewash lookupAddresses error: ${e.message}`);
       return [];

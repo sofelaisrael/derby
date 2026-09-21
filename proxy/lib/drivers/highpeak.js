@@ -1,4 +1,4 @@
-const { lookupAddressesOsPlaces, httpGet, httpPost, cookieJarFrom, cookieHeader, encodeForm } = require('./shared');
+const { httpGet, httpPost, cookieJarFrom, cookieHeader, encodeForm } = require('./shared');
 
 const BASE = 'https://bins.highpeak.gov.uk/PublicDashboard';
 
@@ -104,7 +104,7 @@ module.exports = {
         const label = item.Address || item.Premises || item.Property || uprn;
         addrs.push({ uprn, label });
       }
-      if (addrs.length === 0) return await lookupAddressesOsPlaces(normalized);
+      if (addrs.length === 0) return [];
       return addrs;
     } catch (e) { return []; }
   },

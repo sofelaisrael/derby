@@ -1,5 +1,5 @@
 const https = require('https');
-const { lookupAddressesOsPlaces } = require('./shared');
+const { httpPost } = require('./shared');
 
 const MONTHS = {
   january: 0, february: 1, march: 2, april: 3,
@@ -143,7 +143,21 @@ module.exports = {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
     try {
-      return await lookupAddressesOsPlaces(normalized);
+      const body = `Postcode=${encodeURIComponent(normalized)}`;
+      const result = await httpPost('https://secure.derby.gov.uk/binday', body);
+      if (result.status !== 200) return [];
+      const selectMatch = result.body.match(/<select[^>]*(?:id|name)="SelectedUprn"[^>]*>([\s\S]*?)<\/select>/i);
+      if (!selectMatch) return [];
+      const options = [];
+      const optionRe = /<option\s+value="([^"]*)"[^>]*>([\s\S]*?)<\/option>/gi;
+      let m;
+      while ((m = optionRe.exec(selectMatch[1])) !== null) {
+        const uprn = m[1].trim();
+        const label = m[2].trim();
+        if (!uprn || !label || label.includes('Select premises')) continue;
+        options.push({ uprn, label });
+      }
+      return options;
     } catch (e) {
       console.error(`derby lookupAddresses error: ${e.message}`);
       return [];

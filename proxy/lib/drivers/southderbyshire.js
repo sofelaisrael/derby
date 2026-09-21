@@ -1,5 +1,4 @@
 const https = require('https');
-const { lookupAddressesOsPlaces } = require('./shared');
 
 const API_URL = 'https://maps.southderbyshire.gov.uk/iShareLIVE.web/getdata.aspx?RequestType=LocalInfo&ms=mapsources/MyHouse&format=JSON&group=Recycling%20Bins%20and%20Waste|Next%20Bin%20Collections&uid=';
 
@@ -117,7 +116,7 @@ module.exports = {
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
-    try { return await lookupAddressesOsPlaces(normalized); } catch (e) { return []; }
+    return [];
   },
 
   async getCollections(uprn, postcode) {

@@ -1,5 +1,4 @@
 const https = require('https');
-const { lookupAddressesOsPlaces } = require('./shared');
 
 const CALENDARS = ['a', 'b'];
 const BASE = 'https://www.bolsover.gov.uk/waste-bins-recycling/bin-calendar-';
@@ -108,7 +107,7 @@ module.exports = {
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
-    try { return await lookupAddressesOsPlaces(normalized); } catch (e) { return []; }
+    return [];
   },
 
   async getCollections(uprn, postcode) {

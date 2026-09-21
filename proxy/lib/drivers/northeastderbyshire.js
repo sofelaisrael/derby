@@ -1,4 +1,4 @@
-const { httpGet, lookupAddressesOsPlaces } = require('./shared');
+const { httpGet } = require('./shared');
 
 const PAGE_URL = 'https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates';
 const MONTHS = { january: 0, february: 1, march: 2, april: 3, may: 4, june: 5, july: 6, august: 7, september: 8, october: 9, november: 10, december: 11 };
@@ -117,7 +117,7 @@ module.exports = {
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
-    try { return await lookupAddressesOsPlaces(normalized); } catch (e) { return []; }
+    return [];
   },
 
   async getCollections(uprn, postcode) {

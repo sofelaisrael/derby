@@ -1,4 +1,4 @@
-const { httpGet, httpPost, encodeForm, cookieJarFrom, cookieHeader, lookupAddressesOsPlaces } = require('./shared');
+const { httpGet, httpPost, encodeForm, cookieJarFrom, cookieHeader } = require('./shared');
 
 const FORM_URL = 'https://selfserve.derbyshiredales.gov.uk/renderform?k=9644C066D2168A4C21BCDA351DA2642526359DFF&t=103';
 const RENDER_URL = 'https://selfserve.derbyshiredales.gov.uk/RenderForm';
@@ -95,7 +95,7 @@ module.exports = {
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
-    try { return await lookupAddressesOsPlaces(normalized); } catch (e) { return []; }
+    return [];
   },
 
   async getCollections(uprn, postcode) {

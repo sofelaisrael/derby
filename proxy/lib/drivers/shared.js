@@ -1,7 +1,5 @@
 const https = require('https');
 
-const OS_PLACES_API = 'https://api.os.uk/search/places/v1';
-
 function httpGet(urlStr, extraHeaders) {
   return new Promise((resolve, reject) => {
     const url = new URL(urlStr);
@@ -35,23 +33,6 @@ async function httpGetRetry(urlStr, maxRetries = 3) {
     const delay = 500 + Math.random() * 1500 + attempt * 1000;
     await new Promise(r => setTimeout(r, delay));
   }
-}
-
-async function lookupAddressesOsPlaces(postcode) {
-  const key = process.env.OS_API_KEY;
-  if (!key) return [];
-  const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
-  const { status, body } = await httpGet(
-    `${OS_PLACES_API}/postcode?postcode=${encodeURIComponent(normalized)}&key=${key}&output_srs=EPSG:4326`
-  );
-  if (status !== 200) {
-    throw Object.assign(new Error(`OS Places API returned ${status}`), { code: 'OS_PLACES_ERROR' });
-  }
-  const data = JSON.parse(body);
-  if (!data.results || !Array.isArray(data.results)) return [];
-  return data.results
-    .filter(r => r.DPA && r.DPA.UPRN)
-    .map(r => ({ uprn: String(r.DPA.UPRN), label: r.DPA.ADDRESS }));
 }
 
 function httpPost(urlStr, bodyData, headers) {
@@ -106,4 +87,4 @@ function encodeForm(data) {
     .join('&');
 }
 
-module.exports = { httpGet, httpGetRetry, httpPost, lookupAddressesOsPlaces, cookieJarFrom, cookieHeader, encodeForm };
+module.exports = { httpGet, httpGetRetry, httpPost, cookieJarFrom, cookieHeader, encodeForm };

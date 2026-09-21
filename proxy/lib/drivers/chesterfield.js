@@ -1,5 +1,4 @@
 const https = require('https');
-const { lookupAddressesOsPlaces } = require('./shared');
 
 const SESSION_URL = 'https://www.chesterfield.gov.uk/bins-and-recycling/bin-collections/check-bin-collections.aspx';
 const FWUID_URL = 'https://myaccount.chesterfield.gov.uk/anonymous/c/cbc_VE_CollectionDaysLO.app?aura.format=JSON&aura.formatAdapter=LIGHTNING_OUT';
@@ -78,7 +77,7 @@ module.exports = {
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
-    try { return await lookupAddressesOsPlaces(normalized); } catch (e) { return []; }
+    return [];
   },
 
   async getCollections(uprn, postcode) {

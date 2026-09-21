@@ -1,4 +1,4 @@
-const { lookupAddressesOsPlaces, httpGet } = require('./shared');
+const { httpGet } = require('./shared');
 
 const STREAM_MAP = {
   refuseNextDate: { stream: 'general', label: 'General Waste' },
@@ -67,7 +67,7 @@ module.exports = {
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
-    try { return await lookupAddressesOsPlaces(normalized); } catch (e) { return []; }
+    return [];
   },
 
   async getCollections(uprn, postcode) {
