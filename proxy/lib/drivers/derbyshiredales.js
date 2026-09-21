@@ -2,6 +2,7 @@ const { httpGet, httpPost, encodeForm, cookieJarFrom, cookieHeader } = require('
 
 const FORM_URL = 'https://selfserve.derbyshiredales.gov.uk/renderform?k=9644C066D2168A4C21BCDA351DA2642526359DFF&t=103';
 const RENDER_URL = 'https://selfserve.derbyshiredales.gov.uk/RenderForm';
+const ADDRESS_LOOKUP_URL = 'https://selfserve.derbyshiredales.gov.uk/core/addresslookup';
 
 function extractHiddenInputs(html) {
   const inputs = {};
@@ -93,14 +94,28 @@ module.exports = {
   name: 'Derbyshire Dales District Council',
 
   async lookupAddresses(postcode) {
-    const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
+    const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, ' ');
     if (!normalized) return [];
-    return [];
+    try {
+      console.error('[derbyshiredales] lookupAddresses: postcode=%s', normalized);
+      const res = await httpPost(ADDRESS_LOOKUP_URL, encodeForm({ query: normalized }), { 'Content-Type': 'application/x-www-form-urlencoded' });
+      console.error('[derbyshiredales] lookupAddresses: status=%d', res.status);
+      if (res.status !== 200) return [];
+      const data = JSON.parse(res.body);
+      const results = Object.entries(data).map(([uprn, label]) => ({ uprn, label }));
+      console.error('[derbyshiredales] lookupAddresses: found %d addresses', results.length);
+      return results;
+    } catch (e) {
+      console.error('[derbyshiredales] lookupAddresses error:', e.message);
+      return [];
+    }
   },
 
   async getCollections(uprn, postcode) {
     if (!uprn) return [];
     try {
+      const formattedUp = uprn.startsWith('U') ? uprn : 'U' + uprn;
+      console.error('[derbyshiredales] getCollections: uprn=%s formattedUp=%s postcode=%s', uprn, formattedUp, postcode);
       const r1 = await httpGet(FORM_URL);
       if (r1.status !== 200) throw Object.assign(new Error(`Form page returned ${r1.status}`), { code: 'UPSTREAM_ERROR' });
 
@@ -117,7 +132,7 @@ module.exports = {
       const payload = {};
       for (const f of formFields) {
         if (f.name === 'FF2924') {
-          payload[f.name] = uprn;
+          payload[f.name] = formattedUp;
         } else if (f.name === 'FF2924-text') {
           payload[f.name] = '';
         } else if (f.name) {
