@@ -7,7 +7,12 @@
     "test": "node test/run-tests.js",
     "test:live": "LIVE_TEST=1 node test/run-tests.js"
   },
-  "engines": { "node": ">=16" },
+  "engines": {
+    "node": ">=16"
+  },
   "license": "MIT",
-  "type": "commonjs"
+  "type": "commonjs",
+  "dependencies": {
+    "playwright-core": "^1.63.0"
+  }
 }

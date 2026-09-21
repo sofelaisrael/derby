@@ -163,8 +163,23 @@ async function run() {
       assert.deepStrictEqual(result, []);
     });
 
+    it('getCollections without postcode returns []', async () => {
+      const result = await erewash.getCollections('100023456789');
+      assert.deepStrictEqual(result, []);
+    });
+
     it('lookupAddresses("") returns []', async () => {
       const result = await erewash.lookupAddresses('');
+      assert.deepStrictEqual(result, []);
+    });
+
+    it('lookupAddresses(null) returns []', async () => {
+      const result = await erewash.lookupAddresses(null);
+      assert.deepStrictEqual(result, []);
+    });
+
+    it('lookupAddresses("   ") returns []', async () => {
+      const result = await erewash.lookupAddresses('   ');
       assert.deepStrictEqual(result, []);
     });
   });
