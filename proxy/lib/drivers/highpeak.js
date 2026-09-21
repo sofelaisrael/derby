@@ -61,7 +61,7 @@ function deriveFrequency(dates) {
 }
 
 async function postAndFollow(jar, url, body) {
-  const r = await httpPost(url, body, { Cookie: cookieHeader(jar) });
+  const r = await httpPost(url, body, { Cookie: cookieHeader(jar), 'X-Requested-With': 'XMLHttpRequest' });
   jar = Object.assign(jar, cookieJarFrom(r.headers));
   if (r.status >= 300 && r.status < 400 && r.headers && r.headers.location) {
     let loc = r.headers.location;
@@ -106,7 +106,7 @@ module.exports = {
       }
       if (addrs.length === 0) return [];
       return addrs;
-    } catch (e) { return []; }
+    } catch (e) { console.error('[highpeak] lookupAddresses error:', e.message); throw e; }
   },
 
   async getCollections(uprn, postcode) {
@@ -119,6 +119,7 @@ module.exports = {
       const r1 = await httpGet(BASE);
       jar = cookieJarFrom(r1.headers);
       token = extractToken(r1.body);
+      console.error('[highpeak] step1: status=%d token=%s', r1.status, token || 'NONE');
       if (!token) return [];
 
       if (normalized) {
@@ -126,6 +127,7 @@ module.exports = {
         const { response: r2, jar: jar2 } = await postAndFollow(jar, `${BASE}?handler=SearchPostcode`, body);
         jar = jar2;
         token = extractToken(r2.body) || token;
+        console.error('[highpeak] step2: status=%d', r2.status);
       }
 
       const selectBody = encodeForm({
@@ -137,6 +139,8 @@ module.exports = {
 
       const blocks = extractJsonBlocks(r3.body);
       const scheduleBlock = blocks.find(b => b.length > 0 && b[0].Subject);
+      console.error('[highpeak] step3: status=%d blocks=%d', r3.status, blocks.length);
+      console.error('[highpeak] scheduleBlock found=%s items=%d', !!scheduleBlock, scheduleBlock?.length || 0);
       if (!scheduleBlock) return [];
 
       const byStream = {};
@@ -177,6 +181,6 @@ module.exports = {
         });
       }
       return results;
-    } catch (e) { return []; }
+    } catch (e) { console.error('[highpeak] getCollections error:', e.message); throw e; }
   },
 };

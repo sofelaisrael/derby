@@ -123,6 +123,7 @@ module.exports = {
     if (!uprn) return [];
     try {
       const r = await httpGet(`${API_URL}${encodeURIComponent(uprn)}`);
+      console.error('[southderbyshire] API status=%d', r.status);
       if (r.status !== 200) throw Object.assign(new Error(`API returned ${r.status}`), { code: 'UPSTREAM_ERROR' });
 
       let data;
@@ -132,6 +133,7 @@ module.exports = {
       if (!html) return [];
 
       const entries = parseEntries(html);
+      console.error('[southderbyshire] entries=%d', entries.length);
       if (entries.length === 0) return [];
 
       const byStream = {};
@@ -167,6 +169,6 @@ module.exports = {
         });
       }
       return results;
-    } catch (e) { return []; }
+    } catch (e) { console.error('[southderbyshire] getCollections error:', e.message); throw e; }
   },
 };

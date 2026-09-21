@@ -112,6 +112,7 @@ module.exports = {
       }
 
       if (!formInputs.__RequestVerificationToken || !formInputs.FormGuid) return [];
+      console.error('[derbyshiredales] step1: status=%d token=%s', r1.status, formInputs.__RequestVerificationToken ? 'YES' : 'NONE');
 
       const payload = {};
       for (const f of formFields) {
@@ -124,10 +125,11 @@ module.exports = {
         }
       }
 
-      const r2 = await httpPost(RENDER_URL, encodeForm(payload), { Cookie: cookieHeader(jar) });
+      const r2 = await httpPost(RENDER_URL, encodeForm(payload), { Cookie: cookieHeader(jar), 'X-Requested-With': 'XMLHttpRequest' });
       if (r2.status !== 200) return [];
 
       const collections = parseRows(r2.body);
+      console.error('[derbyshiredales] step2: status=%d collections=%d', r2.status, collections.length);
       if (collections.length === 0) return [];
 
       const byStream = {};
@@ -155,6 +157,6 @@ module.exports = {
         });
       }
       return results;
-    } catch (e) { return []; }
+    } catch (e) { console.error('[derbyshiredales] getCollections error:', e.message); throw e; }
   },
 };
