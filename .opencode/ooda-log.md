@@ -71,6 +71,34 @@ Council websites are treating Vercel's cloud IPs differently — likely blocking
 - Deleted dead ukbinday.js
 - All 28 tests passing, zero comments in codebase
 
+## Cycle 9 - Apply Mansfield Vercel-hardening patterns to Erewash
+
+### What happened
+- User asked "What did we do so far?" and pointed out Mansfield proxy initially didn't work on Vercel either
+- Reviewed Mansfield git history for Vercel-specific fixes: 5 key commits found
+- Key Mansfield fixes: cookie persistence (`c9b59e6`), retry logic (`424de61`), debug logging (`34b2759`), Vercel function limit (`80aa055`), timeout increase (`424de61`)
+- Identified two patterns missing from our Erewash driver that Mansfield's Gedling (Drupal AJAX) has:
+  1. `X-Requested-With: XMLHttpRequest` header on all AJAX POST requests
+  2. Cookie merging between steps (step 2's Set-Cookie → step 3)
+
+### What was done
+1. Added step-by-step `console.error` logging with `[erewash]` prefix at each step (like Mansfield's Gedling)
+2. Replaced silent `catch(e) { return []; }` with `throw e` so errors propagate to Vercel logs
+3. Added `X-Requested-With: XMLHttpRequest` header to all 3 httpPost calls (lookupAddresses, getCollections step 2, getCollections step 3)
+4. Added cookie merge after step 2 response: extracts Set-Cookie from postcode POST, merges with existing jar before step 3 uses them
+5. All 77 tests passing
+
+### Git commits
+- `3321fe1` Add /report route to vercel.json
+- Cycle 9 changes (pending commit): Vercel-hardening for Erewash driver
+
+### What needs to happen next
+1. **Deploy to Vercel and test** — these changes should fix Erewash getCollections on Vercel
+2. If Erewash works, apply same patterns (XHR header, cookie merge, debug logging) to High Peak, South Derbyshire, Derbyshire Dales
+3. Set REPORT_SCRIPT_URL env var on Vercel for /report endpoint
+4. Fix Derby getCollections (needs headless browser or underlying AJAX API discovery)
+5. Fix auto-detect picking wrong council (Bolsover returns all UPRNs)
+
 ## Research complete for remaining councils
 - Amber Valley: GET info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN?uprn=... - parse JSON
 - High Peak: Bartec portal at bins.highpeak.gov.uk/PublicDashboard - POST with token

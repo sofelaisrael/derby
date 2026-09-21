@@ -106,6 +106,7 @@ function parseCollectionTable(html) {
 
     results.push({ stream, dayOfWeek: dayStr, date });
   }
+  if (results.length === 0) console.error('[erewash] parseCollectionTable: no rows found in response');
   return results;
 }
 
@@ -143,6 +144,7 @@ module.exports = {
 
       const postcodeRes = await httpPost(AJAX_URL, postcodeBody, {
         'Cookie': cookies,
+        'X-Requested-With': 'XMLHttpRequest',
       });
       if (postcodeRes.status !== 200) {
         throw Object.assign(new Error(`Erewash postcode lookup returned ${postcodeRes.status}`), { code: 'UPSTREAM_ERROR' });
@@ -183,8 +185,9 @@ module.exports = {
       }
 
       const jar = cookieJarFrom(pageRes.headers);
-      const cookies = cookieHeader(jar);
+      let cookies = cookieHeader(jar);
       const formBuildId = extractBuildId(pageRes.body);
+      console.error('[erewash] step1 homepage: status=%d form_build_id=%s cookies=%s', pageRes.status, formBuildId || 'NONE', cookies || 'NONE');
       if (!formBuildId) {
         throw Object.assign(new Error('Could not extract form_build_id from Erewash page'), { code: 'PARSE_ERROR' });
       }
@@ -202,10 +205,22 @@ module.exports = {
 
       const postcodeRes = await httpPost(AJAX_URL, postcodeBody, {
         'Cookie': cookies,
+        'X-Requested-With': 'XMLHttpRequest',
       });
       if (postcodeRes.status !== 200) {
         throw Object.assign(new Error(`Erewash postcode lookup returned ${postcodeRes.status}`), { code: 'UPSTREAM_ERROR' });
       }
+
+      // Merge cookies from step 2 response so step 3 gets fresh session cookies
+      const jar2 = cookieJarFrom(postcodeRes.headers);
+      const mergedJar = [...jar];
+      for (const c of jar2) {
+        const name = c.split('=')[0];
+        const idx = mergedJar.findIndex(e => e.split('=')[0] === name);
+        if (idx >= 0) mergedJar[idx] = c.split(';')[0];
+        else mergedJar.push(c.split(';')[0]);
+      }
+      cookies = cookieHeader(mergedJar);
 
       let postcodeData;
       try {
@@ -235,6 +250,7 @@ module.exports = {
 
       const matchedAddr = parsePostcodeOptions(addressHtml);
       const target = matchedAddr.find(a => a.uprn === String(uprn));
+      console.error('[erewash] step2 postcode: status=%d addresses=%d uprn_found=%s next_build_id=%s', postcodeRes.status, matchedAddr.length, !!target, nextBuildId || 'NONE');
       if (!target) {
         throw Object.assign(new Error(`UPRN ${uprn} not found in postcode response`), { code: 'UPRN_NOT_FOUND' });
       }
@@ -251,8 +267,11 @@ module.exports = {
         op: 'Look up address',
       });
 
+      console.error('[erewash] step3 uprn post: uprn=%s build_id=%s', uprn, nextBuildId);
+
       const uprnRes = await httpPost(AJAX_URL, uprnBody, {
         'Cookie': cookies,
+        'X-Requested-With': 'XMLHttpRequest',
       });
       if (uprnRes.status !== 200) {
         throw Object.assign(new Error(`Erewash UPRN lookup returned ${uprnRes.status}`), { code: 'UPSTREAM_ERROR' });
@@ -277,6 +296,7 @@ module.exports = {
       }
 
       const rows = parseCollectionTable(collectionHtml);
+      console.error('[erewash] step4 collections: status=%d parsed=%d rows=%d', uprnRes.status, uprnData.length, rows.length);
       if (rows.length === 0) return [];
 
       const byStream = {};
@@ -308,8 +328,8 @@ module.exports = {
 
       return results;
     } catch (e) {
-      console.error(`erewash getCollections error for uprn ${uprn}: ${e.message}`);
-      return [];
+      console.error('[erewash] getCollections error:', e.message);
+      throw e;
     }
   },
 };
