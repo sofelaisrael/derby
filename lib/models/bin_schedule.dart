@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// Types of waste streams for Derbyshire councils.
 enum WasteStream {
-  general('General Waste', Icons.delete_outline, Color(0xFF6B7280)),
-  recycling('Recycling', Icons.recycling, Color(0xFF2563EB)),
-  garden('Garden Waste', Icons.yard, Color(0xFF16A34A)),
-  food('Food Waste', Icons.set_meal, Color(0xFFF59E0B));
+  general('General Waste', Icons.delete_outline, Color(0xFF7BAED7)),
+  recycling('Recycling', Icons.recycling, Color(0xFF006239)),
+  garden('Garden Waste', Icons.yard, Color(0xFF1A7A52)),
+  food('Food Waste', Icons.set_meal, Color(0xFFF7C900));
 
   final String displayName;
   final IconData icon;
