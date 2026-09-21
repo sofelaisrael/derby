@@ -6,10 +6,12 @@ const derbyshiredalesDriver = require('./derbyshiredales');
 const bolsoverDriver = require('./bolsover');
 const chesterfieldDriver = require('./chesterfield');
 const southderbyshireDriver = require('./southderbyshire');
+const northeastderbyshireDriver = require('./northeastderbyshire');
 
 const COUNCILS = [
   derbyDriver, erewashDriver, ambervalleyDriver, highpeakDriver,
   derbyshiredalesDriver, bolsoverDriver, chesterfieldDriver, southderbyshireDriver,
+  northeastderbyshireDriver,
 ];
 
 const drivers = {};

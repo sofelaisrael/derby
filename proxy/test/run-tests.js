@@ -19,9 +19,9 @@ async function run() {
 
     const drivers = listDrivers();
 
-    it('listDrivers returns array with length >= 8', () => {
+    it('listDrivers returns array with length >= 9', () => {
       assert.ok(Array.isArray(drivers), 'should be an array');
-      assert.ok(drivers.length >= 8, `expected >= 8, got ${drivers.length}`);
+      assert.ok(drivers.length >= 9, `expected >= 9, got ${drivers.length}`);
     });
 
     it('each item has id, name, slug properties', () => {
@@ -80,6 +80,12 @@ async function run() {
       const d = getDriver('southderbyshire');
       assert.ok(d, 'southderbyshire driver not found');
       assert.strictEqual(d.name, 'South Derbyshire District Council');
+    });
+
+    it('northeastderbyshire is in the list', () => {
+      const d = getDriver('northeastderbyshire');
+      assert.ok(d, 'northeastderbyshire driver not found');
+      assert.strictEqual(d.name, 'North East Derbyshire District Council');
     });
 
     it('getDriver("Derby City Council") returns truthy (name lookup)', () => {
@@ -295,6 +301,46 @@ async function run() {
 
     it('getCollections(null) returns []', async () => {
       const result = await sd.getCollections(null);
+      assert.deepStrictEqual(result, []);
+    });
+  });
+
+  describe('North East Derbyshire driver', () => {
+    const ned = require('../lib/drivers/northeastderbyshire');
+
+    it('has correct id, slug, name', () => {
+      assert.strictEqual(ned.id, 'northeastderbyshire');
+      assert.strictEqual(ned.slug, 'northeastderbyshire');
+      assert.strictEqual(ned.name, 'North East Derbyshire District Council');
+    });
+
+    it('has lookupAddresses and getCollections methods', () => {
+      assert.strictEqual(typeof ned.lookupAddresses, 'function');
+      assert.strictEqual(typeof ned.getCollections, 'function');
+    });
+
+    it('getCollections(null) returns []', async () => {
+      const result = await ned.getCollections(null);
+      assert.deepStrictEqual(result, []);
+    });
+
+    it('getCollections without postcode returns []', async () => {
+      const result = await ned.getCollections('12345');
+      assert.deepStrictEqual(result, []);
+    });
+
+    it('lookupAddresses("") returns []', async () => {
+      const result = await ned.lookupAddresses('');
+      assert.deepStrictEqual(result, []);
+    });
+
+    it('lookupAddresses(null) returns []', async () => {
+      const result = await ned.lookupAddresses(null);
+      assert.deepStrictEqual(result, []);
+    });
+
+    it('lookupAddresses("   ") returns []', async () => {
+      const result = await ned.lookupAddresses('   ');
       assert.deepStrictEqual(result, []);
     });
   });
