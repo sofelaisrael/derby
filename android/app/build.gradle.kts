@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "uk.co.derbybins.derby_bins"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
