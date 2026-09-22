@@ -6,8 +6,8 @@ const STREAM_MAP = { black: 'general', green: 'recycling', brown: 'garden', podb
 const LABELS = { general: 'Black bin', recycling: 'Green bin', garden: 'Brown bin', food: 'Podback' };
 
 const IMG_STREAM_MAP = {
-  blackweek: ['general'],
-  greenweek: ['recycling', 'garden'],
+  blackweek: ['general', 'food'],
+  greenweek: ['recycling', 'garden', 'food'],
   podback: ['food'],
 };
 
