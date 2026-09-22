@@ -2,7 +2,6 @@
 const binsHandler = require('./bins');
 const addressesHandler = require('./addresses');
 const reportHandler = require('./report');
-const drivers = require('../lib/drivers');
 
 function parseQuery(urlStr) {
   const q = {};
@@ -37,24 +36,10 @@ function wrapRes(res) {
   return wrapped;
 }
 
-const diagHandler = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  const driver = drivers.getDriver('chesterfield');
-  try {
-    const addrs = await driver.lookupAddresses('S40 3JL');
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(200).json({ addresses: addrs, count: addrs.length });
-  } catch (e) {
-    res.setHeader('Content-Type', 'application/json');
-    return res.status(500).json({ error: e.message, stack: e.stack });
-  }
-};
-
 const handlers = {
   '/bins': binsHandler,
   '/addresses': addressesHandler,
   '/report': reportHandler,
-  '/diagnose': diagHandler,
 };
 
 const server = http.createServer(async (req, res) => {
@@ -63,7 +48,7 @@ const server = http.createServer(async (req, res) => {
 
   if (path === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ status: 'ok', endpoints: ['/bins', '/addresses', '/report', '/diagnose'] }));
+    return res.end(JSON.stringify({ status: 'ok', endpoints: ['/bins', '/addresses', '/report'] }));
   }
 
   const handler = handlers[path];
