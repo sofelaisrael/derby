@@ -60,8 +60,10 @@ module.exports = {
       }
       let data;
       try { data = JSON.parse(result.body); } catch (e) { throw Object.assign(new Error('Invalid JSON from address lookup'), { code: 'PARSE_ERROR' }); }
-      if (!Array.isArray(data)) return [];
-      return data
+      console.error('[ambervalley-debug-lookup] data type:', typeof data, 'isArray:', Array.isArray(data), 'keys:', Object.keys(data || {}).slice(0, 10), 'preview:', JSON.stringify(data).substring(0, 500));
+      const list = Array.isArray(data) ? data : (data && Array.isArray(data.d) ? data.d : []);
+      console.error('[ambervalley-debug-lookup] resolved list length:', list.length);
+      return list
         .filter(item => item.uprn)
         .map(item => ({ uprn: String(item.uprn), label: item.addressComma }));
     } catch (e) {
