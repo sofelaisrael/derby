@@ -1,9 +1,10 @@
-{
+﻿{
   "name": "derby-bin-proxy",
   "version": "1.0.0",
-  "description": "Vercel proxy backend for Derbyshire bin collection app",
-  "main": "api/bins.js",
+  "description": "Proxy backend for Derbyshire bin collection app",
+  "main": "api/index.js",
   "scripts": {
+    "start": "node api/index.js",
     "test": "node test/run-tests.js",
     "test:live": "LIVE_TEST=1 node test/run-tests.js"
   },
