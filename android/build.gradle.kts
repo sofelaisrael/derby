@@ -16,7 +16,7 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
     project.plugins.withId("com.android.library") {
         project.extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
-            compileSdkVersion = 36
+            compileSdkVersion = "36"
         }
     }
 }
