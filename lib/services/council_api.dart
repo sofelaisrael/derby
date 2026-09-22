@@ -7,7 +7,7 @@ class CouncilApi {
   final String baseUrl;
   final http.Client _client;
 
-  CouncilApi({this.baseUrl = 'http://localhost:3000', http.Client? client})
+  CouncilApi({this.baseUrl = 'https://derby-d6e5.onrender.com', http.Client? client})
       : _client = client ?? http.Client();
 
   /// Look up addresses for a postcode.
