@@ -15,6 +15,7 @@ class ScheduleService {
   Future<CollectionSchedule> getSchedule({
     required String uprn,
     required String council,
+    String? postcode,
     bool forceRefresh = false,
   }) async {
     if (!forceRefresh) {
@@ -22,7 +23,7 @@ class ScheduleService {
       if (cached != null) return cached;
     }
 
-    final schedule = await _api.fetchSchedule(uprn: uprn, council: council);
+    final schedule = await _api.fetchSchedule(uprn: uprn, council: council, postcode: postcode);
     await _cache.saveSchedule(schedule);
     return schedule;
   }
@@ -36,8 +37,9 @@ class ScheduleService {
   Future<CollectionSchedule> refreshSchedule({
     required String uprn,
     required String council,
+    String? postcode,
   }) {
-    return getSchedule(uprn: uprn, council: council, forceRefresh: true);
+    return getSchedule(uprn: uprn, council: council, postcode: postcode, forceRefresh: true);
   }
 
   /// Report a missed collection.

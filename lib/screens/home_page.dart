@@ -62,6 +62,7 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       final schedule = await _scheduleService.getSchedule(
         uprn: session['uprn']!,
         council: session['council']!,
+        postcode: session['postcode'] ?? '',
         forceRefresh: forceRefresh,
       );
       if (mounted) {

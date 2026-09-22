@@ -1,4 +1,3 @@
-/// Information about a Derbyshire council.
 enum DerbyCouncil {
   derbyCity('Derby City Council', 'derby'),
   erewash('Erewash Borough Council', 'erewash'),
@@ -7,7 +6,8 @@ enum DerbyCouncil {
   derbyshireDales('Derbyshire Dales District Council', 'derbyshire_dales'),
   bolsover('Bolsover District Council', 'bolsover'),
   chesterfield('Chesterfield Borough Council', 'chesterfield'),
-  southDerbyshire('South Derbyshire District Council', 'south_derbyshire');
+  southDerbyshire('South Derbyshire District Council', 'south_derbyshire'),
+  northEastDerbyshire('North East Derbyshire District Council', 'northeastderbyshire');
 
   final String displayName;
   final String id;

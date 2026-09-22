@@ -159,7 +159,14 @@ module.exports = {
   async getCollections(uprn, postcode) {
     if (!uprn) return [];
     try {
-      const url = `https://secure.derby.gov.uk/binday/BinDays/${encodeURIComponent(uprn)}`;
+      let addressLabel = '';
+      try {
+        const addrs = await this.lookupAddresses(postcode || '');
+        const match = addrs.find(a => a.uprn === String(uprn));
+        if (match) addressLabel = match.label;
+      } catch (_) {}
+      const addrParam = addressLabel ? `?address=${encodeURIComponent(addressLabel)}` : '';
+      const url = `https://secure.derby.gov.uk/binday/BinDays/${encodeURIComponent(uprn)}${addrParam}`;
       const result = await httpGet(url);
       if (result.status !== 200) {
         throw Object.assign(new Error(`Derby API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });

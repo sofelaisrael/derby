@@ -63,9 +63,10 @@ function formatDate(d) {
 
 function mapChesterfieldType(type) {
   const t = (type || '').toLowerCase();
-  if (t.includes('refuse') || t.includes('domestic refuse')) return 'general';
-  if (t.includes('recycling') || t.includes('domestic recycling')) return 'recycling';
-  if (t.includes('organic') || t.includes('garden')) return 'garden';
+  if (t.includes('refuse')) return 'general';
+  if (t.includes('recycling')) return 'recycling';
+  if (t.includes('garden') || t.includes('organic')) return 'garden';
+  if (t.includes('food')) return 'food';
   return null;
 }
 
@@ -77,7 +78,69 @@ module.exports = {
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
-    return [];
+    try {
+      await httpGet(SESSION_URL);
+      const fwuidResp = await httpGet(FWUID_URL);
+      if (fwuidResp.status !== 200) return [];
+      let fwuidData;
+      try { fwuidData = JSON.parse(fwuidResp.body); } catch (e) { return []; }
+      const fwuid = fwuidData.auraConfig && fwuidData.auraConfig.context && fwuidData.auraConfig.context.fwuid;
+      if (!fwuid) return [];
+
+      const message = JSON.stringify({
+        actions: [{
+          id: '4;a',
+          descriptor: 'aura://ApexActionController/ACTION$execute',
+          callingDescriptor: 'UNKNOWN',
+          params: {
+            classname: 'CBC_VE_CollectionDays',
+            method: 'getAddressListFromPostCode',
+            params: { postCode: normalized },
+            cacheable: false,
+            isContinuation: false,
+          },
+        }],
+      });
+
+      const payload = {
+        message,
+        'aura.context': JSON.stringify({
+          mode: 'PROD',
+          fwuid,
+          app: 'c:cbc_VE_CollectionDaysLO',
+          loaded: fwuidData.auraConfig && fwuidData.auraConfig.context && fwuidData.auraConfig.context.loaded || { 'APPLICATION@markup://c:cbc_VE_CollectionDaysLO': 'pqeNg7kPWCbx1pO8sIjdLA' },
+          dn: [],
+          globals: {},
+          uad: true,
+        }),
+        'aura.pageURI': '/bins-and-recycling/bin-collections/check-bin-collections.aspx',
+        'aura.token': 'null',
+      };
+
+      const formBody = Object.entries(payload)
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join('&');
+
+      const r = await httpPost(SEARCH_URL, formBody);
+      if (r.status !== 200) return [];
+
+      const rawBody = r.body.replace(/^\/\*/, '').replace(/\*\/$/, '');
+      let data;
+      try { data = JSON.parse(rawBody); } catch (e) { return []; }
+
+      const rv = data.actions && data.actions[0] &&
+        data.actions[0].returnValue && data.actions[0].returnValue.returnValue;
+      if (!rv) return [];
+
+      let addresses;
+      try { addresses = JSON.parse(rv); } catch (e) { return []; }
+      if (!Array.isArray(addresses)) return [];
+
+      return addresses.map(a => ({ uprn: String(a.value), label: a.label }));
+    } catch (e) {
+      console.error('[chesterfield] lookupAddresses error:', e.message);
+      return [];
+    }
   },
 
   async getCollections(uprn, postcode) {
@@ -98,7 +161,6 @@ module.exports = {
           descriptor: 'aura://ApexActionController/ACTION$execute',
           callingDescriptor: 'UNKNOWN',
           params: {
-            namespace: '',
             classname: 'CBC_VE_CollectionDays',
             method: 'getServicesByUPRN',
             params: { propertyUprn: String(uprn), executedFrom: 'Main Website' },
@@ -114,7 +176,7 @@ module.exports = {
           mode: 'PROD',
           fwuid,
           app: 'c:cbc_VE_CollectionDaysLO',
-          loaded: { 'APPLICATION@markup://c:cbc_VE_CollectionDaysLO': 'pqeNg7kPWCbx1pO8sIjdLA' },
+          loaded: fwuidData.auraConfig && fwuidData.auraConfig.context && fwuidData.auraConfig.context.loaded || { 'APPLICATION@markup://c:cbc_VE_CollectionDaysLO': 'pqeNg7kPWCbx1pO8sIjdLA' },
           dn: [],
           globals: {},
           uad: true,
@@ -159,7 +221,7 @@ module.exports = {
             const key = `${stream}:${dateStr}`;
             if (seen.has(key)) continue;
             seen.add(key);
-            const label = { general: 'Domestic Refuse', recycling: 'Domestic Recycling', garden: 'Domestic Paid Garden' }[stream] || wasteType;
+            const label = { general: 'Domestic Refuse', recycling: 'Domestic Recycling', garden: 'Domestic Paid Garden', food: 'Domestic Food' }[stream] || wasteType;
             results.push({ stream, date: dateStr, label });
           }
         }

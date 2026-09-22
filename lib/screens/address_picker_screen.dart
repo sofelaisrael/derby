@@ -39,6 +39,7 @@ class _AddressPickerScreenState extends State<AddressPickerScreen> {
       final schedule = await _scheduleService.getSchedule(
         uprn: uprn,
         council: 'auto', // Proxy auto-detects
+        postcode: widget.postcode,
       );
 
       // Save session

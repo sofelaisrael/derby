@@ -37,9 +37,12 @@ class CouncilApi {
   Future<CollectionSchedule> fetchSchedule({
     required String uprn,
     required String council,
+    String? postcode,
   }) async {
+    final params = <String, String>{'uprn': uprn, 'council': council};
+    if (postcode != null && postcode.isNotEmpty) params['postcode'] = postcode;
     final uri = Uri.parse('$baseUrl/api/bins').replace(
-      queryParameters: {'uprn': uprn, 'council': council},
+      queryParameters: params,
     );
 
     final response = await _client.get(uri).timeout(

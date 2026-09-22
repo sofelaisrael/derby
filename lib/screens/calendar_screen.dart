@@ -36,6 +36,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       final schedule = await _scheduleService.getSchedule(
         uprn: session['uprn']!,
         council: session['council']!,
+        postcode: session['postcode'] ?? '',
       );
       if (mounted) {
         setState(() {

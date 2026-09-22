@@ -1,4 +1,5 @@
 const drivers = require('../lib/drivers');
+const { cacheGet, cacheSet, cacheKey } = require('../lib/shared/cache');
 
 function normalizePostcode(raw) {
   return (raw || '').trim().toUpperCase().replace(/\s+/g, '');
@@ -21,31 +22,42 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const cacheTTL = 24 * 60 * 60 * 1000;
+
     if (council) {
       const driver = drivers.getDriver(council);
       if (!driver) {
         res.setHeader('Content-Type', 'application/json');
         return res.status(404).json({ error: `Unknown council: ${council}` });
       }
-      const addresses = await driver.lookupAddresses(postcode);
+      const ck = cacheKey('addr', council, postcode);
+      let addresses = cacheGet(ck);
+      if (!addresses) {
+        addresses = await driver.lookupAddresses(postcode);
+        cacheSet(ck, addresses, cacheTTL);
+      }
       res.setHeader('Content-Type', 'application/json');
       return res.status(200).json({ addresses });
     }
 
     const allList = drivers.listDrivers();
+    const merged = [];
     const results = await Promise.allSettled(
       allList.map(d => {
         const driver = drivers.getDriver(d.id);
-        return driver.lookupAddresses(postcode);
+        const ck = cacheKey('addr', d.id, postcode);
+        const cached = cacheGet(ck);
+        if (cached) return Promise.resolve(cached);
+        return driver.lookupAddresses(postcode).then(addrs => {
+          cacheSet(ck, addrs, cacheTTL);
+          return addrs;
+        });
       })
     );
 
-    const merged = [];
     for (const r of results) {
       if (r.status === 'fulfilled' && Array.isArray(r.value)) {
-        for (const a of r.value) {
-          merged.push(a);
-        }
+        for (const a of r.value) merged.push(a);
       }
     }
 

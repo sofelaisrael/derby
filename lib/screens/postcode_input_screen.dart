@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../services/schedule_service.dart';
-import '../services/session_store.dart';
-import 'address_picker_screen.dart';
+import 'uprn_input_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 
@@ -17,8 +15,6 @@ class PostcodeInputScreen extends StatefulWidget {
 class _PostcodeInputScreenState extends State<PostcodeInputScreen> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
-  final _scheduleService = ScheduleService();
-  bool _isLoading = false;
   String? _error;
 
   @override
@@ -57,39 +53,13 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final addresses = await _scheduleService.lookupAddresses(postcode);
-      if (!mounted) return;
-
-      if (addresses.isEmpty) {
-        setState(() {
-          _error = 'No addresses found for this postcode';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => AddressPickerScreen(
-            addresses: addresses,
-            postcode: postcode,
-          ),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UprnInputScreen(
+          postcode: postcode,
         ),
-      );
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Failed to look up postcode. Please try again.';
-          _isLoading = false;
-        });
-      }
-    }
+      ),
+    );
   }
 
   bool _isValidPostcode(String postcode) {
@@ -201,30 +171,21 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _lookupPostcode,
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Find my collections',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.search, size: 20),
-                            ],
+                    onPressed: _lookupPostcode,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Find my collections',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.search, size: 20),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
