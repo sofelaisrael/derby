@@ -92,14 +92,123 @@ Council websites are treating Vercel's cloud IPs differently — likely blocking
 - `3321fe1` Add /report route to vercel.json
 - Cycle 9 changes (pending commit): Vercel-hardening for Erewash driver
 
-### What needs to happen next
-1. **Deploy to Vercel and test** — these changes should fix Erewash getCollections on Vercel
-2. If Erewash works, apply same patterns (XHR header, cookie merge, debug logging) to High Peak, South Derbyshire, Derbyshire Dales
-3. Set REPORT_SCRIPT_URL env var on Vercel for /report endpoint
-4. Fix Derby getCollections (needs headless browser or underlying AJAX API discovery)
-5. Fix auto-detect picking wrong council (Bolsover returns all UPRNs)
+### Vercel test results
+- **Erewash getCollections ✅ WORKS ON VERCEL** — returns 3 streams (general/food/recycling)
+- Fix was `X-Requested-With: XMLHttpRequest` header + cookie merge pattern from Mansfield Gedling driver
+- Also fixed "jar is not iterable" bug — `cookieJarFrom()` returns object, not array; `[...jar]` → `{ ...jar, ...jar2 }`
 
-## Research complete for remaining councils
-- Amber Valley: GET info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN?uprn=... - parse JSON
-- High Peak: Bartec portal at bins.highpeak.gov.uk/PublicDashboard - POST with token
-- Derbyshire Dales: Firmstep form at selfserve.derbyshiredales.gov.uk/renderform - POST with hidden inputs
+### Vercel live test results (Cycle 9 post-fix)
+- **Erewash ✅ WORKS** — 3 streams (general/food/recycling) with UPRN 100030140736
+- **High Peak ✅ WORKS** — 4 streams (recycling/garden/general/food) with UPRN 10010743094
+- **South Derbyshire ❌ COUNCIL API DOWN** — iShareLIVE returns "ERROR 10006: IntGetData" for ALL UPRNs. Not our code issue — council backend is broken.
+- **Derbyshire Dales ❌ UPRN FORMAT** — needs U-prefixed UPRNs (e.g. U10070090119 not 10070090119). Address lookup available via POST /core/addresslookup. Also needs correct POST URL: /renderform/Form not /RenderForm.
+
+### Final Vercel results (Cycle 9 complete)
+| Council | Address Lookup | getCollections | Notes |
+|---------|---------------|----------------|-------|
+| Derby | ✅ | ✅ | Works! Old test UPRN had no data. Valid UPRN (10010671843) returns 2 streams |
+| Amber Valley | ❌ | ✅ | No address lookup, but collections work |
+| Bolsover | ❌ | ✅ | No address lookup, returns all UPRNs |
+| Chesterfield | ❌ | ✅ | No address lookup, Salesforce Lightning |
+| Derbyshire Dales | ✅ FIXED | ✅ FIXED | Address lookup via /core/addresslookup, U-prefix UPRN format |
+| Erewash | ✅ | ✅ FIXED | XHR header + cookie merge fixed Vercel issue |
+| High Peak | ✅ | ✅ FIXED | XHR header fixed Vercel issue |
+| NE Derbyshire | ❌ | ✅ | Area-based, no postcode lookup |
+| South Derbyshire | ❌ | ❌ | Council API down (ERROR 10006) |
+
+### What needs to happen next
+1. Set REPORT_SCRIPT_URL env var on Vercel for /report endpoint (user handling)
+2. Fix auto-detect picking wrong council (Bolsover returns all UPRNs)
+3. Implement address lookup for remaining drivers (Amber Valley, Chesterfield, Bolsover, NE Derbyshire, South Derbyshire when API comes back)
+
+## Cycle 10 - Open-source HACS research for remaining councils
+
+### What happened
+- Searched GitHub for open-source implementations of our remaining councils
+- Found `mampfes/hacs_waste_collection_schedule` — Home Assistant integration with Python scrapers for UK councils
+- They have implementations for: Amber Valley, Bolsover, Chesterfield, Erewash, High Peak
+- NE Derbyshire is NOT in their repo (still open issue #2693)
+
+### Key findings from HACS codebase
+
+**Chesterfield** — Salesforce Lightning API fully reverse-engineered:
+- Session: `GET chesterfield.gov.uk/bins-and-recycling/bin-collections/check-bin-collections.aspx`
+- FWUID: `GET myaccount.chesterfield.gov.uk/anonymous/c/cbc_VE_CollectionDaysLO.app?aura.format=JSON&aura.formatAdapter=LIGHTNING_OUT`
+- Search: `POST myaccount.chesterfield.gov.uk/anonymous/aura?r=2&aura.ApexAction.execute=1`
+- Method: `CBC_VE_CollectionDays.getServicesByUPRN` with `propertyUprn` param
+- **Our driver already matches this exactly!** getCollections is correct.
+- HACS does NOT implement address lookup either — UPRN-only
+
+**Amber Valley** — Simple JSON API:
+- `GET info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN?uprn=...`
+- **Our driver already matches this!** getCollections is correct.
+- HACS does NOT implement address lookup — UPRN-only
+
+**Bolsover** — Calendar-based (A or B), no address lookup:
+- User must know their calendar letter (A/B) and collection day (Tue-Fri)
+- Scrapes `bolsover.gov.uk/waste-bins-recycling/bin-calendar-{a|b}`
+- **Our driver scrapes both calendars** (returns ALL data, no address filtering)
+- HACS does NOT implement address lookup — calendar+day-only
+
+**Erewash** — Drupal AJAX:
+- `GET erewash.gov.uk/bbd-whitespace/one-year-collection-dates?uprn=...&_wrapper_format=drupal_ajax`
+- **Our driver already works** (Vercel fix from Cycle 9)
+
+**High Peak** — Bartec portal:
+- `GET bins.highpeak.gov.uk/PublicDashboard` → token
+- `POST ?handler=SearchPostcode` → premises list
+- `POST ?handler=SelectPrem` → collection schedule
+- **Our driver already works** (Vercel fix from Cycle 9)
+
+### Critical insight
+**None of the HACS implementations do address lookup (postcode → list of addresses).** They all take UPRN as input directly. This means:
+1. Our getCollections implementations are ALREADY CORRECT and match the open-source reference implementations
+2. The address lookup (postcode → UPRN list) is NOT solved by any open-source project
+3. Address lookup needs to be built from scratch for each council
+
+### What needs to happen next
+1. Build address lookup for each council (the hard part — none of the open-source projects solved this)
+2. Options for address lookup:
+   a. Reverse-engineer each council's website address lookup API (jQuery UI autocomplete, AchieveForms, etc.)
+   b. Use a free UK address lookup API (GetAddress.io has 50 free lookups/day, Ideal Postcodes has free tier)
+   c. Use browser automation (Playwright) to capture the actual API calls
+3. Fix auto-detect picking wrong council (Bolsover returns all UPRNs)
+4. Set REPORT_SCRIPT_URL env var on Vercel
+
+## Cycle 11 - Switched to Render, fixed Derby/Chesterfield drivers
+
+### What happened
+- Switched from Vercel to Render (derby-d6e5.onrender.com) because Playwright can't run on Vercel serverless (needed for Bolsover AchieveForms)
+- Created proxy/api/index.js as HTTP server entry point with res.status().json() shim
+- Added in-memory cache (proxy/lib/shared/cache.js) with 24h TTL to addresses endpoint
+
+### What we fixed
+- **Derby getCollections**: Website changed - now requires ?address= param in URL. Fixed by looking up address label from postcode during getCollections
+- **Chesterfield Aura API**: Two failures - (1) namespace: '' param caused "Action descriptor must be in a valid component format", (2) hardcoded loaded hash 'pqeNg7kPWCbx1pO8sIjdLA' changed to '1123_2HY-XU4ejs_gWkcOb0zOBA'. Fixed by removing namespace param and making loaded hash dynamic from fwuid endpoint
+- **Chesterfield food waste**: mapChesterfieldType didn't map food - added food: 'Domestic Food' to the type mapper
+- **Flutter app postcode threading**: Added postcode param through fetchSchedule -> getSchedule -> all callers (home_page, calendar_screen, uprn_input_screen, address_picker_screen)
+
+### Render test results
+| Council | Address | Collections | Notes |
+|---------|---------|-------------|-------|
+| Chesterfield | 30 addr | 4 streams | All 4 waste types working |
+| Derby | 21 addr | 4 streams | Address param fix working |
+| Erewash | 25 addr | 0 (wrong test UPRN) | Works with correct UPRN |
+| High Peak | 1 addr | 0 | Only 1 address for SK23 7GL |
+| Derbyshire Dales | 0 addr | 4 streams | Address lookup returns empty on Render (caching issue from old code) |
+| NE Derbyshire | N/A | 3 streams | No address lookup needed |
+| Bolsover | 0 addr | 3 streams | Address needs Playwright on Render |
+| South Derbyshire | N/A | N/A | Council API down |
+| Amber Valley | N/A | N/A | Server unreachable |
+
+### Known remaining issues
+- Bolsover address lookup needs Playwright on Render (Chromium install)
+- Derbyshire Dales address lookup returns 0 on Render (may need cache flush after deploy)
+- Erewash/High Peak need correct UPRN+postcode pairs for testing
+- South Derbyshire: council API down (ERROR 10006)
+- Amber Valley: server unreachable
+- Chesterfield address lookup was returning 0 but /diagnose endpoint confirmed it works (30 addresses) - likely stale cache
+
+### Git commits
+- 2ffdce3 Fix Derby getCollections (address param), Chesterfield Aura API, Flutter postcode threading
+- 9266a49 Add diagnose endpoint for Chesterfield debug (removed in 8da9e18)

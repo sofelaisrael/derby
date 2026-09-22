@@ -1,6 +1,6 @@
 const https = require('https');
 
-const API_URL = 'https://maps.southderbyshire.gov.uk/iShareLIVE.web/getdata.aspx?RequestType=LocalInfo&ms=mapsources/MyHouse&format=JSON&group=Recycling%20Bins%20and%20Waste|Next%20Bin%20Collections&uid=';
+const API_URL = 'https://maps.southderbyshire.gov.uk/iShareLIVE.Web/getdata.aspx?callback=test&RequestType=LocalInfo&ms=mapsources/MyHouse&format=JSONP&group=Recycling%20Bins%20and%20Waste|Next%20Bin%20Collections&uid=';
 
 const STREAM_MAP = { black: 'general', green: 'recycling', brown: 'garden', podback: 'food' };
 const LABELS = { general: 'Black bin', recycling: 'Green bin', garden: 'Brown bin', food: 'Podback' };
@@ -27,7 +27,7 @@ function httpGet(urlStr) {
     const url = new URL(urlStr);
     const opts = {
       method: 'GET', hostname: url.hostname, path: url.pathname + url.search,
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', Accept: 'application/json' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', Accept: '*/*' },
       timeout: 30000,
     };
     const req = https.request(opts, (resp) => {
@@ -116,7 +116,13 @@ module.exports = {
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
-    return [];
+    const url = `https://maps.southderbyshire.gov.uk/iShareLIVE.Web/getdata.aspx?callback=cb&RequestType=LocationSearch&service=LocationSearch&pagesize=100&startnum=1&mapsource=mapsources/MyHouse&location=${encodeURIComponent(normalized)}`;
+    const r = await httpGet(url);
+    if (r.status !== 200) throw Object.assign(new Error(`Address search returned ${r.status}`), { code: 'UPSTREAM_ERROR' });
+    let data;
+    try { data = JSON.parse(r.body); } catch (e) { throw Object.assign(new Error('Invalid JSON from address search'), { code: 'PARSE_ERROR' }); }
+    if (!data.data || !Array.isArray(data.data)) return [];
+    return data.data.map(item => ({ uprn: item[0], label: item[7] }));
   },
 
   async getCollections(uprn, postcode) {
@@ -126,8 +132,12 @@ module.exports = {
       console.error('[southderbyshire] API status=%d', r.status);
       if (r.status !== 200) throw Object.assign(new Error(`API returned ${r.status}`), { code: 'UPSTREAM_ERROR' });
 
+      let raw = r.body;
+      if (raw.startsWith('test(') && raw.endsWith(');')) {
+        raw = raw.slice(5, -2);
+      }
       let data;
-      try { data = JSON.parse(r.body); } catch (e) { throw Object.assign(new Error('Invalid JSON'), { code: 'PARSE_ERROR' }); }
+      try { data = JSON.parse(raw); } catch (e) { throw Object.assign(new Error('Invalid JSON'), { code: 'PARSE_ERROR' }); }
 
       const html = data.Results && data.Results.Next_Bin_Collections && data.Results.Next_Bin_Collections._;
       if (!html) return [];
