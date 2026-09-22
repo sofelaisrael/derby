@@ -14,17 +14,13 @@ rootProject.layout.buildDirectory.value(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
     project.evaluationDependsOn(":app")
-    project.plugins.withType<com.android.build.gradle.LibraryPlugin> {
-        project.extensions.configure<com.android.build.gradle.LibraryExtension> {
-            compileSdk = 36
-        }
-    }
-    project.plugins.withType<com.android.build.gradle.ApplicationPlugin> {
-        project.extensions.configure<com.android.build.gradle.ApplicationExtension> {
-            compileSdk = 36
+    afterEvaluate {
+        val android = project.extensions.findByName("android")
+        if (android != null) {
+            try {
+                android.javaClass.getMethod("setCompileSdk", Int::class.javaPrimitiveType).invoke(android, 36)
+            } catch (_: Exception) {}
         }
     }
 }
