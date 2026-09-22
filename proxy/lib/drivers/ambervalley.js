@@ -40,6 +40,14 @@ function isTimeoutError(e) {
   return e && (e.message === 'timeout' || (e.code && (e.code === 'ETIMEDOUT' || e.code === 'ECONNRESET' || e.code === 'ENOTFOUND')));
 }
 
+function formatPostcode(raw) {
+  const p = (raw || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (p.length < 5) return p;
+  const inward = p.slice(-3);
+  const outward = p.slice(0, -3);
+  return `${outward} ${inward}`;
+}
+
 const LOOKUP_URL = 'https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/GazetteerJSON.asmx/PropertyLookupFeed';
 const COLLECTION_URL = 'https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN';
 
@@ -49,25 +57,21 @@ module.exports = {
   name: 'Amber Valley Borough Council',
 
   async lookupAddresses(postcode) {
-    const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, ' ').replace(/\s{2,}/g, ' ');
-    if (!normalized) return [];
+    const formatted = formatPostcode(postcode);
+    if (!formatted) return [];
     try {
-      const formData = `srchText=${encodeURIComponent(normalized)}`;
+      const formData = `srchText=${encodeURIComponent(formatted)}`;
       const result = await httpPost(LOOKUP_URL, formData, { 'Content-Type': 'application/x-www-form-urlencoded' });
-      console.error('[ambervalley-debug-lookup] status:', result.status, 'body:', result.body.substring(0, 500));
       if (result.status !== 200) {
         throw Object.assign(new Error(`Amber Valley API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
       }
       let data;
       try { data = JSON.parse(result.body); } catch (e) { throw Object.assign(new Error('Invalid JSON from address lookup'), { code: 'PARSE_ERROR' }); }
-      console.error('[ambervalley-debug-lookup] data type:', typeof data, 'isArray:', Array.isArray(data), 'keys:', Object.keys(data || {}).slice(0, 10), 'preview:', JSON.stringify(data).substring(0, 500));
       const list = Array.isArray(data) ? data : (data && Array.isArray(data.d) ? data.d : []);
-      console.error('[ambervalley-debug-lookup] resolved list length:', list.length);
       return list
         .filter(item => item.uprn)
         .map(item => ({ uprn: String(item.uprn), label: item.addressComma }));
     } catch (e) {
-      console.error('[ambervalley-debug-lookup] ERROR:', e.message, e.code);
       if (isTimeoutError(e)) throw new Error('Amber Valley API unreachable (may be UK-only)');
       throw e;
     }
@@ -78,7 +82,6 @@ module.exports = {
     try {
       const url = `${COLLECTION_URL}?uprn=${encodeURIComponent(uprn)}`;
       const result = await httpGet(url, { Accept: 'application/json' });
-      console.error('[ambervalley-debug-collections] status:', result.status, 'body:', result.body.substring(0, 500));
       if (result.status !== 200) {
         throw Object.assign(new Error(`Amber Valley API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
       }
