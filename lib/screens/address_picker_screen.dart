@@ -1,256 +1,250 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../services/schedule_service.dart';
-import '../services/session_store.dart';
-import '../theme/app_colors.dart';
-import '../theme/spacing.dart';
-import 'home_page.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:derby_bins/services/council_api.dart';
+import 'package:derby_bins/services/schedule_service.dart';
+import 'package:derby_bins/services/theme_service.dart';
+import 'package:derby_bins/theme/app_colors.dart';
+import 'package:derby_bins/theme/spacing.dart';
+import 'package:derby_bins/theme/typography.dart';
+import 'calendar_screen.dart';
+import 'report_missing_address_screen.dart';
 
-class AddressPickerScreen extends StatefulWidget {
-  final List<Map<String, String>> addresses;
+class AddressPickerScreen extends StatelessWidget {
   final String postcode;
-
+  final String councilSlug;
+  final String councilName;
+  final List<CouncilAddress> addresses;
+  final ThemeService? themeService;
   const AddressPickerScreen({
     super.key,
-    required this.addresses,
     required this.postcode,
+    required this.councilSlug,
+    required this.councilName,
+    required this.addresses,
+    this.themeService,
   });
 
   @override
-  State<AddressPickerScreen> createState() => _AddressPickerScreenState();
-}
-
-class _AddressPickerScreenState extends State<AddressPickerScreen> {
-  final _scheduleService = ScheduleService();
-  final _sessionStore = SessionStore();
-  bool _isLoading = false;
-  String? _error;
-
-  Future<void> _selectAddress(Map<String, String> address) async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final uprn = address['uprn'] ?? '';
-      
-      // First, try to fetch the schedule to determine council
-      final schedule = await _scheduleService.getSchedule(
-        uprn: uprn,
-        council: 'auto', // Proxy auto-detects
-        postcode: widget.postcode,
-      );
-
-      // Save session
-      await _sessionStore.saveSession(
-        uprn: uprn,
-        address: address['address'] ?? '',
-        council: schedule.council,
-        postcode: widget.postcode,
-      );
-
-      if (!mounted) return;
-
-      // Navigate to home
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomePage()),
-        (route) => false,
-      );
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Failed to load schedule. Please try again.';
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final colors = context.binColors;
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [AppColors.darkBackground, AppColors.darkSurface]
-                : [AppColors.lightBackground, const Color(0xFFEEF2FF)],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenHorizontal,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: AppSpacing.xl),
-                // Back button
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(
-                    Icons.arrow_back_ios,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.lightTextPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Select your address',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.lightTextPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  '${widget.addresses.length} addresses found for ${widget.postcode}',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.lightTextSecondary,
-                  ),
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusSm),
-                    ),
-                    child: Row(
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Spacing.xxl, vertical: Spacing.md),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.error_outline,
-                            color: AppColors.error, size: 18),
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: Text(
-                            _error!,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              color: AppColors.error,
-                            ),
-                          ),
+                        Text('Choose your address',
+                            style: AppText.h1),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${addresses.length} addresses found Â· $postcode',
+                          style: AppTypography.caption
+                              .copyWith(color: colors.textSecondary),
                         ),
                       ],
                     ),
                   ),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-                // Address list
-                Expanded(
-                  child: _isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.accent,
+                  GestureDetector(
+                    onTap: () {
+                      clearResolveCache();
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/', (route) => false);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.shadow,
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                        )
-                      : ListView.builder(
-                          itemCount: widget.addresses.length,
-                          itemBuilder: (context, index) {
-                            final address = widget.addresses[index];
-                            return _buildAddressCard(address, isDark);
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddressCard(Map<String, String> address, bool isDark) {
-    final addressText = address['address'] ?? '';
-    final town = address['town'] ?? '';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _isLoading ? null : () => _selectAddress(address),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.darkSurfaceVariant
-                  : AppColors.lightSurfaceVariant,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              border: Border.all(
-                color: isDark
-                    ? AppColors.darkCardBorder
-                    : AppColors.lightCardBorder,
+                        ],
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.md, vertical: Spacing.sm),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.close,
+                              size: 14,
+                              color: colors.textSecondary),
+                          const SizedBox(width: 6),
+                          Text('Change',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.radiusSm),
-                  ),
-                  child: const Icon(
-                    Icons.home_outlined,
-                    color: AppColors.accent,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        addressText,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.lightTextPrimary,
-                        ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                    Spacing.xxl, Spacing.lg, Spacing.xxl, Spacing.xxl),
+                children: [
+                  const SizedBox(height: Spacing.sm),
+                  ...addresses.map((a) {
+                    final idx = a.label.lastIndexOf(',');
+                    final street = idx < 0
+                        ? a.label
+                        : a.label.substring(0, idx).trim();
+                    final sub = idx < 0
+                        ? null
+                        : a.label.substring(idx + 1).trim();
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: Spacing.sm),
+                      decoration: BoxDecoration(
+                        color: colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(AppRadius.container),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.shadow,
+                            blurRadius: 16,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
-                      if (town.isNotEmpty)
-                        Text(
-                          town,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            color: isDark
-                                ? AppColors.darkTextTertiary
-                                : AppColors.lightTextTertiary,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => CalendarScreen(
+                                  postcode: postcode,
+                                  councilSlug: councilSlug,
+                                  councilName: councilName,
+                                  uprn: a.uprn,
+                                  addressLabel: a.label,
+                                  addresses: addresses,
+                                  themeService: themeService,
+                                ),
+                              ),
+                              (route) => false,
+                            );
+                          },
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.container),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: Spacing.lg, horizontal: Spacing.md),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: colors.primaryLight,
+                                    borderRadius:
+                                        BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(Icons.home_outlined,
+                                      size: 20, color: colors.primary),
+                                ),
+                                const SizedBox(width: Spacing.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(street,
+                                          style: AppTypography.title.copyWith(
+                                              color: colors.textPrimary)),
+                                      if (sub != null) ...[
+                                        const SizedBox(height: 2),
+                                        Text(sub,
+                                            style: AppTypography.caption),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.chevron_right,
+                                    size: 18, color: colors.textMuted),
+                              ],
+                            ),
                           ),
                         ),
-                    ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: Spacing.sm),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ReportMissingAddressScreen(
+                              postcode: postcode,
+                              councilSlug: councilSlug,
+                              councilName: councilName,
+                            ),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(AppRadius.container),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: Spacing.md, vertical: Spacing.lg),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceTinted,
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.container),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: colors.surfaceElevated,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(Icons.add_circle_outline,
+                                  size: 20, color: colors.primary),
+                            ),
+                            const SizedBox(width: Spacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text('My address isn\u2019t listed',
+                                      style: AppTypography.title.copyWith(
+                                          color: colors.textPrimary)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Let us know and we\u2019ll work on adding it',
+                                    style: AppTypography.caption,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right,
+                                size: 18, color: colors.textMuted),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: isDark
-                      ? AppColors.darkTextTertiary
-                      : AppColors.lightTextTertiary,
-                ),
-              ],
+                  const SizedBox(height: Spacing.xxl),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

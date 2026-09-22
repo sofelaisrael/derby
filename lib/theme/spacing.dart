@@ -1,49 +1,47 @@
-/// Spacing system for consistent layout.
-/// Uses 4px base unit with named increments.
 class AppSpacing {
   AppSpacing._();
 
-  // Base unit
-  static const double unit = 4.0;
+  // Base scale
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 16;
+  static const double lg = 24;
+  static const double xl = 32;
+  static const double xxl = 48;
 
-  // Named spacings
-  static const double xxxs = 2.0;
-  static const double xxs = 4.0;
-  static const double xs = 8.0;
-  static const double sm = 12.0;
-  static const double md = 16.0;
-  static const double lg = 24.0;
-  static const double xl = 32.0;
-  static const double xxl = 48.0;
-  static const double xxxl = 64.0;
+  // Page
+  static const double page = 24;
 
-  // Screen padding
-  static const double screenHorizontal = 20.0;
-  static const double screenHorizontalLarge = 32.0;
-  static const double screenTop = 24.0;
-  static const double screenBottom = 24.0;
+  // Radii
+  static const double radiusSm = 12;
+  static const double radiusMd = 16;
+  static const double radiusLg = 20;
+  static const double radiusXl = 24;
+  static const double radiusFull = 999;
 
-  // Card padding
-  static const double cardPadding = 20.0;
-  static const double cardPaddingSmall = 12.0;
-  static const double cardPaddingLarge = 24.0;
+  // Legacy aliases
+  static const double cardRadius = radiusXl;
+  static const double buttonRadius = radiusMd;
+}
 
-  // Border radius
-  static const double radiusXs = 6.0;
-  static const double radiusSm = 10.0;
-  static const double radiusMd = 16.0;
-  static const double radiusLg = 24.0;
-  static const double radiusXl = 32.0;
-  static const double radiusFull = 999.0;
+/// Legacy spacing values (from old theme.dart — tighter spacing)
+class Spacing {
+  Spacing._();
 
-  // Shadows
-  static const double shadowSm = 2.0;
-  static const double shadowMd = 4.0;
-  static const double shadowLg = 8.0;
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 12;
+  static const double lg = 16;
+  static const double xl = 20;
+  static const double xxl = 24;
+  static const double xxxl = 32;
+  static const double huge = 48;
+}
 
-  // Icon sizes
-  static const double iconSm = 16.0;
-  static const double iconMd = 24.0;
-  static const double iconLg = 32.0;
-  static const double iconXl = 48.0;
+/// Legacy radius values (from old theme.dart)
+class AppRadius {
+  AppRadius._();
+
+  static const double container = 16;
+  static const double pill = 999;
 }

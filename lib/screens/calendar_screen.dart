@@ -1,435 +1,347 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import '../models/bin_schedule.dart';
-import '../services/schedule_service.dart';
-import '../services/session_store.dart';
-import '../theme/app_colors.dart';
-import '../theme/spacing.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:derby_bins/models/bin_schedule.dart';
+import 'package:derby_bins/services/council_api.dart';
+import 'package:derby_bins/services/notification_service.dart';
+import 'package:derby_bins/services/reminder_store.dart';
+import 'package:derby_bins/services/schedule_cache.dart';
+import 'package:derby_bins/services/schedule_service.dart';
+import 'package:derby_bins/services/session_store.dart';
+import 'package:derby_bins/services/theme_service.dart';
+import 'package:derby_bins/theme/app_colors.dart';
+import 'package:derby_bins/theme/spacing.dart';
+import 'package:derby_bins/theme/typography.dart';
+import 'address_picker_screen.dart';
+import 'home_page.dart';
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  final String postcode;
+  final String councilSlug;
+  final String councilName;
+  final String? uprn;
+  final String? addressLabel;
+  final List<CouncilAddress>? addresses;
+  final ThemeService? themeService;
+  const CalendarScreen({
+    super.key,
+    required this.postcode,
+    this.councilSlug = 'derby',
+    this.councilName = 'Derby City Council',
+    this.uprn,
+    this.addressLabel,
+    this.addresses,
+    this.themeService,
+  });
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  final _scheduleService = ScheduleService();
-  final _sessionStore = SessionStore();
-  CollectionSchedule? _schedule;
-  bool _isLoading = true;
-  DateTime _selectedDate = DateTime.now();
-  DateTime _currentMonth = DateTime.now();
+  ResolveResult? _resolution;
+  String _status = 'loading';
+  String _errorMsg = '';
 
   @override
   void initState() {
     super.initState();
-    _loadSchedule();
+    _load();
   }
 
-  Future<void> _loadSchedule() async {
-    final session = await _sessionStore.loadSession();
-    if (session == null) return;
-
+  Future<void> _load({bool force = false}) async {
     try {
-      final schedule = await _scheduleService.getSchedule(
-        uprn: session['uprn']!,
-        council: session['council']!,
-        postcode: session['postcode'] ?? '',
-      );
-      if (mounted) {
+      final result = await resolvePostcode(widget.postcode,
+          force: force, uprn: widget.uprn, addressLabel: widget.addressLabel,
+          councilSlug: widget.councilSlug, councilName: widget.councilName);
+      if (result is ResolveUncovered) {
+        if (await _loadCached()) return;
         setState(() {
-          _schedule = schedule;
-          _isLoading = false;
+          _status = 'error';
+          _errorMsg =
+              'We could not find collection data for this postcode, and the live council feed could not identify it either. Try a different postcode.';
         });
+        return;
       }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (result is ResolveNoData) {
+        if (await _loadCached()) return;
+        setState(() {
+          _status = 'error';
+          _errorMsg =
+              'Couldn\u2019t reach the server. Check your internet connection and try again.';
+        });
+        return;
+      }
+      setState(() {
+        _resolution = result;
+        if (result is ResolveCoverage) {
+          _status = 'coverage';
+        } else {
+          _status = 'ready';
+        }
+      });
+      if (result is ResolveReady) {
+        SessionStore.save(SavedSession(
+          councilSlug: widget.councilSlug,
+          councilName: widget.councilName,
+          postcode: widget.postcode,
+          uprn: widget.uprn ?? '',
+          addressLabel: widget.addressLabel ?? widget.postcode,
+        ));
+        // If reminders were enabled during onboarding, schedule them now that
+        // we know the user's area.
+        if (await ReminderStore.isEnabled()) {
+          await NotificationService.scheduleReminders(
+            (_resolution as ResolveReady).area,
+            widget.councilSlug,
+          );
+        }
+        if (widget.uprn != null) {
+          await ScheduleCache.save(
+            uprn: widget.uprn!,
+            postcode: widget.postcode,
+            councilSlug: widget.councilSlug,
+            councilName: widget.councilName,
+            area: (_resolution as ResolveReady).area,
+            isLive: (_resolution as ResolveReady).liveCouncil,
+          );
+        }
+      }
+    } on ScheduleError catch (e) {
+      if (await _loadCached()) return;
+      setState(() {
+        _status = 'error';
+        _errorMsg = e.message;
+      });
+    } catch (_) {
+      if (await _loadCached()) return;
+      setState(() {
+        _status = 'error';
+        _errorMsg = 'Something went wrong loading your schedule.';
+      });
     }
   }
 
-  List<BinCollection> _collectionsForDay(DateTime day) {
-    return _schedule?.collections.where((c) =>
-        c.date.year == day.year &&
-        c.date.month == day.month &&
-        c.date.day == day.day).toList() ?? [];
-  }
+  AreaSchedule? get _area =>
+      _resolution is ResolveReady ? (_resolution as ResolveReady).area : null;
 
-  List<BinCollection> _collectionsForMonth(DateTime month) {
-    return _schedule?.collections.where((c) =>
-        c.date.year == month.year &&
-        c.date.month == month.month).toList() ?? [];
+  Future<bool> _loadCached() async {
+    if (widget.uprn == null) return false;
+    final cached = await ScheduleCache.load(widget.uprn!);
+    if (cached != null && mounted) {
+      setState(() {
+        _resolution = ResolveReady(
+          widget.postcode, widget.councilSlug, cached.councilName,
+          cached.area, null, cached.isLive,
+        );
+        _status = 'ready';
+      });
+      return true;
+    }
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (_status == 'loading') {
+      return _poppable(_loadingView());
+    }
+    if (_status == 'error') {
+      return _poppable(_errorView());
+    }
+    if (_status == 'coverage' && _resolution is ResolveCoverage) {
+      return _poppable(_coverageView(_resolution as ResolveCoverage));
+    }
+    return _readyView();
+  }
 
-    return Scaffold(
-      body: Container(
+  // The loading/error/coverage/no-data states are full-screen and sit at the
+  // root route, so a normal back gesture would quit the app. Intercept it and
+  // return the user to postcode entry instead of closing the app.
+  Widget _poppable(Widget child) => PopScope(
+        canPop: false,
+        onPopInvoked: (_) =>
+            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
+        child: Scaffold(body: child),
+      );
+
+  Widget _loadingView() {
+    return Center(
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.all(Spacing.xl),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [AppColors.darkBackground, AppColors.darkSurface]
-                : [AppColors.lightBackground, const Color(0xFFEEF2FF)],
-          ),
+          color: context.binColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadius.container),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        child: SafeArea(
-          child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: AppColors.accent),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.all(Spacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: context.binColors.primary),
+            const SizedBox(height: Spacing.lg),
+            const Text('Finding your collections', style: AppText.h2),
+            const SizedBox(height: Spacing.sm),
+            Text(
+              'Looking up bin collections for ${widget.postcode}...',
+              textAlign: TextAlign.center,
+              style: AppText.body,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _errorView() {
+    return Center(
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.all(Spacing.xl),
+        decoration: BoxDecoration(
+          color: context.binColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadius.container),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(Spacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: context.binColors.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(26),
+              ),
+              child: Icon(Icons.cloud_off_outlined,
+                  size: 24, color: context.binColors.error),
+            ),
+            const SizedBox(height: Spacing.lg),
+            const Text("Couldn't load your schedule", style: AppText.h2),
+            const SizedBox(height: Spacing.sm),
+            Text(_errorMsg,
+                textAlign: TextAlign.center,
+                style: AppText.body),
+            const SizedBox(height: Spacing.xl),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _load(force: true),
+                style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: Spacing.lg)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Header
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.screenHorizontal,
-                        vertical: AppSpacing.md,
-                      ),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: Icon(
-                              Icons.arrow_back_ios,
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightTextPrimary,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.xs),
-                          Text(
-                            'Calendar',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightTextPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Month navigator
-                    _buildMonthNavigator(isDark),
-
-                    // Calendar grid
-                    _buildCalendarGrid(isDark),
-
-                    const SizedBox(height: AppSpacing.md),
-
-                    // Selected day details
-                    Expanded(
-                      child: _buildDayDetails(isDark),
-                    ),
+                    Icon(Icons.refresh, size: 15, color: context.binColors.primary),
+                    const SizedBox(width: 7),
+                    const Text('Try again', style: AppText.button),
                   ],
                 ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                clearResolveCache();
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (route) => false);
+              },
+              child: Text('Use a different postcode',
+                  style: TextStyle(
+                      decoration: TextDecoration.underline,
+                      color: context.binColors.primary,
+                      fontWeight: FontWeight.w700)),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMonthNavigator(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _currentMonth = DateTime(
-                  _currentMonth.year,
-                  _currentMonth.month - 1,
-                );
-              });
-            },
-            icon: Icon(
-              Icons.chevron_left,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
+  Widget _coverageView(ResolveCoverage c) {
+    return Center(
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.all(Spacing.xl),
+        decoration: BoxDecoration(
+          color: context.binColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppRadius.container),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 18,
+              offset: const Offset(0, 6),
             ),
-          ),
-          Text(
-            DateFormat('MMMM yyyy').format(_currentMonth),
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
+          ],
+        ),
+        padding: const EdgeInsets.all(Spacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: context.binColors.primaryLight,
+                borderRadius: BorderRadius.circular(27),
+              ),
+              child: Icon(Icons.check, size: 26, color: context.binColors.primary),
             ),
-          ),
-          IconButton(
-            onPressed: () {
-              setState(() {
-                _currentMonth = DateTime(
-                  _currentMonth.year,
-                  _currentMonth.month + 1,
-                );
-              });
-            },
-            icon: Icon(
-              Icons.chevron_right,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
+            const SizedBox(height: Spacing.lg),
+            Text(c.councilName,
+                style: const TextStyle(
+                    fontSize: 22,
+                    letterSpacing: -0.3,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: Spacing.xl),
+            const Text(
+              'Great news - your council is covered by our live feed. We are working on adding per-address collection dates for your area.',
+              textAlign: TextAlign.center,
+              style: AppText.body,
             ),
-          ),
-        ],
+            const SizedBox(height: Spacing.xl),
+            TextButton(
+              onPressed: () {
+                clearResolveCache();
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (route) => false);
+              },
+              child: Text('Try another postcode',
+                  style: TextStyle(
+                      decoration: TextDecoration.underline,
+                      color: context.binColors.primary,
+                      fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildCalendarGrid(bool isDark) {
-    final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
-    final lastDay = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
-    final startOffset = firstDay.weekday % 7; // Monday = 1, Sunday = 0
+  Widget _readyView() {
+    final area = _area!;
+    final isLive = (_resolution as ResolveReady).liveCouncil;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-      ),
-      child: Column(
-        children: [
-          // Weekday headers
-          Row(
-            children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-                .map((day) => Expanded(
-                      child: Center(
-                        child: Text(
-                          day,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? AppColors.darkTextTertiary
-                                : AppColors.lightTextTertiary,
-                          ),
-                        ),
-                      ),
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          // Day cells
-          ...List.generate((lastDay.day + startOffset + 6) ~/ 7, (week) {
-            return Row(
-              children: List.generate(7, (dayOfWeek) {
-                final dayIndex = week * 7 + dayOfWeek - startOffset + 1;
-                if (dayIndex < 1 || dayIndex > lastDay.day) {
-                  return const Expanded(child: SizedBox(height: 44));
-                }
-                final day = DateTime(
-                  _currentMonth.year,
-                  _currentMonth.month,
-                  dayIndex,
-                );
-                final collections = _collectionsForDay(day);
-                final isToday = _isToday(day);
-                final isSelected = day.year == _selectedDate.year &&
-                    day.month == _selectedDate.month &&
-                    day.day == _selectedDate.day;
-
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedDate = day),
-                    child: Container(
-                      height: 44,
-                      margin: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.accent
-                            : isToday
-                                ? AppColors.accent.withOpacity(0.1)
-                                : Colors.transparent,
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusSm),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '$dayIndex',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
-                              fontWeight: isToday || isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: isSelected
-                                  ? Colors.white
-                                  : isToday
-                                      ? AppColors.accent
-                                      : isDark
-                                          ? AppColors.darkTextPrimary
-                                          : AppColors.lightTextPrimary,
-                            ),
-                          ),
-                          if (collections.isNotEmpty)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: collections
-                                  .take(3)
-                                  .map((c) => Container(
-                                        width: 4,
-                                        height: 4,
-                                        margin: const EdgeInsets.all(0.5),
-                                        decoration: BoxDecoration(
-                                          color: c.wasteStreams.first.color,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ))
-                                  .toList(),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  bool _isToday(DateTime day) {
-    final now = DateTime.now();
-    return day.year == now.year &&
-        day.month == now.month &&
-        day.day == now.day;
-  }
-
-  Widget _buildDayDetails(bool isDark) {
-    final collections = _collectionsForDay(_selectedDate);
-    final isToday = _isToday(_selectedDate);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenHorizontal,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            isToday
-                ? 'Today'
-                : DateFormat('EEEE, d MMMM').format(_selectedDate),
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Expanded(
-            child: collections.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 48,
-                          color: isDark
-                              ? AppColors.darkTextTertiary
-                              : AppColors.lightTextTertiary,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(
-                          'No collections on this day',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 15,
-                            color: isDark
-                                ? AppColors.darkTextTertiary
-                                : AppColors.lightTextTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: collections.length,
-                    itemBuilder: (context, index) {
-                      final collection = collections[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? AppColors.darkSurfaceVariant
-                              : AppColors.lightSurfaceVariant,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusMd),
-                          border: Border.all(
-                            color: isDark
-                                ? AppColors.darkCardBorder
-                                : AppColors.lightCardBorder,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            ...collection.wasteStreams.map((stream) => Container(
-                              width: 40,
-                              height: 40,
-                              margin: const EdgeInsets.only(right: 8),
-                              decoration: BoxDecoration(
-                                color: stream.color.withOpacity(0.15),
-                                borderRadius:
-                                    BorderRadius.circular(AppSpacing.radiusSm),
-                              ),
-                              child: Icon(stream.icon, color: stream.color, size: 20),
-                            )),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    collection.wasteStreams
-                                        .map((w) => w.displayName)
-                                        .join(', '),
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark
-                                          ? AppColors.darkTextPrimary
-                                          : AppColors.lightTextPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    collection.frequency.shortLabel,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13,
-                                      color: isDark
-                                          ? AppColors.darkTextTertiary
-                                          : AppColors.lightTextTertiary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+    return HomePage(
+      postcode: widget.postcode,
+      councilSlug: widget.councilSlug,
+      councilName: (_resolution as ResolveReady).councilName,
+      uprn: widget.uprn,
+      addressLabel: widget.addressLabel,
+      area: area,
+      isLive: isLive,
+      themeService: widget.themeService,
     );
   }
 }

@@ -1,21 +1,17 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Tracks whether the user has completed onboarding.
+/// Persists whether the user has seen the first-launch onboarding screen
+/// (welcome + notification permission prompt). Shown once per install.
 class OnboardingStore {
-  static const _keyComplete = 'onboarding_complete';
+  static const _keyHasSeen = 'onboardingHasSeen';
 
-  Future<bool> isComplete() async {
+  static Future<bool> hasSeen() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyComplete) ?? false;
+    return prefs.getBool(_keyHasSeen) ?? false;
   }
 
-  Future<void> markComplete() async {
+  static Future<void> setSeen() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyComplete, true);
-  }
-
-  Future<void> reset() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyComplete);
+    await prefs.setBool(_keyHasSeen, true);
   }
 }

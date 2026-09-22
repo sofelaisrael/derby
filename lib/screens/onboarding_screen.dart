@@ -1,338 +1,821 @@
+﻿import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../models/council_info.dart';
-import '../services/onboarding_store.dart';
-import '../services/session_store.dart';
+import 'package:derby_bins/services/notification_service.dart';
+import 'package:derby_bins/services/onboarding_store.dart';
+import 'package:derby_bins/services/reminder_store.dart';
+import 'package:derby_bins/services/theme_service.dart';
+import '../services/bin_scheme.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
-import 'postcode_input_screen.dart';
+import '../theme/typography.dart';
+import '../widgets/undraw_art.dart';
 
+const _brandGradient = [Color(0xFF1E293B), Color(0xFF4338CA)];
+
+const _kickerLight = Color(0xFF6366F1);
+const _kickerDark = Color(0xFFA5B4FC);
+
+double _seg(Animation<double> c, double a, double b,
+    [Curve curve = Curves.easeOutCubic]) {
+  final p = c.value;
+  if (p <= a) return 0;
+  if (p >= b) return 1;
+  return curve.transform((p - a) / (b - a));
+}
+
+/// First-launch welcome flow: three animated steps (the kerb, the calendar,
+/// the nudge) before the user lands in the app.
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  final ThemeService? themeService;
+  final VoidCallback onDone;
+
+  const OnboardingScreen({super.key, this.themeService, required this.onDone});
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen>
-    with SingleTickerProviderStateMixin {
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
-  DerbyCouncil? _selectedCouncil;
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  static const _lastStep = 2;
+
+  bool _busy = false;
+  int _step = 0;
+  bool _everNavigated = false;
+  bool? _remindersGranted; // null = still checking / show "Enable reminders"
 
   @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _checkPermissionState();
   }
 
-  void _nextPage() {
-    if (_currentPage < 2) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOut,
-      );
-    }
+  Future<void> _checkPermissionState() async {
+    final granted = await NotificationService.notificationsPermissionGranted();
+    if (mounted) setState(() => _remindersGranted = granted);
   }
 
-  Future<void> _completeOnboarding() async {
-    final store = OnboardingStore();
-    await store.markComplete();
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const PostcodeInputScreen(),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 600),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
-      body: Container(
+  Future<void> _enableReminders() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    // Guideline 5.1.1(iv): pre-permission is informational only -- always hand off to system dialog.
+    // Button is neutral ("Continue") so it doesn't mimic the system Allow/Don't Allow.
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [AppColors.darkBackground, AppColors.darkSurface]
-                : [AppColors.lightBackground, const Color(0xFFEEF2FF)],
-          ),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF1E1E2E)
+              : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
+          top: false,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Skip button
-              Align(
-                alignment: Alignment.topRight,
-                child: TextButton(
-                  onPressed: _completeOnboarding,
-                  child: Text(
-                    'Skip',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary,
-                      fontWeight: FontWeight.w500,
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : const Color(0xFFEEF2F7),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.notifications_active_outlined,
+                  size: 28,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white70
+                      : const Color(0xFF6366F1),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Bin day reminders',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : const Color(0xFF1A1A2E),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Get a reminder the evening before each collection and a heads-up on the morning. Local to your device, off anytime in Settings.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white60
+                      : const Color(0xFF6B7280),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withValues(alpha: 0.9)
+                        : const Color(0xFF6366F1),
+                    foregroundColor: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF1A1A2E)
+                        : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                  ),
+                  child: const Text(
+                    'Continue',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
-
-              // Page content
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) =>
-                      setState(() => _currentPage = index),
-                  children: [
-                    _buildWelcomePage(isDark),
-                    _buildCouncilPage(isDark),
-                    _buildDonePage(isDark),
-                  ],
-                ),
-              ),
-
-              // Bottom controls
-              _buildBottomControls(isDark),
             ],
           ),
         ),
       ),
     );
+    // Always show system dialog after custom explanation -- do not branch on Not Now.
+    var granted = await NotificationService.notificationsPermissionGranted();
+    if (!granted) {
+      granted = await NotificationService.requestPermissions();
+    }
+    if (granted) {
+      if (mounted) setState(() => _remindersGranted = true);
+      await ReminderStore.setEnabled(true);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'No problem â€” you can enable reminders any time in Settings.',
+            ),
+            action: SnackBarAction(
+              label: 'Settings',
+              onPressed: () => NotificationService.openAppSettings(),
+            ),
+          ),
+        );
+      }
+    }
+    await OnboardingStore.setSeen();
+    if (mounted) widget.onDone();
   }
 
-  Widget _buildWelcomePage(bool isDark) {
+  Future<void> _skip() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    await OnboardingStore.setSeen();
+    if (mounted) widget.onDone();
+  }
+
+  void _next() {
+    if (_busy || _step >= _lastStep) return;
+    _everNavigated = true;
+    setState(() => _step++);
+  }
+
+  void _back() {
+    if (_busy || _step == 0) return;
+    _everNavigated = true;
+    setState(() => _step--);
+  }
+
+  /// Cross-fade between steps: no horizontal travel, so each new step appears
+  /// exactly where the old one was â€” no perceived offset or leftover ghost.
+  Widget _fadeTransition(Widget child, Animation<double> animation) {
+    return FadeTransition(opacity: animation, child: child);
+  }
+
+  Widget _buildStepContent() {
+    final artHeight = MediaQuery.sizeOf(context).height < 700 ? 150.0 : 200.0;
+    final page = _StepPage(
+      key: ValueKey('step-$_step'),
+      step: _step,
+      artHeight: artHeight,
+    );
+    if (!_everNavigated) {
+      return _InitialEntrance(key: ValueKey('step-$_step'), child: page);
+    }
+    return page;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final switchDuration =
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 300);
+    return Scaffold(
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _TopBar(
+              step: _step,
+              busy: _busy,
+              onBack: _back,
+              onSkip: _skip,
+            ),
+            _SegmentedProgress(current: _step),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.page, AppSpacing.lg, AppSpacing.page, AppSpacing.xl),
+                child: AnimatedSwitcher(
+                  duration: switchDuration,
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: _fadeTransition,
+                  child: _buildStepContent(),
+                ),
+              ),
+            ),
+            _BottomCta(
+              key: ValueKey('cta-$_step'),
+              step: _step,
+              busy: _busy,
+              reduceMotion: reduceMotion,
+              remindersGranted: _remindersGranted,
+              onGetStarted: _next,
+              onNext: _next,
+              onEnable: _enableReminders,
+              onNotNow: _skip,
+            ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// â”€â”€â”€ Top bar: brand mark + wordmark, back and skip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _TopBar extends StatelessWidget {
+  final int step;
+  final bool busy;
+  final VoidCallback onBack;
+  final VoidCallback onSkip;
+
+  const _TopBar({
+    required this.step,
+    required this.busy,
+    required this.onBack,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.page, AppSpacing.md, AppSpacing.page, AppSpacing.md),
+      child: Row(
         children: [
-          // Logo / icon
-          Container(
-            width: 120,
-            height: 120,
+          if (step > 0)
+            _RoundButton(
+              icon: Icons.arrow_back_ios_new_rounded,
+              iconSize: 17,
+              onTap: busy ? null : onBack,
+            )
+          else
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: _brandGradient,
+                ),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              ),
+              child: const Icon(Icons.recycling_outlined,
+                  size: 22, color: Colors.white),
+            ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              'DerbyBins',
+              style: AppTypography.title.copyWith(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+          if (step < _OnboardingScreenState._lastStep)
+            TextButton(
+              onPressed: busy ? null : onSkip,
+              child: Text(
+                'Skip',
+                style: TextStyle(
+                  color: colors.textMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _SegmentedProgress extends StatelessWidget {
+  final int current;
+
+  const _SegmentedProgress({required this.current});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    const count = _OnboardingScreenState._lastStep + 1;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
+      child: Row(
+        children: List.generate(count, (i) {
+          final active = i <= current;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+            width: 32,
+            height: 4,
+            margin: EdgeInsets.only(right: i < count - 1 ? 6 : 0),
             decoration: BoxDecoration(
-              gradient: AppColors.heroGradient,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withOpacity(0.3),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
+              color: active
+                  ? (dark ? _kickerDark : colors.primary)
+                  : colors.border,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _RoundButton extends StatelessWidget {
+  final IconData icon;
+  final double iconSize;
+  final VoidCallback? onTap;
+
+  const _RoundButton({
+    required this.icon,
+    required this.iconSize,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: colors.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 12,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Icon(icon, size: iconSize, color: colors.textPrimary),
+      ),
+    );
+  }
+}
+
+// â”€â”€â”€ Step page: entrance controller + staggered content â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _StepPage extends StatefulWidget {
+  final int step;
+  final double artHeight;
+
+  const _StepPage({super.key, required this.step, required this.artHeight});
+
+  @override
+  State<_StepPage> createState() => _StepPageState();
+}
+
+class _StepPageState extends State<_StepPage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _started = false;
+
+  Duration get _duration => switch (widget.step) {
+        0 => const Duration(milliseconds: 2200),
+        1 => const Duration(milliseconds: 1500),
+        _ => const Duration(milliseconds: 1400),
+      };
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(vsync: this, duration: _duration);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_started) {
+      _started = true;
+      if (MediaQuery.of(context).disableAnimations) {
+        _controller.value = 1.0;
+      } else {
+        _controller.forward();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final kickerColor = dark ? _kickerDark : _kickerLight;
+
+    final (kicker, title, body) = switch (widget.step) {
+      0 => (
+          'YOUR STREET',
+          'Your bin days,\nwithout the rota.',
+          'Black, blue, green, food caddy â€” which one goes out this week, for your street, at a glance.',
+        ),
+      1 => (
+          'AT A GLANCE',
+          'Everything,\nat a glance.',
+          'The full year of collection days. A nudge the evening before. And a way to flag a missed bin in seconds.',
+        ),
+      _ => (
+          'ONE MORE THING',
+          'A nudge the\nevening before.',
+          "We'll ask your permission before sending reminder notifications. You can choose whether to receive them.",
+        ),
+    };
+
+    final (kickerA, kickerB, titleA, titleB, bodyA, bodyB) =
+        switch (widget.step) {
+      0 => (0.28, 0.44, 0.40, 0.62, 0.52, 0.70),
+      1 => (0.26, 0.40, 0.34, 0.56, 0.44, 0.64),
+      _ => (0.24, 0.38, 0.30, 0.52, 0.40, 0.60),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: _StagePanel(
+            tint: dark
+                ? colors.surface
+                : const [
+                    Color(0xFFEEF2F7),
+                    Color(0xFFE0E7FF),
+                    Color(0xFFE2E8F0),
+                  ][widget.step],
+            height: widget.artHeight,
+            artBuilder: _buildArt,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        _Stagger(
+          controller: _controller,
+          start: kickerA,
+          end: kickerB,
+          rise: 8,
+          child: Text(
+            kicker,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.4,
+              color: kickerColor,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _Stagger(
+          controller: _controller,
+          start: titleA,
+          end: titleB,
+          child: Text(
+            title,
+            style: AppTypography.h1.copyWith(color: colors.textPrimary),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _Stagger(
+          controller: _controller,
+          start: bodyA,
+          end: bodyB,
+          child: Text(
+            body,
+            style: AppTypography.body.copyWith(color: colors.textSecondary),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        ..._buildChildren(colors, dark),
+      ],
+    );
+  }
+
+  Widget _buildArt(double w) {
+    switch (widget.step) {
+      case 0:
+        return SizedBox(
+          width: w,
+          height: widget.artHeight,
+          child: UndrawArt(
+            asset: 'assets/illustrations/onboarding_step0.svg',
+            progress: CurvedAnimation(
+              parent: _controller,
+              curve: const Interval(0.14, 0.40, curve: Curves.easeOutCubic),
+            ),
+          ),
+        );
+      case 1:
+        return SizedBox(
+          width: w,
+          height: widget.artHeight,
+          child: UndrawArt(
+            asset: 'assets/illustrations/onboarding_calendar.svg',
+            progress: CurvedAnimation(
+              parent: _controller,
+              curve: const Interval(0.16, 0.40, curve: Curves.easeOutCubic),
+            ),
+          ),
+        );
+      default:
+        return SizedBox(
+          width: w,
+          height: widget.artHeight,
+          child: UndrawArt(
+            asset: 'assets/illustrations/onboarding_notification.svg',
+            progress: CurvedAnimation(
+              parent: _controller,
+              curve: const Interval(0.20, 0.50, curve: Curves.easeOutCubic),
+            ),
+          ),
+        );
+    }
+  }
+
+  List<Widget> _buildChildren(BinColors colors, bool dark) {
+    switch (widget.step) {
+      case 0:
+        final bins = CouncilScheme.streamsFor('derby')
+            .map((s) => CouncilScheme.resolve('derby', s))
+            .toList();
+        return [
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (var i = 0; i < bins.length; i++)
+                _Stagger(
+                  controller: _controller,
+                  start: 0.62 + i * 0.07,
+                  end: 0.78 + i * 0.07,
+                  rise: 12,
+                  child: _BinPill(
+                    color: bins[i].themed(context),
+                    label: bins[i].label,
+                  ),
+                ),
+            ],
+          ),
+        ];
+      case 1:
+        const cards = [
+          _FeatureCardData(
+            icon: Icons.calendar_month_outlined,
+            title: 'Full schedule',
+            caption: 'Every bin, every week â€” all in one place.',
+          ),
+          _FeatureCardData(
+            icon: Icons.notifications_active_outlined,
+            title: 'Evening nudges',
+            caption: 'A gentle reminder the night before collection.',
+          ),
+          _FeatureCardData(
+            icon: Icons.flag_outlined,
+            title: 'Missed a bin?',
+            caption: 'Flag it to your council in a couple of taps.',
+          ),
+        ];
+        return [
+          for (var i = 0; i < cards.length; i++)
+            _Stagger(
+              controller: _controller,
+              start: 0.42 + i * 0.08,
+              end: 0.62 + i * 0.08,
+              rise: 18,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: i < cards.length - 1 ? AppSpacing.md : 0),
+                child: _FeatureCard(data: cards[i]),
+              ),
+            ),
+        ];
+      default:
+        return const [];
+    }
+  }
+}
+
+class _FeatureCardData {
+  final IconData icon;
+  final String title;
+  final String caption;
+
+  const _FeatureCardData({
+    required this.icon,
+    required this.title,
+    required this.caption,
+  });
+}
+
+class _FeatureCard extends StatelessWidget {
+  final _FeatureCardData data;
+
+  const _FeatureCard({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 16,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: colors.primaryLight,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+            ),
+            child: Icon(data.icon, size: 21, color: colors.primary),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(data.title,
+                    style: AppTypography.title
+                        .copyWith(color: colors.textPrimary)),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  data.caption,
+                  style: AppTypography.caption
+                      .copyWith(color: colors.textSecondary),
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.recycling,
-              size: 60,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            'Derby Bins',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Never miss a collection day',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          // Feature highlights
-          _buildFeatureRow(
-            icon: Icons.notifications_outlined,
-            title: 'Smart reminders',
-            subtitle: 'Get notified before collection day',
-            isDark: isDark,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _buildFeatureRow(
-            icon: Icons.calendar_month_outlined,
-            title: 'Full calendar view',
-            subtitle: 'See all upcoming collections at a glance',
-            isDark: isDark,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _buildFeatureRow(
-            icon: Icons.dark_mode_outlined,
-            title: 'Dark mode',
-            subtitle: 'Easy on the eyes, day or night',
-            isDark: isDark,
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildFeatureRow({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isDark,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+class _BinPill extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _BinPill({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 10,
+            offset: Offset(0, 3),
           ),
-          child: Icon(
-            icon,
-            color: AppColors.accent,
-            size: 24,
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
           ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  color: isDark
-                      ? AppColors.darkTextTertiary
-                      : AppColors.lightTextTertiary,
-                ),
-              ),
-            ],
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: colors.textSecondary,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildCouncilPage(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+// â”€â”€â”€ Stage panel behind the art â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _StagePanel extends StatelessWidget {
+  final Color tint;
+  final double height;
+  final Widget Function(double width) artBuilder;
+
+  const _StagePanel({
+    required this.tint,
+    required this.height,
+    required this.artBuilder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    return Container(
+      width: double.infinity,
+      height: height,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Text(
-            'Select your council',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0, -0.35),
+                radius: 1.0,
+                colors: [
+                  colors.primaryLight.withValues(alpha: 0.5),
+                  colors.primaryLight.withValues(alpha: 0.0),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Choose your Derbyshire council to get started',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Expanded(
-            child: ListView.builder(
-              itemCount: DerbyCouncil.values.length,
-              itemBuilder: (context, index) {
-                final council = DerbyCouncil.values[index];
-                final isSelected = _selectedCouncil == council;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.accent.withOpacity(0.1)
-                          : isDark
-                              ? AppColors.darkSurfaceVariant
-                              : AppColors.lightSurfaceVariant,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMd),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.accent
-                            : isDark
-                                ? AppColors.darkCardBorder
-                                : AppColors.lightCardBorder,
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    child: ListTile(
-                      onTap: () =>
-                          setState(() => _selectedCouncil = council),
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.accent
-                              : isDark
-                                  ? AppColors.darkCardBorder
-                                  : AppColors.lightCardBorder,
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.radiusSm),
-                        ),
-                        child: Icon(
-                          Icons.location_city,
-                          color: isSelected
-                              ? Colors.white
-                              : isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary,
-                          size: 20,
-                        ),
-                      ),
-                      title: Text(
-                        council.displayName,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.w500,
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.lightTextPrimary,
-                        ),
-                      ),
-                      trailing: isSelected
-                          ? const Icon(Icons.check_circle,
-                              color: AppColors.accent)
-                          : null,
-                    ),
-                  ),
-                );
+          Center(
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final w = math.min(c.maxWidth, 360.0);
+                return SizedBox(width: w, child: artBuilder(w));
               },
             ),
           ),
@@ -340,171 +823,274 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       ),
     );
   }
+}
 
-  Widget _buildDonePage(bool isDark) {
+// â”€â”€â”€ Staggered entrance helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _Stagger extends StatelessWidget {
+  final Animation<double> controller;
+  final double start;
+  final double end;
+  final double rise;
+  final Widget child;
+
+  const _Stagger({
+    required this.controller,
+    required this.start,
+    required this.end,
+    this.rise = 12,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      child: child,
+      builder: (context, child) {
+        final t = _seg(controller, start, end);
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, rise * (1 - t)),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+}
+
+// â”€â”€â”€ Initial page entrance (slide-up + fade, once) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _InitialEntrance extends StatefulWidget {
+  final Widget child;
+
+  const _InitialEntrance({super.key, required this.child});
+
+  @override
+  State<_InitialEntrance> createState() => _InitialEntranceState();
+}
+
+class _InitialEntranceState extends State<_InitialEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_started) {
+      _started = true;
+      if (MediaQuery.of(context).disableAnimations) {
+        _controller.value = 1.0;
+      } else {
+        _controller.forward();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final curved =
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.04),
+          end: Offset.zero,
+        ).animate(curved),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+// â”€â”€â”€ Bottom CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class _BottomCta extends StatelessWidget {
+  final int step;
+  final bool busy;
+  final bool reduceMotion;
+  final bool? remindersGranted;
+  final VoidCallback onGetStarted;
+  final VoidCallback onNext;
+  final VoidCallback onEnable;
+  final VoidCallback onNotNow;
+
+  const _BottomCta({
+    super.key,
+    required this.step,
+    required this.busy,
+    required this.reduceMotion,
+    required this.remindersGranted,
+    required this.onGetStarted,
+    required this.onNext,
+    required this.onEnable,
+    required this.onNotNow,
+  });
+
+  Widget _transition(Widget child, Animation<double> animation) {
+    return FadeTransition(opacity: animation, child: child);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    final duration =
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 300);
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check,
-              size: 50,
-              color: AppColors.success,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            'You\'re all set!',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            _selectedCouncil != null
-                ? 'Connected to ${_selectedCouncil!.displayName}'
-                : 'We\'ll auto-detect your council from your postcode',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 15,
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xxl),
-          _buildGlassInfoCard(
-            icon: Icons.info_outline,
-            text: 'You can change your council later in Settings',
-            isDark: isDark,
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.page, AppSpacing.sm, AppSpacing.page, AppSpacing.md),
+      child: AnimatedSwitcher(
+        duration: duration,
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: _transition,
+        child: _buildCta(colors),
       ),
     );
   }
 
-  Widget _buildGlassInfoCard({
-    required IconData icon,
-    required String text,
-    required bool isDark,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.glassDark
-            : AppColors.glassLight,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(
-          color: isDark
-              ? AppColors.glassBorderDark
-              : AppColors.glassBorderLight,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.accent, size: 20),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                color: isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.lightTextSecondary,
-              ),
+  Widget _buildCta(BinColors colors) {
+    switch (step) {
+      case 0:
+        return _PrimaryButton(
+          key: const ValueKey('cta-get-started'),
+          busy: busy,
+          label: 'See my street.',
+          onPressed: onGetStarted,
+        );
+      case 1:
+        return _PrimaryButton(
+          key: const ValueKey('cta-next'),
+          busy: busy,
+          label: 'Show me the nudge.',
+          onPressed: onNext,
+        );
+      default:
+        return Column(
+          key: const ValueKey('cta-reminders'),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _PrimaryButton(
+              busy: busy,
+              label: 'Continue',
+              onPressed: onEnable,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomControls(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Row(
-        children: [
-          // Page indicators
-          Row(
-            children: List.generate(3, (index) {
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.only(right: 8),
-                width: _currentPage == index ? 24 : 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: _currentPage == index
-                      ? AppColors.accent
-                      : isDark
-                          ? AppColors.darkTextTertiary
-                          : AppColors.lightTextTertiary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              );
-            }),
-          ),
-          const Spacer(),
-          // Next / Done button
-          ElevatedButton(
-            onPressed: _currentPage == 2
-                ? _completeOnboarding
-                : _currentPage == 1 && _selectedCouncil == null
-                    ? null
-                    : _nextPage,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              disabledBackgroundColor:
-                  isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.sm + 4,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _currentPage == 2 ? 'Get Started' : 'Next',
-                  style: GoogleFonts.plusJakartaSans(
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: busy ? null : onNotNow,
+                child: Text(
+                  'Not now',
+                  style: TextStyle(
+                    color: colors.textMuted,
                     fontWeight: FontWeight.w600,
-                    color: _currentPage == 2
-                        ? Colors.white
-                        : isDark
-                            ? AppColors.darkTextTertiary
-                            : AppColors.lightTextTertiary,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Icon(
-                  _currentPage == 2 ? Icons.arrow_forward : Icons.arrow_forward,
-                  size: 18,
-                  color: _currentPage == 2
-                      ? Colors.white
-                      : isDark
-                          ? AppColors.darkTextTertiary
-                          : AppColors.lightTextTertiary,
-                ),
-              ],
+              ),
             ),
+          ],
+        );
+    }
+  }
+}
+
+class _PrimaryButton extends StatefulWidget {
+  final bool busy;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _PrimaryButton({
+    super.key,
+    required this.busy,
+    required this.label,
+    this.onPressed,
+  });
+
+  @override
+  State<_PrimaryButton> createState() => _PrimaryButtonState();
+}
+
+class _PrimaryButtonState extends State<_PrimaryButton> {
+  bool _pressed = false;
+
+  bool get _enabled => !widget.busy && widget.onPressed != null;
+
+  void _setPressed(bool value) {
+    if (!_enabled && value) return;
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    return GestureDetector(
+      onTapDown: (_) => _setPressed(true),
+      onTapUp: (_) => _setPressed(false),
+      onTapCancel: () => _setPressed(false),
+      onTap: _enabled ? widget.onPressed : null,
+      child: Semantics(
+        button: true,
+        enabled: _enabled,
+        label: widget.label,
+        child: AnimatedScale(
+          scale: _pressed ? 0.98 : 1.0,
+          duration: Duration(milliseconds: _pressed ? 90 : 140),
+          curve: _pressed ? Curves.easeOutCubic : Curves.easeOutBack,
+          child: Container(
+          width: double.infinity,
+          height: 56,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: colors.primary,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: colors.primary.withValues(alpha: 0.22),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-        ],
+          child: widget.busy
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(
+                  widget.label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+        ),
+      ),
       ),
     );
   }

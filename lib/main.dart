@@ -1,109 +1,139 @@
+import 'dart:async';
+
+import 'package:background_fetch/background_fetch.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'theme/app_theme.dart';
-import 'services/theme_service.dart';
-import 'services/onboarding_store.dart';
-import 'services/session_store.dart';
+import 'screens/calendar_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/postcode_input_screen.dart';
-import 'screens/home_page.dart';
-import 'screens/calendar_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/report_screen.dart';
+import 'services/notification_service.dart';
+import 'services/onboarding_store.dart';
+import 'services/session_store.dart';
+import 'services/theme_service.dart';
+
+const String appName = 'DerbyBins';
+const String supportedCouncilsText = 'Covers Derby City, Erewash, Amber Valley, High Peak, Derbyshire Dales, Bolsover, Chesterfield, South Derbyshire & North East Derbyshire. More councils coming soon.';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Lock orientation to portrait
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // Set system UI overlay style
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.dark,
-  ));
-
-  runApp(const DerbyBinsApp());
+  BackgroundFetch.registerHeadlessTask(backgroundFetchHeadlessTask);
+  await NotificationService.init();
+  await NotificationService.configureBackgroundFetch();
+  runApp(const BinApp());
 }
 
-class DerbyBinsApp extends StatelessWidget {
-  const DerbyBinsApp({super.key});
+class BinApp extends StatefulWidget {
+  const BinApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeService(),
-      child: Consumer<ThemeService>(
-        builder: (context, themeService, _) {
-          return MaterialApp(
-            title: 'Derby Bins',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
-            darkTheme: AppTheme.dark,
-            themeMode: themeService.themeMode,
-            home: const AppStartup(),
-            routes: {
-              '/postcode': (_) => const PostcodeInputScreen(),
-              '/home': (_) => const HomePage(),
-              '/calendar': (_) => const CalendarScreen(),
-              '/settings': (_) => const SettingsScreen(),
-              '/report': (_) => const ReportScreen(),
-            },
-          );
-        },
-      ),
-    );
-  }
+  State<BinApp> createState() => _BinAppState();
 }
 
-/// Checks onboarding status and routes accordingly.
-class AppStartup extends StatefulWidget {
-  const AppStartup({super.key});
+class _BinAppState extends State<BinApp> {
+  final _themeService = ThemeService();
 
-  @override
-  State<AppStartup> createState() => _AppStartupState();
-}
-
-class _AppStartupState extends State<AppStartup> {
   @override
   void initState() {
     super.initState();
-    _checkOnboarding();
+    _themeService.addListener(() => setState(() {}));
   }
 
-  Future<void> _checkOnboarding() async {
-    final onboardingStore = OnboardingStore();
-    final sessionStore = SessionStore();
-
-    final onboardingComplete = await onboardingStore.isComplete();
-    final hasSession = await sessionStore.hasSession();
-
-    if (!mounted) return;
-
-    Widget destination;
-    if (!onboardingComplete) {
-      destination = const OnboardingScreen();
-    } else if (!hasSession) {
-      destination = const PostcodeInputScreen();
-    } else {
-      destination = const HomePage();
-    }
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => destination),
-    );
+  @override
+  void dispose() {
+    _themeService.removeListener(() {});
+    _themeService.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
+    return MaterialApp(
+      title: appName,
+      debugShowCheckedModeBanner: false,
+      theme: _themeService.theme,
+      home: _AppHome(themeService: _themeService),
+    );
+  }
+}
+
+class _AppHome extends StatefulWidget {
+  final ThemeService themeService;
+  const _AppHome({required this.themeService});
+
+  @override
+  State<_AppHome> createState() => _AppHomeState();
+}
+
+class _AppHomeState extends State<_AppHome> with WidgetsBindingObserver {
+  late Future<Widget> _homeFuture;
+  StreamSubscription<String?>? _notificationSub;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _homeFuture = _decideHome();
+    _notificationSub = NotificationService.onNotifications.listen((payload) {
+      // Notification tapped — no deep-link action needed.
+      // App opens to the default home screen.
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _notificationSub?.cancel();
+    super.dispose();
+  }
+
+  Future<Widget> _decideHome() async {
+    // A saved session means the app was set up before. Prefer it over the
+    // onboarding flag so a lost/cleared flag (e.g. after an app update) never
+    // forces a returning user back through onboarding.
+    final session = await SessionStore.load();
+    if (session != null) {
+      return CalendarScreen(
+        postcode: session.postcode,
+        councilSlug: session.councilSlug,
+        councilName: session.councilName,
+        uprn: session.uprn,
+        addressLabel: session.addressLabel,
+        themeService: widget.themeService,
+      );
+    }
+    if (!await OnboardingStore.hasSeen()) {
+      return OnboardingScreen(
+        themeService: widget.themeService,
+        onDone: _refreshHome,
+      );
+    }
+    return PostcodeInputScreen(themeService: widget.themeService);
+  }
+
+  void _refreshHome() {
+    setState(() {
+      _homeFuture = _decideHome();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      NotificationService.maybeRescheduleIfExactAlarmGranted();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Widget>(
+      future: _homeFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return snapshot.data!;
+        }
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      },
     );
   }
 }

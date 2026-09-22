@@ -1,0 +1,191 @@
+import Flutter
+import UIKit
+import EventKit
+import EventKitUI
+import Foundation
+
+extension Date {
+      init(milliseconds:Double) {
+          self = Date(timeIntervalSince1970: TimeInterval(milliseconds) / 1000)
+      }
+}
+
+public class Add2CalendarPlugin: NSObject, FlutterPlugin {
+  // Captured by `presentCalendarModalToAddEvent` and invoked by
+  // EKEventEditViewDelegate so the Flutter Future<bool> resolves with
+  // .saved → true, .canceled|.deleted → false. Closes #135.
+  private var pendingResult: FlutterResult?
+
+  public static func register(with registrar: FlutterPluginRegistrar) {
+    let channel = FlutterMethodChannel(name: "add_2_calendar", binaryMessenger: registrar.messenger())
+    let instance = Add2CalendarPlugin()
+    registrar.addMethodCallDelegate(instance, channel: channel)
+  }
+
+  private func completePendingResult(_ success: Bool) {
+    pendingResult?(success)
+    pendingResult = nil
+  }
+
+ public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+      if call.method == "add2Cal" {
+        // Reject re-entry while a modal is already in flight. The
+        // singleton-shared pendingResult slot would otherwise orphan the
+        // first Future and resolve the second with the first modal's
+        // action. Reject the new call without disturbing the in-flight one.
+        guard pendingResult == nil else {
+          result(false)
+          return
+        }
+        let args = call.arguments as! [String:Any]
+        pendingResult = result
+        addEventToCalendar(from: args)
+      }
+    }
+
+    private func addEventToCalendar(from args: [String:Any]) {
+        
+        
+        let title = args["title"] as! String
+        let description = args["desc"] is NSNull ? nil: args["desc"] as? String
+        let location = args["location"] is NSNull ? nil: args["location"] as? String
+        let timeZone = args["timeZone"] is NSNull ? nil: TimeZone(identifier: args["timeZone"] as! String)
+        let startDate = Date(milliseconds: (args["startDate"] as! Double))
+        let endDate = Date(milliseconds: (args["endDate"] as! Double))
+        let alarmInterval = args["alarmInterval"] as? Double
+        let allDay = args["allDay"] as! Bool
+        let url = args["url"] as? String
+        
+        let eventStore = EKEventStore()
+        let event = createEvent(eventStore: eventStore, alarmInterval: alarmInterval, title: title, description: description, location: location, timeZone: timeZone, startDate: startDate, endDate: endDate, allDay: allDay, url: url, args: args)
+
+        presentCalendarModalToAddEvent(event, eventStore: eventStore)
+    }
+    
+    private func createEvent(eventStore: EKEventStore, alarmInterval: Double?, title: String, description: String?, location: String?, timeZone: TimeZone?, startDate: Date?, endDate: Date?, allDay: Bool, url: String?, args: [String:Any]) -> EKEvent {
+        let event = EKEvent(eventStore: eventStore)
+        if let alarm = alarmInterval{
+            event.addAlarm(EKAlarm(relativeOffset: alarm*(-1)))
+        }
+        event.title = title
+        event.startDate = startDate
+        event.endDate = endDate
+        if (timeZone != nil) {
+            event.timeZone = timeZone
+        }
+        if (location != nil) {
+            event.location = location
+        }
+        if (description != nil) {
+            event.notes = description
+        }
+        if let url = url{
+            event.url = URL(string: url);
+        }
+        event.isAllDay = allDay
+        
+        if let recurrence = args["recurrence"] as? [String:Any]{
+            let interval = recurrence["interval"] as! Int
+            let frequency = recurrence["frequency"] as! Int
+            let end = recurrence["endDate"] as? Double// Date(milliseconds: (args["startDate"] as! Double))
+            let ocurrences = recurrence["ocurrences"] as? Int
+            
+            let recurrenceRule = EKRecurrenceRule.init(
+                recurrenceWith: EKRecurrenceFrequency(rawValue: frequency)!,
+                interval: interval,
+                end: ocurrences != nil ? EKRecurrenceEnd.init(occurrenceCount: ocurrences!) : end != nil ? EKRecurrenceEnd.init(end: Date(milliseconds: end!)) : nil
+            )
+            event.recurrenceRules = [recurrenceRule]
+        }
+        
+        return event
+    }
+
+    private func getAuthorizationStatus() -> EKAuthorizationStatus {
+        return EKEventStore.authorizationStatus(for: EKEntityType.event)
+    }
+
+    private static func topViewController() -> UIViewController? {
+        if #available(iOS 13.0, *) {
+            let scene = UIApplication.shared.connectedScenes
+                .compactMap { $0 as? UIWindowScene }
+                .first { $0.activationState == .foregroundActive }
+            if let root = scene?.windows.first(where: { $0.isKeyWindow })?.rootViewController
+                ?? scene?.windows.first?.rootViewController {
+                return root
+            }
+        }
+        if let root = UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController {
+            return root
+        }
+        return UIApplication.shared.windows.first?.rootViewController
+    }
+    
+    // Show event kit ui to add event to calendar
+    
+    func presentCalendarModalToAddEvent(_ event: EKEvent, eventStore: EKEventStore) {
+        if #available(iOS 17, *) {
+            OperationQueue.main.addOperation {
+                self.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
+            }
+        } else {
+            let authStatus = getAuthorizationStatus()
+            switch authStatus {
+            case .authorized:
+                OperationQueue.main.addOperation {
+                    self.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
+                }
+            case .notDetermined:
+                //Auth is not determined
+                //We should request access to the calendar
+                eventStore.requestAccess(to: .event, completion: { [weak self] (granted, error) in
+                    if granted {
+                        OperationQueue.main.addOperation {
+                            self?.presentEventCalendarDetailModal(event: event, eventStore: eventStore)
+                        }
+                    } else {
+                        // Auth denied
+                        self?.completePendingResult(false)
+                    }
+                })
+            case .denied, .restricted:
+                // Auth denied or restricted
+                completePendingResult(false)
+            default:
+                completePendingResult(false)
+            }
+        }
+    }
+    
+    // Present edit event calendar modal
+    
+    func presentEventCalendarDetailModal(event: EKEvent, eventStore: EKEventStore) {
+        let eventModalVC = EKEventEditViewController()
+        eventModalVC.event = event
+        eventModalVC.eventStore = eventStore
+        eventModalVC.editViewDelegate = self
+        
+        eventModalVC.modalPresentationStyle = .fullScreen
+
+        guard let root = Self.topViewController() else {
+            // No window/root available — fail-closed so the Future doesn't hang.
+            completePendingResult(false)
+            return
+        }
+        root.present(eventModalVC, animated: true)
+    }
+}
+
+extension Add2CalendarPlugin: EKEventEditViewDelegate {
+    
+    public func eventEditViewController(_ controller: EKEventEditViewController, didCompleteWith action: EKEventEditViewAction) {
+        // Resolve the Future only after the modal is fully off-screen.
+        // Firing pendingResult while dismiss is still animating lets a
+        // caller's .then() / await-next re-enter add2Cal mid-dismissal,
+        // which UIKit silently drops.
+        let saved = (action == .saved)
+        controller.dismiss(animated: true, completion: {
+            self.completePendingResult(saved)
+        })
+    }
+}

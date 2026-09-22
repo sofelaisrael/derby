@@ -1,52 +1,62 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Stores the user's selected address and council preference.
+class SavedSession {
+  final String councilSlug;
+  final String councilName;
+  final String postcode;
+  final String uprn;
+  final String addressLabel;
+
+  const SavedSession({
+    required this.councilSlug,
+    required this.councilName,
+    required this.postcode,
+    required this.uprn,
+    required this.addressLabel,
+  });
+}
+
 class SessionStore {
-  static const _keyAddress = 'session_address';
-  static const _keyUprn = 'session_uprn';
-  static const _keyCouncil = 'session_council';
-  static const _keyPostcode = 'session_postcode';
+  static const _keyCouncilSlug = 'councilSlug';
+  static const _keyCouncilName = 'councilName';
+  static const _keyPostcode = 'postcode';
+  static const _keyUprn = 'uprn';
+  static const _keyAddressLabel = 'addressLabel';
 
-  Future<void> saveSession({
-    required String uprn,
-    required String address,
-    required String council,
-    required String postcode,
-  }) async {
+  static Future<void> save(SavedSession s) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyUprn, uprn);
-    await prefs.setString(_keyAddress, address);
-    await prefs.setString(_keyCouncil, council);
-    await prefs.setString(_keyPostcode, postcode);
+    await prefs.setString(_keyCouncilSlug, s.councilSlug);
+    await prefs.setString(_keyCouncilName, s.councilName);
+    await prefs.setString(_keyPostcode, s.postcode);
+    await prefs.setString(_keyUprn, s.uprn);
+    await prefs.setString(_keyAddressLabel, s.addressLabel);
   }
 
-  Future<Map<String, String>?> loadSession() async {
+  static Future<SavedSession?> load() async {
     final prefs = await SharedPreferences.getInstance();
+    final slug = prefs.getString(_keyCouncilSlug);
+    final name = prefs.getString(_keyCouncilName);
+    final pc = prefs.getString(_keyPostcode);
     final uprn = prefs.getString(_keyUprn);
-    final address = prefs.getString(_keyAddress);
-    final council = prefs.getString(_keyCouncil);
-    final postcode = prefs.getString(_keyPostcode);
-
-    if (uprn == null || address == null || council == null) return null;
-
-    return {
-      'uprn': uprn,
-      'address': address,
-      'council': council,
-      'postcode': postcode ?? '',
-    };
+    final label = prefs.getString(_keyAddressLabel);
+    if (slug == null || name == null || pc == null || uprn == null || label == null) {
+      return null;
+    }
+    return SavedSession(
+      councilSlug: slug,
+      councilName: name,
+      postcode: pc,
+      uprn: uprn,
+      addressLabel: label,
+    );
   }
 
-  Future<void> clearSession() async {
+  static Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyUprn);
-    await prefs.remove(_keyAddress);
-    await prefs.remove(_keyCouncil);
+    await prefs.remove(_keyCouncilSlug);
+    await prefs.remove(_keyCouncilName);
     await prefs.remove(_keyPostcode);
-  }
-
-  Future<bool> hasSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.containsKey(_keyUprn);
+    await prefs.remove(_keyUprn);
+    await prefs.remove(_keyAddressLabel);
   }
 }
