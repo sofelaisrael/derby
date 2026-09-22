@@ -212,3 +212,65 @@ Council websites are treating Vercel's cloud IPs differently — likely blocking
 ### Git commits
 - 2ffdce3 Fix Derby getCollections (address param), Chesterfield Aura API, Flutter postcode threading
 - 9266a49 Add diagnose endpoint for Chesterfield debug (removed in 8da9e18)
+
+## Cycle 12 - South Derbyshire CRACKED, Amber Valley geo-restricted
+
+### What happened
+- User asked to investigate South Derbyshire and Amber Valley
+- South Derbyshire: Fetched the JS files from `maps.southderbyshire.gov.uk/public/pages/bins.js` and `addresssearch_sddc.js`
+- Discovered the actual APIs are JSONP endpoints on `maps.southderbyshire.gov.uk/iShareLIVE.Web/getdata.aspx`
+- Amber Valley: Found HACS Python source on GitHub confirming the API at `info.ambervalley.gov.uk`
+- Apify web-fetch confirmed `info.ambervalley.gov.uk` IS reachable through UK proxy
+
+### South Derbyshire - CRACKED (pure HTTP, no Playwright needed!)
+**Address search API:**
+```
+GET https://maps.southderbyshire.gov.uk/iShareLIVE.Web/getdata.aspx?callback=cb&RequestType=LocationSearch&service=LocationSearch&pagesize=100&startnum=1&mapsource=mapsources/MyHouse&location={postcode}
+```
+Returns raw JSON (not JSONP-wrapped despite callback param). `data[i][0]` = UPRN, `data[i][7]` = address label.
+
+**Bin collections API:**
+```
+GET https://maps.southderbyshire.gov.uk/iShareLIVE.Web/getdata.aspx?callback=test&RequestType=LocalInfo&ms=mapsources/MyHouse&format=JSONP&group=Recycling%20Bins%20and%20Waste|Next%20Bin%20Collections&uid={uprn}
+```
+Returns JSONP-wrapped HTML: `test({...})`. The `_` field contains HTML with dates and descriptions. Existing `parseEntries()` already parses this correctly.
+
+**Fixes applied:**
+1. `lookupAddresses` — was returning empty, now uses LocationSearch API
+2. `getCollections` URL — changed from `format=JSON` to `callback=test&format=JSONP`, fixed `iShareLIVE.Web` casing
+3. JSONP stripping — strips `test(` and `);` wrapper before JSON.parse
+4. `IMG_STREAM_MAP` — added `'food'` to `blackweek` and `greenweek` arrays (were missing food waste stream)
+
+### Amber Valley - API confirmed, geo-restricted
+**Confirmed working API (from Apify UK proxy):**
+```json
+{"refuseNextDate":"2026-09-23T00:00:00","recyclingNextDate":"2026-09-30T00:00:00","greenNextDate":"2026-10-06T00:00:00",...}
+```
+
+**Address lookup API (from page source JS):**
+```
+POST https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/GazetteerJSON.asmx/PropertyLookupFeed
+Body: srchText={postcode}
+```
+
+**Geo-restriction confirmed:**
+- `info.ambervalley.gov.uk` is unreachable from local machine (Israel) and Render (US)
+- Apify web-fetch can reach it through UK proxy infrastructure
+- The bin collection page at `www.ambervalley.gov.uk` loads JS that calls `info.ambervalley.gov.uk`
+
+**Driver rewritten** with:
+- `lookupAddresses` using PropertyLookupFeed POST endpoint
+- `getCollections` using GetCollectionDetailsByUPRN GET endpoint
+- Timeout detection: throws "Amber Valley API unreachable (may be UK-only)" on ETIMEDOUT/ECONNRESET/ENOTFOUND
+- Currently throws on Render (expected — API is UK-only)
+
+### Render test results
+| Council | Address | Collections | Notes |
+|---------|---------|-------------|-------|
+| South Derbyshire | ✅ 2 addr | ✅ 4 streams | CRACKED! JSONP API works from Render |
+| Amber Valley | ❌ timeout | ❌ timeout | API geo-restricted to UK IPs |
+
+### Git commits
+- 50fcd5b Fix South Derbyshire: address lookup + JSONP bin collections API
+- 6e42aa9 Fix South Derbyshire food waste stream missing from image map
+- ddcd11c Rewrite Amber Valley: address lookup + collections APIs with geo-restriction handling
