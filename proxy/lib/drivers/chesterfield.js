@@ -58,7 +58,12 @@ function httpPost(urlStr, bodyData, headers) {
 
 function formatDate(d) {
   if (!d || !(d instanceof Date) || isNaN(d.getTime())) return null;
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(d);
+  const get = (t) => parts.find(p => p.type === t).value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
 function mapChesterfieldType(type) {
@@ -241,7 +246,17 @@ module.exports = {
         const nextCollections = items.map(i => ({ date: i.date, stream, label: i.label }));
         final.push({
           stream,
-          dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
+          dayOfWeek: (() => {
+            const w = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'short' }).format(anchor);
+            if (w === 'Sun') return 7;
+            if (w === 'Mon') return 1;
+            if (w === 'Tue') return 2;
+            if (w === 'Wed') return 3;
+            if (w === 'Thu') return 4;
+            if (w === 'Fri') return 5;
+            if (w === 'Sat') return 6;
+            return anchor.getDay() === 0 ? 7 : anchor.getDay();
+          })(),
           frequency: items.length > 4 ? 'fortnightly' : 'fortnightly',
           anchorDate: items[0].date,
           nextCollections,
