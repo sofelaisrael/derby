@@ -107,13 +107,19 @@ module.exports = {
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
     if (!normalized) return [];
-    return [];
+    return [
+      { uprn: 'calendar-a', label: 'Calendar A - Bolsover, Clowne, Shuttlewood, Stanfree, Barlborough, Whitwell, Creswell, Langwith, Hodthorpe, Whaley Thorns, Upper Langwith' },
+      { uprn: 'calendar-b', label: 'Calendar B - Shirebrook, Tibshelf, Blackwell, South Normanton, Pinxton, Glapwell, Pleasley, New Houghton, Doe Lea, Bramley Vale, Westhouses, Hilcote, Newton, Stoney Houghton, Langwith Junction' },
+    ];
   },
 
   async getCollections(uprn, postcode) {
     try {
       const allEntries = [];
-      for (const cal of CALENDARS) {
+      let calendars = CALENDARS;
+      if (uprn === 'calendar-a') calendars = ['a'];
+      else if (uprn === 'calendar-b') calendars = ['b'];
+      for (const cal of calendars) {
         const r = await httpGet(`${BASE}${cal}`);
         if (r.status !== 200) continue;
         const entries = parseCalendarPage(r.body);

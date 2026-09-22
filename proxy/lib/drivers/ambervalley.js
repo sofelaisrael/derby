@@ -1,4 +1,4 @@
-const { httpGet, httpPost } = require('./shared');
+const { httpGet } = require('./shared');
 
 const STREAM_MAP = {
   refuseNextDate: { stream: 'general', label: 'General Waste' },
@@ -52,8 +52,8 @@ module.exports = {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, ' ').replace(/\s{2,}/g, ' ');
     if (!normalized) return [];
     try {
-      const body = `srchText=${encodeURIComponent(normalized)}`;
-      const result = await httpPost(LOOKUP_URL, body);
+      const url = `${LOOKUP_URL}?srchText=${encodeURIComponent(normalized)}`;
+      const result = await httpGet(url, { Accept: 'application/json' });
       if (result.status !== 200) {
         throw Object.assign(new Error(`Amber Valley API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
       }
