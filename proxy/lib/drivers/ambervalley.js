@@ -1,4 +1,4 @@
-const { httpGet } = require('./shared');
+const { httpGet, httpPost } = require('./shared');
 
 const STREAM_MAP = {
   refuseNextDate: { stream: 'general', label: 'General Waste' },
@@ -9,16 +9,7 @@ const STREAM_MAP = {
   communalRycNextDate: { stream: 'recycling', label: 'Recycling' },
 };
 
-const FREQ_KEY = {
-  refuseNextDate: 'weeklyCollection',
-  recyclingNextDate: 'weeklyCollection',
-  greenNextDate: 'weeklyCollection',
-  NextFoodDate: 'weeklyCollection',
-  communalRefNextDate: 'communalRefWeekly',
-  communalRycNextDate: 'communalRycWeekly',
-};
-
-const SKIP_DATES = ['0001-01-01T00:00:00', '0001-01-01T00:00:00+00:00'];
+const SKIP_DATES = ['0001-01-01T00:00:00', '1900-01-01T00:00:00'];
 
 function formatDate(d) {
   if (!d || !(d instanceof Date) || isNaN(d.getTime())) return null;
@@ -45,19 +36,12 @@ function deriveFrequency(dates) {
   return 'twelveWeekly';
 }
 
-async function httpGetWithRetry(urlStr, extraHeaders, maxRetries) {
-  const retries = maxRetries || 2;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const result = await httpGet(urlStr, extraHeaders);
-      if (result.status !== 429 && result.status !== 503) return result;
-      if (attempt === retries) return result;
-    } catch (e) {
-      if (attempt === retries) throw e;
-    }
-    await new Promise(r => setTimeout(r, 1000 + attempt * 1000));
-  }
+function isTimeoutError(e) {
+  return e && (e.message === 'timeout' || (e.code && (e.code === 'ETIMEDOUT' || e.code === 'ECONNRESET' || e.code === 'ENOTFOUND')));
 }
+
+const LOOKUP_URL = 'https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/GazetteerJSON.asmx/PropertyLookupFeed';
+const COLLECTION_URL = 'https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN';
 
 module.exports = {
   id: 'ambervalley',
@@ -65,25 +49,40 @@ module.exports = {
   name: 'Amber Valley Borough Council',
 
   async lookupAddresses(postcode) {
-    const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
+    const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, ' ').replace(/\s{2,}/g, ' ');
     if (!normalized) return [];
-    return [];
+    try {
+      const body = `srchText=${encodeURIComponent(normalized)}`;
+      const result = await httpPost(LOOKUP_URL, body);
+      if (result.status !== 200) {
+        throw Object.assign(new Error(`Amber Valley API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
+      }
+      let data;
+      try { data = JSON.parse(result.body); } catch (e) { throw Object.assign(new Error('Invalid JSON from address lookup'), { code: 'PARSE_ERROR' }); }
+      if (!Array.isArray(data)) return [];
+      return data
+        .filter(item => item.uprn)
+        .map(item => ({ uprn: String(item.uprn), label: item.addressComma }));
+    } catch (e) {
+      if (isTimeoutError(e)) throw new Error('Amber Valley API unreachable (may be UK-only)');
+      throw e;
+    }
   },
 
   async getCollections(uprn, postcode) {
     if (!uprn) return [];
     try {
-      const url = `https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN?uprn=${encodeURIComponent(uprn)}`;
-      const result = await httpGetWithRetry(url, { 'Accept': 'application/json' }, 2);
-      if (result.status !== 200) throw Object.assign(new Error(`Amber Valley API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
-
+      const url = `${COLLECTION_URL}?uprn=${encodeURIComponent(uprn)}`;
+      const result = await httpGet(url, { Accept: 'application/json' });
+      if (result.status !== 200) {
+        throw Object.assign(new Error(`Amber Valley API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
+      }
       let data;
-      try { data = JSON.parse(result.body); } catch (e) { throw Object.assign(new Error('Invalid JSON'), { code: 'PARSE_ERROR' }); }
+      try { data = JSON.parse(result.body); } catch (e) { throw Object.assign(new Error('Invalid JSON from collection API'), { code: 'PARSE_ERROR' }); }
 
-      if (SKIP_DATES.includes(data.refuseNextDate) && SKIP_DATES.includes(data.recyclingNextDate)) return [];
-
-      const results = [];
       const now = new Date();
+      const oneYear = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+      const results = [];
 
       for (const [dateKey, mapping] of Object.entries(STREAM_MAP)) {
         const rawDate = data[dateKey];
@@ -91,17 +90,19 @@ module.exports = {
         const date = new Date(rawDate);
         if (isNaN(date.getTime()) || date.getFullYear() < 2000) continue;
 
-        const isWeekly = data[FREQ_KEY[dateKey]];
+        const weeklyKey = dateKey === 'communalRefNextDate' || dateKey === 'communalRycNextDate'
+          ? (dateKey === 'communalRefNextDate' ? 'communalRefWeekly' : 'communalRycWeekly')
+          : 'weeklyCollection';
+        const isWeekly = data[weeklyKey];
         const dayOffset = isWeekly ? 7 : 14;
         const dates = [];
         let d = new Date(date);
-        const oneYear = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
         while (d <= oneYear) {
           dates.push(new Date(d));
           d = new Date(d.getTime() + dayOffset * 86400000);
         }
-
         if (dates.length === 0) continue;
+
         const anchor = dates[0];
         const freq = deriveFrequency(dates);
         const nextCollections = dates.map(dd => ({
@@ -110,6 +111,7 @@ module.exports = {
           label: mapping.label,
         })).filter(c => c.date);
         if (nextCollections.length === 0) continue;
+
         results.push({
           stream: mapping.stream,
           dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
@@ -121,8 +123,8 @@ module.exports = {
 
       return results;
     } catch (e) {
-      console.error(`ambervalley getCollections error for uprn ${uprn}: ${e.message}`);
-      return [];
+      if (isTimeoutError(e)) throw new Error('Amber Valley API unreachable (may be UK-only)');
+      throw e;
     }
   },
 };
