@@ -1,4 +1,4 @@
-const { httpGet } = require('./shared');
+const { httpGet, httpPost } = require('./shared');
 
 const STREAM_MAP = {
   refuseNextDate: { stream: 'general', label: 'General Waste' },
@@ -52,8 +52,9 @@ module.exports = {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, ' ').replace(/\s{2,}/g, ' ');
     if (!normalized) return [];
     try {
-      const url = `${LOOKUP_URL}?srchText=${encodeURIComponent(normalized)}`;
-      const result = await httpGet(url, { Accept: 'application/json' });
+      const formData = `srchText=${encodeURIComponent(normalized)}`;
+      const result = await httpPost(LOOKUP_URL, formData, { 'Content-Type': 'application/x-www-form-urlencoded' });
+      console.error('[ambervalley-debug-lookup] status:', result.status, 'body:', result.body.substring(0, 500));
       if (result.status !== 200) {
         throw Object.assign(new Error(`Amber Valley API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
       }
@@ -64,6 +65,7 @@ module.exports = {
         .filter(item => item.uprn)
         .map(item => ({ uprn: String(item.uprn), label: item.addressComma }));
     } catch (e) {
+      console.error('[ambervalley-debug-lookup] ERROR:', e.message, e.code);
       if (isTimeoutError(e)) throw new Error('Amber Valley API unreachable (may be UK-only)');
       throw e;
     }
@@ -74,6 +76,7 @@ module.exports = {
     try {
       const url = `${COLLECTION_URL}?uprn=${encodeURIComponent(uprn)}`;
       const result = await httpGet(url, { Accept: 'application/json' });
+      console.error('[ambervalley-debug-collections] status:', result.status, 'body:', result.body.substring(0, 500));
       if (result.status !== 200) {
         throw Object.assign(new Error(`Amber Valley API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
       }
