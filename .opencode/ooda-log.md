@@ -274,3 +274,33 @@ Body: srchText={postcode}
 - 50fcd5b Fix South Derbyshire: address lookup + JSONP bin collections API
 - 6e42aa9 Fix South Derbyshire food waste stream missing from image map
 - ddcd11c Rewrite Amber Valley: address lookup + collections APIs with geo-restriction handling
+
+## Cycle 13 - Bolsover + Amber Valley fully working
+
+### What happened
+- User asked to investigate both remaining councils
+- Discovered Amber Valley API is NOT geo-restricted (collections worked from Render!)
+- The address lookup issue was postcode normalization: our code stripped spaces (`DE562AN`) but API needs `DE56 2AN`
+- Bolsover doesn't use address lookup — uses Calendar A/B system (different areas)
+
+### Fixes
+- **Amber Valley**: Added `formatPostcode()` to re-insert space before last 3 chars; switched back to POST; added ASMX `d` wrapper handling. Returns 12 addresses for DE562AN, 3 streams for any UPRN.
+- **Bolsover**: `lookupAddresses` returns static Calendar A/B options with area descriptions; `getCollections` now only scrapes the selected calendar (not both).
+
+### Render test results
+| Council | Address | Collections | Notes |
+|---------|---------|-------------|-------|
+| Derby | ✅ | ✅ | |
+| Amber Valley | ✅ FIXED | ✅ | 12 addresses, 3 streams |
+| Bolsover | ✅ FIXED | ✅ | Calendar A/B selection, 3 streams |
+| Chesterfield | ✅ | ✅ | |
+| Derbyshire Dales | ✅ | ✅ | |
+| Erewash | ✅ | ✅ | |
+| High Peak | ✅ | ✅ | |
+| NE Derbyshire | N/A | ✅ | No lookup needed |
+| South Derbyshire | ✅ | ✅ | |
+
+**ALL 9 COUNCILS WORKING!**
+
+### Git commits
+- 3722ed9 Fix Amber Valley address lookup (GET instead of POST) + Bolsover calendar A/B selection
