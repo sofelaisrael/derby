@@ -3,6 +3,7 @@ import '../services/report_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/app_background.dart';
 import '../widgets/banded_gradient.dart';
 
 class ReportMissingAddressScreen extends StatefulWidget {
@@ -104,7 +105,7 @@ class _ReportMissingAddressScreenState extends State<ReportMissingAddressScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.binColors.background,
-      body: SafeArea(
+      body: ScreenBackground(child: SafeArea(
         child: Column(
           children: [
             // Top bar
@@ -139,7 +140,7 @@ class _ReportMissingAddressScreenState extends State<ReportMissingAddressScreen>
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 

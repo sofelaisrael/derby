@@ -493,3 +493,26 @@ Body: srchText={postcode}
 - settings_tab 7 AppColors.shadow uses remain (out of M3 scope) — convert if user wants full hairline consistency.
 - M1+M2+M3 all UNCOMMITTED. test/failures/ stale dir not gitignored — delete before commit.
 - M4 (Codemagic rebuild) pending — needs user trigger or token.
+
+## Cycle 22 - M1-M3 committed + pushed (f2ee85d); user's 8-item polish pass (M5) briefed
+
+### What happened
+- User approved M3; committed everything EXCEPT test/nav_test.dart (known-failing, left uncommitted intentionally). Deleted test/failures/ first. Commit f2ee85d "Redesign app UI - cream/forest palette, banded gradients, dashboard home, store screenshots" pushed to origin/main (confirmed via ls-remote). Codemagic derby-bins workflow auto-triggered on push (no tests in workflow; user to confirm green build = M4).
+- User: "yo you are relly cooking bruh... now just some minor changes yeah?" then delivered an 8-item polish list + "really think of all the scenarios that can occur" + "reduce the padding a little".
+
+### Recon findings (grounding each item)
+1. Onboarding step 0: KerbLine 4-bins art (onboarding_screen.dart _buildArt case 0) → replace with single stylized wheelie bin (CustomPainter, no raster assets). Step 1: _buildCalendarArt mini-calendar with 6px forest strip → replace with compact schedule-list card conveying full schedule / evening nudge / missed bin. Step 2: _buildReminderArt "Recycling tomorrow" card — 6px amber strip reads as thin line / not flush; ALSO known nitpick: amber band on a blue-bin card → make band taller + flush + recycling-blue.
+2. UPRN dialog (_showUprnFallback postcode_input_screen.dart:246-346): long paragraph → shorter copy, tighter layout; KEEP digits-only input, uprn.uk link, Cancel/Continue, String? return + resolvePostcode-with-uprn flow (returning user with UPRN works).
+3. "View calendar" TextButton at home_page.dart:262-277 (bottom) → move to top header row (calendar icon button next to settings gear); hero card onTap is DEAD (`onTap: () {}` line 228) → wire to _openCalendar.
+4. Calendar: _DayCell 3+ pills overflow ~38px cell (3*16+6=54px) = the "broke" bug. Fix: single bin → number bg = bin color; 2+ → cap 2 pills + "+N"; today highlight radiusMd→radiusSm; dark-mode today text white-on-sage #7FA98C ~2.6:1 → luminance-aware ink. _DayDetail tap card redesign. _header height 140→~180 (row stays top, gradient extends). _showExportSheet redesign (keep 3 actions).
+5. Bin guide general icon: _iconFor general = Icons.delete_outline → Icons.waste (wheelie-bin glyph; fallback delete_sweep_outlined).
+6. Dark palette green-tinted (#121A16 etc) → neutral near-black (#0D0E0C family); remove stale "Accent indigo"/"brand indigo" comments (app_colors.dart:58-59,64-66); forestBandedGradient dark first stop #121A16→#0D0E0C; new ScreenBackground widget (subtle full-screen vertical gradient, light #EFEAE0→#F6F3EC, dark #141513→#0D0E0C) applied to main screens.
+7. UpcomingTile chipBase = collections.first only → multiBinBandedGradient over ALL bins (bandedGradient already accepts N colors; add helper flattening binTones per base).
+8. HeroCollectionCard: too big (number 40, padding lg), strip = first bin only, dead progress param + calculateProgress → smaller (number ~30, padding md), number in bin-colored chip (multi-bin gradient), multi-bin strip, remove dead progress (update home_page call site).
+9. Padding: AppSpacing page 24→20, md 16→14, lg 24→20, xl 32→28, xxl 48→40 (keep xs/sm/radii).
+- Golden harness (test/store_screenshots_test.dart): 10 PNGs, LIGHT MODE ONLY — home/calendar/onboarding/reminders/binguide × iphone/android. Sample area has no multi-bin days, so multi-bin visuals won't appear in goldens (edge cases verified by code review).
+
+### Next
+1. Delegate M5 polish pass to implementer (full 8-item brief + scenario robustness + padding). Verify: analyze ≤57 zero new, tests 71/1, goldens regenerated, reviewer APPROVE.
+2. Commit + push (exclude nav_test.dart) → Codemagic auto-rebuild → user confirms green (M4).
+3. Optional follow-ups: settings_tab 7 shadow cards, dark-mode button contrast, binForeground old slate 0xFF1F2937.

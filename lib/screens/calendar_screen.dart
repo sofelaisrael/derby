@@ -10,6 +10,7 @@ import 'package:derby_bins/services/theme_service.dart';
 import 'package:derby_bins/theme/app_colors.dart';
 import 'package:derby_bins/theme/spacing.dart';
 import 'package:derby_bins/theme/typography.dart';
+import 'package:derby_bins/widgets/app_background.dart';
 import 'address_picker_screen.dart';
 import 'home_page.dart';
 
@@ -160,7 +161,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         canPop: false,
         onPopInvoked: (_) =>
             Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
-        child: Scaffold(body: child),
+        child: Scaffold(body: ScreenBackground(child: child)),
       );
 
   Widget _loadingView() {

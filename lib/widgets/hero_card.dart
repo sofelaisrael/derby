@@ -83,7 +83,6 @@ class HeroCollectionCard extends StatelessWidget {
   final String display;
   final String? subtitle;
   final List<BinCollection> collections;
-  final double progress;
   final VoidCallback onTap;
   final String councilSlug;
 
@@ -93,7 +92,6 @@ class HeroCollectionCard extends StatelessWidget {
     required this.display,
     this.subtitle,
     required this.collections,
-    required this.progress,
     required this.onTap,
     this.councilSlug = 'derby',
   });
@@ -114,10 +112,12 @@ class HeroCollectionCard extends StatelessWidget {
     final curve = reduce ? Curves.linear : Curves.easeOutCubic;
     final split = _splitDisplay();
 
-    final stripBase = collections.isNotEmpty
-        ? CouncilScheme.resolve(councilSlug, collections.first.stream)
-            .themed(context)
-        : colors.primary;
+    final bases = collections.isNotEmpty
+        ? [
+            for (final c in collections)
+              CouncilScheme.resolve(councilSlug, c.stream).themed(context),
+          ]
+        : [colors.primary];
 
     return GestureDetector(
       onTap: onTap,
@@ -134,19 +134,19 @@ class HeroCollectionCard extends StatelessWidget {
             Container(
               height: 10,
               decoration: BoxDecoration(
-                gradient: binBandedGradient(stripBase),
+                gradient: multiBinBandedGradient(bases),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Container(
-                        width: 40,
-                        height: 40,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           color: colors.primaryLight,
                           borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
@@ -241,17 +241,26 @@ class HeroCollectionCard extends StatelessWidget {
                       textBaseline: TextBaseline.alphabetic,
                       children: [
                         if (split.number != null) ...[
-                          Text(
-                            split.number!,
-                            style: TextStyle(
-                              fontSize: 40,
-                              height: 1.0,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -1,
-                              color: colors.textPrimary,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              gradient: multiBinBandedGradient(bases),
+                              borderRadius:
+                                  BorderRadius.circular(AppSpacing.radiusMd),
+                            ),
+                            child: Text(
+                              split.number!,
+                              style: const TextStyle(
+                                fontSize: 30,
+                                height: 1.0,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -1,
+                                color: Colors.white,
+                                fontFeatures: [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.sm),
@@ -298,13 +307,5 @@ class HeroCollectionCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static double calculateProgress(DateTime date, DateTime today) {
-    final daysUntil = DateTime(date.year, date.month, date.day)
-        .difference(DateTime(today.year, today.month, today.day))
-        .inDays;
-    if (daysUntil <= 0) return 1.0;
-    return 1.0 - (daysUntil / 7.0).clamp(0.0, 1.0);
   }
 }

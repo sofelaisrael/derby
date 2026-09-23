@@ -33,10 +33,12 @@ class UpcomingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeColors = context.binColors;
-    final chipBase = collections.isNotEmpty
-        ? CouncilScheme.resolve(councilSlug, collections.first.stream)
-            .themed(context)
-        : themeColors.primary;
+    final chipBases = collections.isNotEmpty
+        ? [
+            for (final c in collections)
+              CouncilScheme.resolve(councilSlug, c.stream).themed(context),
+          ]
+        : [themeColors.primary];
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
@@ -53,7 +55,7 @@ class UpcomingTile extends StatelessWidget {
               width: 52,
               height: 56,
               decoration: BoxDecoration(
-                gradient: binBandedGradient(chipBase),
+                gradient: multiBinBandedGradient(chipBases),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Column(

@@ -3,6 +3,7 @@ import '../services/report_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/app_background.dart';
 import '../widgets/banded_gradient.dart';
 
 class ReportMissingBinScreen extends StatefulWidget {
@@ -97,7 +98,7 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
     final colors = context.binColors;
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
+      body: ScreenBackground(child: SafeArea(
         child: Column(
           children: [
             Padding(
@@ -130,7 +131,7 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:derby_bins/services/theme_service.dart';
 import 'package:derby_bins/theme/app_colors.dart';
 import 'package:derby_bins/theme/spacing.dart';
 import 'package:derby_bins/theme/typography.dart';
+import 'package:derby_bins/widgets/app_background.dart';
 import 'calendar_screen.dart';
 import 'report_missing_address_screen.dart';
 
@@ -28,7 +29,7 @@ class AddressPickerScreen extends StatelessWidget {
     final colors = context.binColors;
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
+      body: ScreenBackground(child: SafeArea(
         child: Column(
           children: [
             Padding(
@@ -234,7 +235,7 @@ class AddressPickerScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }

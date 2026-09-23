@@ -14,6 +14,7 @@ import '../services/theme_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/app_background.dart';
 import '../widgets/bin_badge.dart';
 import '../widgets/centered_dialog.dart';
 import 'bin_guide_screen.dart';
@@ -251,15 +252,17 @@ class _SettingsTabState extends State<SettingsTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return Scaffold(
-        body: const SafeArea(
-          child: Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        body: ScreenBackground(
+          child: SafeArea(
+            child: Center(child: CircularProgressIndicator()),
+          ),
         ),
       );
     }
     final councilWebsite = CouncilApi.websiteFor(widget.councilSlug);
     return Scaffold(
-      body: SafeArea(
+      body: ScreenBackground(child: SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.page),
         child: Column(
@@ -741,7 +744,7 @@ class _SettingsTabState extends State<SettingsTab> {
           ],
         ),
       ),
-      ),
+      )),
     );
   }
 

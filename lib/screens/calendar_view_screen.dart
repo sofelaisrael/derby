@@ -8,7 +8,9 @@ import '../services/schedule_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/app_background.dart';
 import '../widgets/banded_gradient.dart';
+import '../widgets/bin_swatch.dart';
 
 class CalendarViewScreen extends StatefulWidget {
   final AreaSchedule area;
@@ -131,9 +133,16 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              width: double.infinity,
+              height: 6,
+              decoration: BoxDecoration(
+                gradient: binBandedGradient(const Color(0xFF3B82F6)),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.sm),
+                  AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),
               child: Text(
                 'Export your schedule',
                 style: AppTypography.h3.copyWith(color: colors.textPrimary),
@@ -204,7 +213,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: Column(
+      body: ScreenBackground(child: Column(
         children: [
           _header(context),
           Expanded(
@@ -293,7 +302,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 
@@ -309,37 +318,69 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
       child: SafeArea(
         bottom: false,
         child: SizedBox(
-          height: 140,
+          height: 180,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
-            child: Row(
+            child: Column(
               children: [
-                _HeaderButton(
-                  icon: Icons.arrow_back,
-                  onTap: () => Navigator.of(context).pop(),
-                ),
-                const Expanded(
-                  child: Text(
-                    'Your calendar',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _HeaderButton(
+                      icon: Icons.arrow_back,
+                      onTap: () => Navigator.of(context).pop(),
                     ),
-                  ),
+                    const Expanded(
+                      child: Text(
+                        'Your calendar',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ),
+                    _HeaderButton(
+                      icon: Icons.ios_share,
+                      onTap: () {
+                        final box = context.findRenderObject() as RenderBox?;
+                        final origin = (box != null && box.hasSize)
+                            ? box.localToGlobal(Offset.zero) & box.size
+                            : const Rect.fromLTWH(0, 0, 1, 1);
+                        _showExportSheet(context, origin);
+                      },
+                    ),
+                  ],
                 ),
-                _HeaderButton(
-                  icon: Icons.ios_share,
-                  onTap: () {
-                    final box = context.findRenderObject() as RenderBox?;
-                    final origin = (box != null && box.hasSize)
-                        ? box.localToGlobal(Offset.zero) & box.size
-                        : const Rect.fromLTWH(0, 0, 1, 1);
-                    _showExportSheet(context, origin);
-                  },
+                const Spacer(),
+                Column(
+                  children: [
+                    if (widget.addressLabel != null) ...[
+                      Text(
+                        widget.addressLabel!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
+                    Text(
+                      widget.postcode,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.70),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 14),
               ],
             ),
           ),
@@ -424,51 +465,79 @@ class _DayCell extends StatelessWidget {
             ? colors.calendarCollection
             : Colors.transparent;
     final dayColor = isToday
-        ? Colors.white
+        ? binForeground(colors.primary)
         : isSelected
             ? colors.primary
             : hasCollection
                 ? colors.textPrimary
                 : colors.textMuted;
+    final singleBin = binStreams.length == 1;
+    final binColor = singleBin
+        ? CouncilScheme.resolve(councilSlug, binStreams.first).themed(context)
+        : null;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              "$day",
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-                color: dayColor,
+            if (singleBin)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: binColor,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+                child: Text(
+                  "$day",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: binForeground(binColor!),
+                  ),
+                ),
+              )
+            else
+              Text(
+                "$day",
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: dayColor,
+                ),
               ),
-            ),
-            if (binStreams.isNotEmpty) ...[
+            if (binStreams.length > 1) ...[
               const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: binStreams
-                    .map((stream) => Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                          child: Container(
-                            width: 16,
-                            height: 3,
-                            decoration: BoxDecoration(
-                              gradient: binBandedGradient(
-                                CouncilScheme.resolve(councilSlug, stream)
-                                    .themed(context),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: binStreams
+                      .map((stream) => Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 1.5),
+                            child: Container(
+                              width: 16,
+                              height: 3,
+                              decoration: BoxDecoration(
+                                gradient: binBandedGradient(
+                                  CouncilScheme.resolve(councilSlug, stream)
+                                      .themed(context),
+                                ),
+                                borderRadius: BorderRadius.circular(2),
                               ),
-                              borderRadius: BorderRadius.circular(2),
                             ),
-                          ),
-                        ))
-                    .toList(),
+                          ))
+                      .toList(),
+                ),
               ),
             ],
           ],
@@ -503,14 +572,23 @@ class _DayDetail extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            fullDateLabel(date),
-            style: TextStyle(
+          Row(
+            children: [
+              Icon(Icons.calendar_today_outlined,
+                  size: 14, color: context.binColors.textMuted),
+              const SizedBox(width: 6),
+              Text(
+                fullDateLabel(date),
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: context.binColors.textPrimary,
                 ),
+              ),
+            ],
           ),
+          const SizedBox(height: 10),
+          Divider(height: 1, color: context.binColors.borderLight),
           const SizedBox(height: 10),
           ...collections.map((c) {
             final p = CouncilScheme.resolve(councilSlug, c.stream);
@@ -518,34 +596,38 @@ class _DayDetail extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: p.themed(context),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                  BinSwatch(p: p, size: 20),
                   const SizedBox(width: 10),
-                  Text(
-                    p.label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: context.binColors.textPrimary,
-                    ),
-                  ),
-                    const Spacer(),
-                    Text(
-                      frequencyLabel[c.schedule.frequency] ?? '',
+                  Expanded(
+                    child: Text(
+                      p.label,
                       style: TextStyle(
-                        fontSize: 12,
-                        color: context.binColors.textMuted,
+                        fontSize: 14,
+                        color: context.binColors.textPrimary,
                       ),
                     ),
-                  ],
-                ),
-              );
-            }),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: context.binColors.primaryLight,
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusSm),
+                    ),
+                    child: Text(
+                      frequencyLabel[c.schedule.frequency] ?? '',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: context.binColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );

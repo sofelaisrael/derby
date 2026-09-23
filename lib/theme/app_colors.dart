@@ -55,26 +55,21 @@ Color binForeground(Color bg) =>
 class AppColorsDark {
   AppColorsDark._();
 
-  // Accent indigo — reserved for buttons, links, selections and highlights,
-  // never the page substrate itself.
   static const primary = Color(0xFF7FA98C);
   static const primaryLight = Color(0xFF22332A);
   static const accent = Color(0xFFC08A5E);
 
-  // Neutral near-black surfaces, matching how mainstream apps handle dark
-  // mode: a near-black page with subtle outlined elevations. The brand indigo
-  // is no longer the base tint.
-  static const background = Color(0xFF121A16);
-  static const surface = Color(0xFF161F1A);
-  static const surfaceElevated = Color(0xFF1B2620);
-  static const surfaceTinted = Color(0xFF202B24);
+  static const background = Color(0xFF0D0E0C);
+  static const surface = Color(0xFF141513);
+  static const surfaceElevated = Color(0xFF1A1B18);
+  static const surfaceTinted = Color(0xFF20211E);
 
   static const textPrimary = Color(0xFFECF0E8);
   static const textSecondary = Color(0xFFB7C0B4);
   static const textMuted = Color(0xFF808B80);
 
-  static const border = Color(0xFF2A352D);
-  static const borderLight = Color(0xFF253028);
+  static const border = Color(0xFF2B2C28);
+  static const borderLight = Color(0xFF242521);
 
   static const greenBin = Color(0xFF34D399);
   static const blueBin = Color(0xFF60A5FA);
@@ -86,7 +81,7 @@ class AppColorsDark {
   static const error = Color(0xFFF87171);
 
   static const calendarToday = Color(0xFF7FA98C);
-  static const calendarDisabled = Color(0xFF1B2620);
+  static const calendarDisabled = Color(0xFF1A1B18);
   static const calendarCollection = Color(0xFF22332A);
 
   static const textHint = textMuted;

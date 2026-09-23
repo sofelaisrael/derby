@@ -42,8 +42,20 @@ LinearGradient forestBandedGradient({
 }) =>
     bandedGradient(
       dark
-          ? const [Color(0xFF121A16), Color(0xFF1F3D2B), Color(0xFF2F5D43)]
+          ? const [Color(0xFF0D0E0C), Color(0xFF1F3D2B), Color(0xFF2F5D43)]
           : const [Color(0xFF1F3D2B), Color(0xFF2F5D43), Color(0xFF7C8B6F)],
       begin: begin,
       end: end,
     );
+
+LinearGradient multiBinBandedGradient(
+  List<Color> bases, {
+  AlignmentGeometry begin = Alignment.topLeft,
+  AlignmentGeometry end = Alignment.bottomRight,
+}) {
+  final tones = <Color>[];
+  for (final base in bases) {
+    tones.addAll(binTones(base));
+  }
+  return bandedGradient(tones, begin: begin, end: end);
+}

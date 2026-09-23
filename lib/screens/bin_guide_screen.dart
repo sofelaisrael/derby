@@ -5,6 +5,7 @@ import '../services/reminder_store.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/app_background.dart';
 import '../widgets/bin_badge.dart';
 
 const _wasteNames = {
@@ -41,7 +42,7 @@ class _BinGuideScreenState extends State<BinGuideScreen> {
     final streams = CouncilScheme.streamsFor(_councilSlug);
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
+      body: ScreenBackground(child: SafeArea(
         child: Column(
           children: [
             Padding(
@@ -131,7 +132,7 @@ class _BinGuideScreenState extends State<BinGuideScreen> {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }

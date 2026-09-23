@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/app_background.dart';
 import '../widgets/banded_gradient.dart';
 import 'calendar_screen.dart';
 import 'address_picker_screen.dart';
@@ -262,14 +263,14 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: context.binColors.primaryLight,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Icon(Icons.home_work_outlined,
-                      color: context.binColors.primary, size: 24),
+                      color: context.binColors.primary, size: 20),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text('Address not found',
@@ -277,9 +278,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                         .copyWith(color: context.binColors.textPrimary)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'We couldn\u2019t find any addresses for that postcode in '
-                  '${council.name}. Enter your UPRN to continue, or check the '
-                  'postcode and try a different council.',
+                  'Enter your UPRN to continue.',
                   style: AppTypography.body
                       .copyWith(color: context.binColors.textSecondary),
                   textAlign: TextAlign.center,
@@ -290,27 +289,44 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
+                    isDense: true,
                     hintText: 'e.g. 100023456789',
                     errorText: error,
                     prefixIcon: const Icon(Icons.tag, size: 18),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                TextButton.icon(
-                  onPressed: () async {
-                    final clean = normalizePostcode(rawPostcode);
-                    final opened = await launchUrl(
-                      Uri.parse('https://uprn.uk/postcode/$clean'),
-                      mode: LaunchMode.externalApplication,
-                    );
-                    if (!opened && ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        const SnackBar(content: Text('Could not open uprn.uk.')),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () async {
+                      final clean = normalizePostcode(rawPostcode);
+                      final opened = await launchUrl(
+                        Uri.parse('https://uprn.uk/postcode/$clean'),
+                        mode: LaunchMode.externalApplication,
                       );
-                    }
-                  },
-                  icon: const Icon(Icons.open_in_new, size: 16),
-                  label: const Text('Find my UPRN on uprn.uk'),
+                      if (!opened && ctx.mounted) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(
+                              content: Text('Could not open uprn.uk.')),
+                        );
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      foregroundColor: context.binColors.primary,
+                    ),
+                    child: Text(
+                      'Find my UPRN on uprn.uk',
+                      style: AppTypography.caption.copyWith(
+                        color: context.binColors.primary,
+                        fontWeight: FontWeight.w700,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Row(
@@ -446,7 +462,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: colors.background,
-        body: SingleChildScrollView(
+        body: ScreenBackground(child: SingleChildScrollView(
           controller: _scrollController,
           child: AnimatedBuilder(
             animation: _entrance,
@@ -505,7 +521,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
               );
             },
           ),
-        ),
+        )),
       ),
     );
   }

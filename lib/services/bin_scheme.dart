@@ -92,7 +92,7 @@ const _foodItems = <String>[
 IconData _iconFor(WasteStream s) {
   switch (s) {
     case WasteStream.general:
-      return Icons.delete_outline;
+      return Icons.delete_sweep_outlined;
     case WasteStream.recycling:
       return Icons.recycling;
     case WasteStream.garden:

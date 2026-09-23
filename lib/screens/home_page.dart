@@ -7,6 +7,7 @@ import '../services/theme_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/app_background.dart';
 import '../widgets/hero_card.dart';
 import '../widgets/upcoming_tile.dart';
 import 'calendar_view_screen.dart';
@@ -122,7 +123,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: SafeArea(
+      body: ScreenBackground(child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.page,
@@ -162,6 +163,24 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
+                  GestureDetector(
+                    onTap: _openCalendar,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                        border: Border.all(color: colors.borderLight),
+                      ),
+                      child: Icon(
+                        Icons.calendar_month_outlined,
+                        size: 20,
+                        color: colors.textMuted,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
                   GestureDetector(
                     onTap: () {
                       Navigator.of(context).push(
@@ -224,8 +243,7 @@ class _HomePageState extends State<HomePage> {
                 display: display,
                 subtitle: subtitle,
                 collections: next?.collections ?? [],
-                progress: 0,
-                onTap: () {},
+                onTap: _openCalendar,
                 councilSlug: widget.councilSlug,
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -257,24 +275,6 @@ class _HomePageState extends State<HomePage> {
                   now: _now,
                 );
               }),
-              const SizedBox(height: AppSpacing.sm),
-
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: _openCalendar,
-                  iconAlignment: IconAlignment.end,
-                  icon: const Icon(Icons.arrow_forward, size: 18),
-                  label: const Text('View calendar'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: colors.primary,
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
               const SizedBox(height: AppSpacing.lg),
 
               Center(
@@ -301,7 +301,7 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-      ),
+      )),
     );
   }
 }

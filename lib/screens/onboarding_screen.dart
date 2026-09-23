@@ -11,7 +11,6 @@ import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/banded_gradient.dart';
-import '../widgets/kerb_line.dart';
 
 const _kickerLight = Color(0xFFA9714B);
 const _kickerDark = Color(0xFFC08A5E);
@@ -164,7 +163,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text(
-              'No problem â€” you can enable reminders any time in Settings.',
+              'No problem — you can enable reminders any time in Settings.',
             ),
             action: SnackBarAction(
               label: 'Settings',
@@ -197,8 +196,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _step--);
   }
 
-  /// Cross-fade between steps: no horizontal travel, so each new step appears
-  /// exactly where the old one was â€” no perceived offset or leftover ghost.
   Widget _fadeTransition(Widget child, Animation<double> animation) {
     return FadeTransition(opacity: animation, child: child);
   }
@@ -462,7 +459,7 @@ class _StepPageState extends State<_StepPage>
       0 => (
           'YOUR STREET',
           'Your bin days,\nwithout the rota.',
-          'Black, blue, green, food caddy â€” which one goes out this week, for your street, at a glance.',
+          'Black, blue, green, food caddy — which one goes out this week, for your street, at a glance.',
         ),
       1 => (
           'AT A GLANCE',
@@ -537,24 +534,19 @@ class _StepPageState extends State<_StepPage>
   Widget _buildArt(double w) {
     switch (widget.step) {
       case 0:
-        final streams = CouncilScheme.streamsFor('derby');
-        final binColors = [
-          for (final s in streams)
-            CouncilScheme.resolve('derby', s).themed(context),
-        ];
         return SizedBox(
           width: w,
           height: widget.artHeight,
           child: Center(
-            child: KerbLine(
-              colors: binColors,
-              highlightedIndex: streams.indexOf(WasteStream.recycling),
+            child: _WheelieBinArt(
+              color: CouncilScheme.resolve('derby', WasteStream.recycling)
+                  .themed(context),
               progress: CurvedAnimation(
                 parent: _controller,
                 curve: const Interval(0.14, 0.40, curve: Curves.easeOutCubic),
               ),
-              showDots: true,
-              size: Size(240, widget.artHeight),
+              width: 240,
+              height: widget.artHeight,
             ),
           ),
         );
@@ -567,7 +559,6 @@ class _StepPageState extends State<_StepPage>
 
   Widget _buildCalendarArt(double w) {
     final colors = context.binColors;
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final streams = CouncilScheme.streamsFor('derby');
     final binColors = [
       for (final s in streams)
@@ -578,7 +569,7 @@ class _StepPageState extends State<_StepPage>
       height: widget.artHeight,
       child: Center(
         child: Container(
-          width: math.min(w * 0.72, 240),
+          width: math.min(w * 0.82, 260),
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: colors.surfaceElevated,
@@ -588,76 +579,59 @@ class _StepPageState extends State<_StepPage>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  gradient: forestBandedGradient(dark: dark),
-                ),
-              ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-                child: Row(
-                  children: [
-                    Icon(Icons.chevron_left_rounded,
-                        size: 14, color: colors.textMuted),
-                    Expanded(
-                      child: Text(
-                        'September',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    Icon(Icons.chevron_right_rounded,
-                        size: 14, color: colors.textMuted),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Column(
                   children: [
-                    Row(
-                      children: [
-                        for (final d in const ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
-                          Expanded(
-                            child: Center(
-                              child: Text(
-                                d,
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w700,
-                                  color: colors.textMuted,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    for (var r = 0; r < 3; r++)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          children: [
-                            for (var c = 0; c < 7; c++)
-                              Expanded(
-                                child: _calendarDayCell(
-                                  r * 7 + c + 1,
-                                  chip: _chipForDay(r * 7 + c + 1, binColors),
-                                  today: r * 7 + c + 1 == 10,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+                    _scheduleRow('Thu 24 Sep', [binColors[1], binColors[3]]),
+                    _scheduleRow('Mon 28 Sep', [binColors[0]]),
+                    _scheduleRow('Wed 30 Sep', [binColors[2]]),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                decoration: BoxDecoration(color: colors.primaryLight),
+                child: Row(
+                  children: [
+                    Icon(Icons.notifications_active_outlined,
+                        size: 12, color: colors.primary),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Evening nudge before each collection',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.flag_outlined,
+                        size: 12, color: colors.textMuted),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Missed a bin? Flag it in seconds.',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -665,77 +639,37 @@ class _StepPageState extends State<_StepPage>
     );
   }
 
-  Widget _calendarDayCell(int day, {Color? chip, bool today = false}) {
+  Widget _scheduleRow(String label, List<Color> chips) {
     final colors = context.binColors;
-    final Widget content;
-    if (today) {
-      content = Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: colors.primary,
-          shape: BoxShape.circle,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          '$day',
-          style: const TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-      );
-    } else if (chip != null) {
-      content = Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          gradient: binBandedGradient(chip),
-          borderRadius: BorderRadius.circular(5),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          '$day',
-          style: const TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-      );
-    } else {
-      content = SizedBox(
-        width: 20,
-        height: 20,
-        child: Center(
-          child: Text(
-            '$day',
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: colors.textMuted,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
+              ),
             ),
           ),
-        ),
-      );
-    }
-    return Center(child: content);
-  }
-
-  Color? _chipForDay(int day, List<Color> binColors) {
-    switch (day) {
-      case 3:
-        return binColors[1];
-      case 6:
-        return binColors[0];
-      case 12:
-        return binColors[3];
-      case 17:
-        return binColors[2];
-      default:
-        return null;
-    }
+          for (final c in chips)
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  gradient: binBandedGradient(c),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildReminderArt(double w) {
@@ -745,7 +679,7 @@ class _StepPageState extends State<_StepPage>
       height: widget.artHeight,
       child: Center(
         child: Container(
-          width: math.min(w * 0.72, 240),
+          width: math.min(w * 0.82, 260),
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: colors.surfaceElevated,
@@ -756,57 +690,69 @@ class _StepPageState extends State<_StepPage>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                height: 6,
+                width: double.infinity,
+                height: 44,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  gradient: binBandedGradient(const Color(0xFFF59E0B)),
+                  gradient: binBandedGradient(const Color(0xFF3B82F6)),
+                ),
+                child: const Text(
+                  'BIN DAY REMINDERS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
                 child: Column(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: colors.primaryLight,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         Icons.notifications_active_outlined,
-                        size: 20,
+                        size: 16,
                         color: colors.primary,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 5),
                     Text(
                       'Recycling tomorrow',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: colors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       '24 September',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: colors.textMuted,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 5),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: colors.primaryLight,
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusSm),
                       ),
                       child: Text(
                         'Reminder set',
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 9,
                           fontWeight: FontWeight.w700,
                           color: colors.primary,
                         ),
@@ -852,7 +798,7 @@ class _StepPageState extends State<_StepPage>
           _FeatureCardData(
             icon: Icons.calendar_month_outlined,
             title: 'Full schedule',
-            caption: 'Every bin, every week â€” all in one place.',
+            caption: 'Every bin, every week — all in one place.',
           ),
           _FeatureCardData(
             icon: Icons.notifications_active_outlined,
@@ -1285,4 +1231,208 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
       ),
     );
   }
+}
+
+class _WheelieBinArt extends StatelessWidget {
+  final Color color;
+  final Animation<double> progress;
+  final double width;
+  final double height;
+
+  const _WheelieBinArt({
+    required this.color,
+    required this.progress,
+    required this.width,
+    required this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: CustomPaint(
+        painter: _WheelieBinPainter(color: color, progress: progress),
+      ),
+    );
+  }
+}
+
+class _WheelieBinPainter extends CustomPainter {
+  final Color color;
+  final Animation<double> progress;
+
+  _WheelieBinPainter({required this.color, required this.progress})
+      : super(repaint: progress);
+
+  double _segP(double p, double a, double b) {
+    if (p <= a) return 0;
+    if (p >= b) return 1;
+    return Curves.easeOutCubic.transform((p - a) / (b - a));
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final p = progress.value;
+
+    final entrance = _segP(p, 0.00, 0.26);
+    if (entrance <= 0) return;
+
+    final bw = w * 0.46;
+    final bh = bw * 1.45;
+    final cx = w / 2;
+    final gy = h * 0.90;
+    final drop = bh * 0.35 * (1 - entrance);
+    final box = Rect.fromLTWH(cx - bw / 2, gy - bh + drop, bw, bh);
+
+    _drawFeatheredEllipse(
+      canvas,
+      center: Offset(cx, gy + h * 0.015),
+      rx: bw * 0.45,
+      ry: bw * 0.10,
+      color: Colors.black.withValues(alpha: 0.10 * entrance),
+    );
+
+    final glowEnt = _segP(p, 0.45, 0.75);
+    if (glowEnt > 0) {
+      final lift = _segP(p, 0.45, 0.65);
+      _drawFeatheredEllipse(
+        canvas,
+        center: Offset(cx, gy - bh * 0.55 - h * 0.03 * lift),
+        rx: bw * 0.80,
+        ry: bh * 0.58,
+        color: color.withValues(alpha: 0.30 * glowEnt),
+      );
+    }
+
+    _paintBin(canvas, box, color);
+
+    final dots = [
+      (Offset(w * 0.12, h * 0.24), 8.0),
+      (Offset(w * 0.88, h * 0.18), 6.0),
+      (Offset(w * 0.80, h * 0.34), 7.0),
+    ];
+    for (final d in dots) {
+      _drawFeatheredEllipse(
+        canvas,
+        center: d.$1,
+        rx: d.$2 * 0.5,
+        ry: d.$2 * 0.5,
+        color: color.withValues(alpha: 0.18),
+      );
+    }
+  }
+
+  void _paintBin(Canvas canvas, Rect box, Color color) {
+    final w = box.width;
+    final h = box.height;
+    final dark = Color.lerp(color, const Color(0xFF000000), 0.16)!;
+    final darker = Color.lerp(color, const Color(0xFF000000), 0.32)!;
+    final light = Color.lerp(color, const Color(0xFFFFFFFF), 0.28)!;
+
+    canvas.save();
+    canvas.translate(box.left, box.top);
+
+    final body = Path()
+      ..moveTo(w * 0.20, h * 0.48)
+      ..lineTo(w * 0.80, h * 0.48)
+      ..quadraticBezierTo(w * 0.82, h * 0.60, w * 0.80, h * 0.80)
+      ..lineTo(w * 0.64, h * 0.88)
+      ..lineTo(w * 0.36, h * 0.88)
+      ..lineTo(w * 0.20, h * 0.80)
+      ..quadraticBezierTo(w * 0.18, h * 0.60, w * 0.20, h * 0.48)
+      ..close();
+    canvas.drawPath(body, Paint()..color = color);
+
+    final bodyShade = Path()
+      ..moveTo(w * 0.68, h * 0.50)
+      ..lineTo(w * 0.80, h * 0.48)
+      ..quadraticBezierTo(w * 0.82, h * 0.60, w * 0.80, h * 0.80)
+      ..lineTo(w * 0.64, h * 0.88)
+      ..lineTo(w * 0.60, h * 0.88)
+      ..lineTo(w * 0.74, h * 0.80)
+      ..quadraticBezierTo(w * 0.76, h * 0.60, w * 0.66, h * 0.50)
+      ..close();
+    canvas.drawPath(bodyShade, Paint()..color = dark.withValues(alpha: 0.55));
+
+    final rib = RRect.fromRectAndCorners(
+      Rect.fromLTRB(w * 0.21, h * 0.52, w * 0.795, h * 0.60),
+      bottomLeft: Radius.circular(w * 0.02),
+      bottomRight: Radius.circular(w * 0.02),
+    );
+    canvas.drawRRect(rib, Paint()..color = light.withValues(alpha: 0.5));
+
+    final sheen = Path()
+      ..moveTo(w * 0.30, h * 0.56)
+      ..lineTo(w * 0.36, h * 0.56)
+      ..lineTo(w * 0.34, h * 0.82)
+      ..lineTo(w * 0.28, h * 0.82)
+      ..close();
+    canvas.drawPath(
+        sheen, Paint()..color = Colors.white.withValues(alpha: 0.28));
+
+    final lid = RRect.fromRectAndCorners(
+      Rect.fromLTRB(w * 0.14, h * 0.30, w * 0.86, h * 0.50),
+      topLeft: Radius.circular(w * 0.14),
+      topRight: Radius.circular(w * 0.14),
+    );
+    canvas.drawRRect(lid, Paint()..color = dark);
+
+    canvas.drawRRect(
+      RRect.fromRectAndCorners(
+        Rect.fromLTRB(w * 0.14, h * 0.30, w * 0.86, h * 0.36),
+        topLeft: Radius.circular(w * 0.14),
+        topRight: Radius.circular(w * 0.14),
+      ),
+      Paint()..color = _lighter(dark),
+    );
+
+    final handle = RRect.fromRectAndCorners(
+      Rect.fromLTRB(w * 0.44, h * 0.22, w * 0.56, h * 0.32),
+      topLeft: Radius.circular(w * 0.06),
+      topRight: Radius.circular(w * 0.06),
+    );
+    canvas.drawRRect(handle, Paint()..color = _lighter(darker));
+
+    final wheelPaint = Paint()..color = const Color(0xFF2A2F2B);
+    canvas.drawCircle(Offset(w * 0.34, h * 0.86), w * 0.10, wheelPaint);
+    canvas.drawCircle(Offset(w * 0.66, h * 0.86), w * 0.10, wheelPaint);
+    final hubPaint = Paint()..color = const Color(0xFF545C56);
+    canvas.drawCircle(Offset(w * 0.34, h * 0.86), w * 0.035, hubPaint);
+    canvas.drawCircle(Offset(w * 0.66, h * 0.86), w * 0.035, hubPaint);
+
+    canvas.restore();
+  }
+
+  Color _lighter(Color c) => Color.lerp(c, const Color(0xFFFFFFFF), 0.42)!;
+
+  void _drawFeatheredEllipse(
+    Canvas canvas, {
+    required Offset center,
+    required double rx,
+    required double ry,
+    required Color color,
+  }) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(1.0, ry / rx);
+    canvas.translate(-center.dx, -center.dy);
+    final rr = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: center, width: rx * 2, height: rx * 2),
+      Radius.circular(rx),
+    );
+    canvas.drawRRect(
+      rr,
+      Paint()
+        ..color = color
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_WheelieBinPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.progress != progress;
 }
