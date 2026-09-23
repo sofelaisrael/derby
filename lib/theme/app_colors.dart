@@ -5,21 +5,21 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  static const primary = Color(0xFF1E293B);
-  static const primaryLight = Color(0xFFE2E8F0);
-  static const accent = Color(0xFF6366F1);
+  static const primary = Color(0xFF1F3D2B);
+  static const primaryLight = Color(0xFFE3EBE2);
+  static const accent = Color(0xFFA9714B);
 
-  static const background = Color(0xFFF8FAFC);
-  static const surface = Color(0xFFFAFBFC);
+  static const background = Color(0xFFF6F3EC);
+  static const surface = Color(0xFFF6F3EC);
   static const surfaceElevated = Color(0xFFFFFFFF);
-  static const surfaceTinted = Color(0xFFEEF2F7);
+  static const surfaceTinted = Color(0xFFEFEAE0);
 
-  static const textPrimary = Color(0xFF0F172A);
-  static const textSecondary = Color(0xFF475569);
-  static const textMuted = Color(0xFF64748B);
+  static const textPrimary = Color(0xFF1C2620);
+  static const textSecondary = Color(0xFF4A564C);
+  static const textMuted = Color(0xFF7A8478);
 
-  static const border = Color(0xFFE2E8F0);
-  static const borderLight = Color(0xFFEDF2F7);
+  static const border = Color(0xFFE4DFD3);
+  static const borderLight = Color(0xFFECE7DC);
 
   static const greenBin = Color(0xFF10B981);
   static const blueBin = Color(0xFF3B82F6);
@@ -30,13 +30,13 @@ class AppColors {
   static const warning = Color(0xFFD97706);
   static const error = Color(0xFFDC2626);
 
-  static const calendarToday = Color(0xFF1E293B);
-  static const calendarDisabled = Color(0xFFF1F5F9);
-  static const calendarCollection = Color(0xFFE2E8F0);
+  static const calendarToday = Color(0xFF1F3D2B);
+  static const calendarDisabled = Color(0xFFEFEAE0);
+  static const calendarCollection = Color(0xFFE3EBE2);
 
   static const textHint = textMuted;
   static const card = surfaceElevated;
-  static const shadow = Color.fromRGBO(15, 23, 42, .06);
+  static const shadow = Color.fromRGBO(20, 33, 26, 0.06);
   static const bg = background;
   static const ink = textPrimary;
   static const inkSoft = textSecondary;
@@ -57,24 +57,24 @@ class AppColorsDark {
 
   // Accent indigo — reserved for buttons, links, selections and highlights,
   // never the page substrate itself.
-  static const primary = Color(0xFF818CF8);
-  static const primaryLight = Color(0xFF1E1B4B);
-  static const accent = Color(0xFFA5B4FC);
+  static const primary = Color(0xFF7FA98C);
+  static const primaryLight = Color(0xFF22332A);
+  static const accent = Color(0xFFC08A5E);
 
   // Neutral near-black surfaces, matching how mainstream apps handle dark
   // mode: a near-black page with subtle outlined elevations. The brand indigo
   // is no longer the base tint.
-  static const background = Color(0xFF0F1115);
-  static const surface = Color(0xFF161A20);
-  static const surfaceElevated = Color(0xFF1C2129);
-  static const surfaceTinted = Color(0xFF232933);
+  static const background = Color(0xFF121A16);
+  static const surface = Color(0xFF161F1A);
+  static const surfaceElevated = Color(0xFF1B2620);
+  static const surfaceTinted = Color(0xFF202B24);
 
-  static const textPrimary = Color(0xFFECF0F5);
-  static const textSecondary = Color(0xFFB7C0CC);
-  static const textMuted = Color(0xFF808B99);
+  static const textPrimary = Color(0xFFECF0E8);
+  static const textSecondary = Color(0xFFB7C0B4);
+  static const textMuted = Color(0xFF808B80);
 
-  static const border = Color(0xFF2D333D);
-  static const borderLight = Color(0xFF272D36);
+  static const border = Color(0xFF2A352D);
+  static const borderLight = Color(0xFF253028);
 
   static const greenBin = Color(0xFF34D399);
   static const blueBin = Color(0xFF60A5FA);
@@ -85,9 +85,9 @@ class AppColorsDark {
   static const warning = Color(0xFFFBBF24);
   static const error = Color(0xFFF87171);
 
-  static const calendarToday = Color(0xFF818CF8);
-  static const calendarDisabled = Color(0xFF1D2129);
-  static const calendarCollection = Color(0xFF1E1B4B);
+  static const calendarToday = Color(0xFF7FA98C);
+  static const calendarDisabled = Color(0xFF1B2620);
+  static const calendarCollection = Color(0xFF22332A);
 
   static const textHint = textMuted;
   static const card = surfaceElevated;

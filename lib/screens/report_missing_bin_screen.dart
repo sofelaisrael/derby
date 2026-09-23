@@ -3,6 +3,7 @@ import '../services/report_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/banded_gradient.dart';
 
 class ReportMissingBinScreen extends StatefulWidget {
   final String postcode;
@@ -113,13 +114,7 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
                         color: colors.surfaceElevated,
                         borderRadius:
                             BorderRadius.circular(AppSpacing.radiusMd),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadow,
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        border: Border.all(color: colors.border),
                       ),
                       child: Icon(Icons.arrow_back_ios_new,
                           size: 18, color: colors.textMuted),
@@ -151,19 +146,8 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1E293B), Color(0xFF4338CA)],
-                ),
+                gradient: forestBandedGradient(dark: false),
                 borderRadius: BorderRadius.circular(36),
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primary.withValues(alpha: 0.25),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
               ),
               child: Icon(Icons.check, size: 34, color: Colors.white),
             ),
@@ -206,13 +190,7 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
               decoration: BoxDecoration(
                 color: colors.surfaceElevated,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+                border: Border.all(color: colors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,11 +199,7 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF1E293B), Color(0xFF4338CA)],
-                      ),
+                      gradient: forestBandedGradient(dark: false),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(Icons.report_problem_outlined,
@@ -301,16 +275,6 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
                           : colors.surfaceElevated,
                       borderRadius:
                           BorderRadius.circular(AppSpacing.radiusMd),
-                      boxShadow: selected
-                          ? [
-                              BoxShadow(
-                                color: colors.primary
-                                    .withValues(alpha: 0.25),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : null,
                     ),
                     child: Text(
                       type,

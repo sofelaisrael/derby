@@ -5,17 +5,20 @@ import '../widgets/bin_swatch.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import 'banded_gradient.dart';
 
 class UpcomingTile extends StatelessWidget {
   final DateTime date;
   final List<BinCollection> collections;
   final String councilSlug;
+  final DateTime? now;
 
   const UpcomingTile({
     super.key,
     required this.date,
     required this.collections,
     this.councilSlug = 'derby',
+    this.now,
   });
 
   String _relativeLabel(DateTime today) {
@@ -30,34 +33,27 @@ class UpcomingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeColors = context.binColors;
+    final chipBase = collections.isNotEmpty
+        ? CouncilScheme.resolve(councilSlug, collections.first.stream)
+            .themed(context)
+        : themeColors.primary;
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
         color: themeColors.surfaceElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: themeColors.borderLight),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ── Date chip ─────────────────────────
             Container(
               width: 52,
               height: 56,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1E293B), Color(0xFF4338CA)],
-                ),
+                gradient: binBandedGradient(chipBase),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Column(
@@ -86,7 +82,6 @@ class UpcomingTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.md),
-            // ── Bins + relative date ───────────────
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +103,7 @@ class UpcomingTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _relativeLabel(DateTime.now()),
+                    _relativeLabel(now ?? DateTime.now()),
                     style: AppTypography.caption.copyWith(
                       color: themeColors.primary,
                       fontWeight: FontWeight.w700,

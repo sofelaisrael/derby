@@ -5,6 +5,7 @@ import '../widgets/bin_swatch.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import 'banded_gradient.dart';
 
 class TodayBanner extends StatelessWidget {
   final List<BinCollection> collections;
@@ -97,7 +98,6 @@ class HeroCollectionCard extends StatelessWidget {
     this.councilSlug = 'derby',
   });
 
-  /// Splits "3 Days" into a large number + small unit for editorial type.
   ({String? number, String label}) _splitDisplay() {
     final match = RegExp(r'^(\d+) Days$').firstMatch(display);
     if (match != null) {
@@ -108,135 +108,118 @@ class HeroCollectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.binColors;
     final reduce = MediaQuery.of(context).disableAnimations;
     final animDuration = reduce ? Duration.zero : const Duration(milliseconds: 700);
     final curve = reduce ? Curves.linear : Curves.easeOutCubic;
-    const textColor = Colors.white;
-    final mutedColor = Colors.white.withValues(alpha: 0.72);
     final split = _splitDisplay();
+
+    final stripBase = collections.isNotEmpty
+        ? CouncilScheme.resolve(councilSlug, collections.first.stream)
+            .themed(context)
+        : colors.primary;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1E293B), Color(0xFF4338CA)],
-          ),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.28),
-              blurRadius: 28,
-              offset: const Offset(0, 14),
-            ),
-          ],
+          color: colors.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(color: colors.borderLight),
         ),
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Soft radial glow, top-right ─────────────
-            Positioned(
-              top: -60,
-              right: -40,
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.white.withValues(alpha: 0.14),
-                      Colors.white.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
+            Container(
+              height: 10,
+              decoration: BoxDecoration(
+                gradient: binBandedGradient(stripBase),
               ),
             ),
-            // ── Ambient highlight, bottom ───────────
-            Positioned(
-              left: -20,
-              bottom: -40,
-              child: Container(
-                width: 180,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.white.withValues(alpha: 0.08),
-                      Colors.white.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // ── Translucent bin icon watermark ──────
-            if (collections.isNotEmpty)
-              Positioned(
-                right: -6,
-                bottom: -12,
-                child: Opacity(
-                  opacity: 0.12,
-                  child: Icon(
-                    Icons.recycling_outlined,
-                    size: 96,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-
             Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Bin chips ─────────────────────────
-                  if (binLabel.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: colors.primaryLight,
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                        ),
+                        child: Icon(
+                          collections.isNotEmpty
+                              ? CouncilScheme.resolve(
+                                      councilSlug, collections.first.stream)
+                                  .icon
+                              : Icons.recycling_outlined,
+                          size: 20,
+                          color: colors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          binLabel.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (collections.length > 1) ...[
+                    const SizedBox(height: AppSpacing.md),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                          for (final c in collections)
-                            Builder(builder: (context) {
-                              final p =
-                                  CouncilScheme.resolve(councilSlug, c.stream);
-                              final fg = binForeground(p.themed(context));
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: p.themed(context),
-                                  borderRadius:
-                                      BorderRadius.circular(AppSpacing.radiusSm),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(p.icon, size: 12, color: fg),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      p.label.toUpperCase(),
-                                      style: TextStyle(
-                                        color: fg,
-                                        letterSpacing: 1.1,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                        for (final c in collections)
+                          Builder(builder: (context) {
+                            final p =
+                                CouncilScheme.resolve(councilSlug, c.stream);
+                            final t = p.themed(context);
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: t.withValues(alpha: 0.12),
+                                borderRadius:
+                                    BorderRadius.circular(AppSpacing.radiusSm),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(p.icon, size: 12, color: t),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    p.label.toUpperCase(),
+                                    style: TextStyle(
+                                      color: colors.textPrimary,
+                                      letterSpacing: 1.1,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
                                     ),
-                                  ],
-                                ),
-                              );
-                            }),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.xl),
                   ],
-
-                  // ── Countdown ────────────────────────
+                  const SizedBox(height: AppSpacing.xl),
                   AnimatedSwitcher(
                     duration: animDuration,
                     switchInCurve: curve,
@@ -261,11 +244,11 @@ class HeroCollectionCard extends StatelessWidget {
                           Text(
                             split.number!,
                             style: TextStyle(
-                              fontSize: 60,
-                              height: 0.9,
+                              fontSize: 40,
+                              height: 1.0,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: -2,
-                              color: textColor,
+                              letterSpacing: -1,
+                              color: colors.textPrimary,
                               fontFeatures: const [
                                 FontFeature.tabularFigures(),
                               ],
@@ -273,25 +256,25 @@ class HeroCollectionCard extends StatelessWidget {
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Text(
-                            'Days',
+                            split.label.toUpperCase(),
                             style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.4,
-                              color: mutedColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                              color: colors.textSecondary,
                             ),
                           ),
                         ] else
                           FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
-                              split.label,
+                              split.label.toUpperCase(),
                               style: TextStyle(
-                                fontSize: split.label.length > 8 ? 28 : 36,
+                                fontSize: split.label.length > 8 ? 28 : 40,
                                 height: 1.0,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -1,
-                                color: textColor,
+                                color: colors.textPrimary,
                               ),
                             ),
                           ),
@@ -303,39 +286,11 @@ class HeroCollectionCard extends StatelessWidget {
                     Text(
                       subtitle!,
                       style: AppTypography.body.copyWith(
-                        color: mutedColor,
+                        color: colors.textMuted,
                         fontSize: 14,
                       ),
                     ),
                   ],
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // ── Meta + progress ──────────────────
-                  Row(
-                    children: [
-                      Icon(Icons.access_time, size: 14, color: mutedColor),
-                      const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        'Before 7:00 AM',
-                        style: AppTypography.caption.copyWith(color: mutedColor),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0, end: progress),
-                      duration: animDuration,
-                      curve: curve,
-                      builder: (context, value, _) => LinearProgressIndicator(
-                        value: value,
-                        backgroundColor: Colors.white.withValues(alpha: 0.16),
-                        valueColor: AlwaysStoppedAnimation(textColor),
-                        minHeight: 5,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),

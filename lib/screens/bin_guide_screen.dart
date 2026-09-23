@@ -58,13 +58,7 @@ class _BinGuideScreenState extends State<BinGuideScreen> {
                         color: colors.surfaceElevated,
                         borderRadius:
                             BorderRadius.circular(AppSpacing.radiusMd),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadow,
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        border: Border.all(color: colors.borderLight),
                       ),
                       child: Icon(Icons.arrow_back_ios_new,
                           size: 18, color: colors.textMuted),
@@ -161,13 +155,7 @@ class _BinSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        border: Border.all(color: colors.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

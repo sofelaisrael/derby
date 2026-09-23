@@ -82,95 +82,94 @@ class _SettingsTabState extends State<SettingsTab> {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (ctx) => Container(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-          decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF1E1E2E)
-                : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: SafeArea(
-            top: false,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
+        builder: (ctx) {
+          final sheetColors = ctx.binColors;
+          final dark = Theme.of(ctx).brightness == Brightness.dark;
+          return Container(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+            decoration: BoxDecoration(
+              color: dark
+                  ? AppColorsDark.surfaceElevated
+                  : sheetColors.surfaceElevated,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppSpacing.radiusLg),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: sheetColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ),
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : const Color(0xFFEEF2F7),
-                    shape: BoxShape.circle,
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: sheetColors.primaryLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.notifications_active_outlined,
+                      size: 28,
+                      color: sheetColors.primary,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.notifications_active_outlined,
-                    size: 28,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white70
-                        : const Color(0xFF6366F1),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Bin day reminders',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: sheetColors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Bin day reminders',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : const Color(0xFF1A1A2E),
+                  const SizedBox(height: 8),
+                  Text(
+                    'A reminder the evening before each collection and a heads-up on the morning. You can turn this off anytime.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.4,
+                      color: sheetColors.textSecondary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'A reminder the evening before each collection and a heads-up on the morning. You can turn this off anytime.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.4,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white60
-                        : const Color(0xFF6B7280),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: FilledButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white.withValues(alpha: 0.9)
-                          : const Color(0xFF6366F1),
-                      foregroundColor: Theme.of(context).brightness == Brightness.dark
-                          ? const Color(0xFF1A1A2E)
-                          : Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: dark
+                            ? Colors.white.withValues(alpha: 0.9)
+                            : sheetColors.primary,
+                        foregroundColor:
+                            dark ? sheetColors.textPrimary : Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusMd),
+                        ),
+                      ),
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ),
-                    child: const Text(
-                      'Continue',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       );
       // Always show system dialog after custom explanation.
       final granted = await NotificationService.requestPermissions();
@@ -210,20 +209,33 @@ class _SettingsTabState extends State<SettingsTab> {
     final openSettings = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('On-time reminders'),
-        content: const Text(
+        backgroundColor: context.binColors.surfaceElevated,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: context.binColors.border),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
+        title: Text('On-time reminders',
+            style: AppTypography.title
+                .copyWith(color: context.binColors.textPrimary)),
+        content: Text(
           'Exact alarms are currently off for DerbyBins, so reminders may '
           'be delayed in low-power modes. Allow "Alarms & reminders" in '
           'system settings for on-time alerts.',
+          style: AppTypography.body
+              .copyWith(color: context.binColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text("Don't ask again"),
+            child: Text("Don't ask again",
+                style: AppTypography.body
+                    .copyWith(color: context.binColors.textSecondary)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Open settings'),
+            child: Text('Open settings',
+                style: AppTypography.body
+                    .copyWith(color: context.binColors.primary)),
           ),
         ],
       ),
@@ -502,51 +514,54 @@ class _SettingsTabState extends State<SettingsTab> {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 18, offset: Offset(0, 6))],
               ),
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    title: Text('Enable reminders',
-                        style: AppTypography.title),
-                    subtitle: Text(
-                      "A reminder the evening before and a heads-up on the morning",
-                      style: AppTypography.caption,
-                    ),
-                    value: _remindersEnabled,
-                    activeTrackColor:
-                        context.binColors.primary.withValues(alpha: 0.3),
-                    activeThumbColor: context.binColors.primary,
-                    onChanged: _toggleReminder,
-                  ),
-                  Divider(height: 1, color: context.binColors.borderLight),
-                  if (!Platform.isIOS)
-                    ListTile(
-                      title: Text('Keep reminders reliable',
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: Text('Enable reminders',
                           style: AppTypography.title),
                       subtitle: Text(
-                        _batteryOptimized == null
-                            ? 'Check battery optimisation'
-                            : _batteryOptimized!
-                                ? 'Battery optimisation is off — reminders can run in the background.'
-                                : 'Allow DerbyBins to run in the background so reminders fire even after you swipe the app away.',
+                        "A reminder the evening before and a heads-up on the morning",
                         style: AppTypography.caption,
                       ),
-                      trailing: Icon(
-                        Icons.battery_saver,
-                        size: 20,
-                        color: _batteryOptimized == true
-                            ? context.binColors.primary
-                            : context.binColors.textMuted,
-                      ),
-                      onTap: () async {
-                        await NotificationService.openBatterySettings();
-                        final updated =
-                            await NotificationService.isIgnoringBatteryOptimizations();
-                        if (mounted) {
-                          setState(() => _batteryOptimized = updated);
-                        }
-                      },
+                      value: _remindersEnabled,
+                      activeTrackColor:
+                          context.binColors.primary.withValues(alpha: 0.3),
+                      activeThumbColor: context.binColors.primary,
+                      onChanged: _toggleReminder,
                     ),
-                ],
+                    Divider(height: 1, color: context.binColors.borderLight),
+                    if (!Platform.isIOS)
+                      ListTile(
+                        title: Text('Keep reminders reliable',
+                            style: AppTypography.title),
+                        subtitle: Text(
+                          _batteryOptimized == null
+                              ? 'Check battery optimisation'
+                              : _batteryOptimized!
+                                  ? 'Battery optimisation is off — reminders can run in the background.'
+                                  : 'Allow DerbyBins to run in the background so reminders fire even after you swipe the app away.',
+                          style: AppTypography.caption,
+                        ),
+                        trailing: Icon(
+                          Icons.battery_saver,
+                          size: 20,
+                          color: _batteryOptimized == true
+                              ? context.binColors.primary
+                              : context.binColors.textMuted,
+                        ),
+                        onTap: () async {
+                          await NotificationService.openBatterySettings();
+                          final updated =
+                              await NotificationService.isIgnoringBatteryOptimizations();
+                          if (mounted) {
+                            setState(() => _batteryOptimized = updated);
+                          }
+                        },
+                      ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -560,24 +575,27 @@ class _SettingsTabState extends State<SettingsTab> {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 18, offset: Offset(0, 6))],
               ),
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    title: Text('Dark mode',
-                        style: AppTypography.title),
-                    subtitle: Text(
-                      'Easier on the eyes at night',
-                      style: AppTypography.caption,
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: Text('Dark mode',
+                          style: AppTypography.title),
+                      subtitle: Text(
+                        'Easier on the eyes at night',
+                        style: AppTypography.caption,
+                      ),
+                      value: widget.themeService?.isDark ?? false,
+                      activeTrackColor:
+                          context.binColors.primary.withValues(alpha: 0.3),
+                      activeThumbColor: context.binColors.primary,
+                      onChanged: widget.themeService != null
+                          ? (_) => widget.themeService!.toggle()
+                          : null,
                     ),
-                    value: widget.themeService?.isDark ?? false,
-                    activeTrackColor:
-                        context.binColors.primary.withValues(alpha: 0.3),
-                    activeThumbColor: context.binColors.primary,
-                    onChanged: widget.themeService != null
-                        ? (_) => widget.themeService!.toggle()
-                        : null,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -591,40 +609,43 @@ class _SettingsTabState extends State<SettingsTab> {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 18, offset: Offset(0, 6))],
               ),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: context.binColors.background,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.report_problem_outlined,
-                          size: 18, color: context.binColors.textMuted),
-                    ),
-                    title: Text('Report a problem',
-                        style: AppTypography.title),
-                    subtitle: Text(
-                      'Missing bin, wrong collection, or damaged bin',
-                      style: AppTypography.caption,
-                    ),
-                    trailing: Icon(Icons.chevron_right,
-                        size: 18, color: context.binColors.textMuted),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ReportMissingBinScreen(
-                            postcode: widget.postcode,
-                            councilName: widget.councilName,
-                            addressLabel: widget.addressLabel,
-                          ),
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: context.binColors.background,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                      );
-                    },
-                  ),
-                ],
+                        child: Icon(Icons.report_problem_outlined,
+                            size: 18, color: context.binColors.textMuted),
+                      ),
+                      title: Text('Report a problem',
+                          style: AppTypography.title),
+                      subtitle: Text(
+                        'Missing bin, wrong collection, or damaged bin',
+                        style: AppTypography.caption,
+                      ),
+                      trailing: Icon(Icons.chevron_right,
+                          size: 18, color: context.binColors.textMuted),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ReportMissingBinScreen(
+                              postcode: widget.postcode,
+                              councilName: widget.councilName,
+                              addressLabel: widget.addressLabel,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -639,78 +660,81 @@ class _SettingsTabState extends State<SettingsTab> {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 18, offset: Offset(0, 6))],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(appName, style: AppTypography.title),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text('Bin collection schedule',
-                      style: AppTypography.caption),
-                  const SizedBox(height: AppSpacing.md),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: context.binColors.background,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    ),
-                    child: Text(
-                      supportedCouncilsText,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.binColors.textMuted,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  if (councilWebsite != null) ...[
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(appName, style: AppTypography.title),
                     const SizedBox(height: AppSpacing.xs),
-                    GestureDetector(
-                      onTap: () async {
-                        final opened = await launchUrl(
-                          Uri.parse(councilWebsite),
-                          mode: LaunchMode.externalApplication,
-                        );
-                        if (!opened && mounted) {
-                          _showSnack('Could not open the council website.');
-                        }
-                      },
+                    Text('Bin collection schedule',
+                        style: AppTypography.caption),
+                    const SizedBox(height: AppSpacing.md),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: context.binColors.background,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      ),
                       child: Text(
-                        councilWebsite.replaceFirst('https://www.', ''),
+                        supportedCouncilsText,
                         textAlign: TextAlign.center,
-                        style: AppTypography.caption.copyWith(
-                          color: context.binColors.primary,
-                          fontWeight: FontWeight.w700,
-                          decoration: TextDecoration.underline,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.binColors.textMuted,
+                          height: 1.4,
                         ),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: AppSpacing.sm),
+                    if (councilWebsite != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      GestureDetector(
+                        onTap: () async {
+                          final opened = await launchUrl(
+                            Uri.parse(councilWebsite),
+                            mode: LaunchMode.externalApplication,
+                          );
+                          if (!opened && mounted) {
+                            _showSnack('Could not open the council website.');
+                          }
+                        },
+                        child: Text(
+                          councilWebsite.replaceFirst('https://www.', ''),
+                          textAlign: TextAlign.center,
+                          style: AppTypography.caption.copyWith(
+                            color: context.binColors.primary,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                    ],
+                    Text(
+                      'Not affiliated with or endorsed by any council.',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.caption.copyWith(
+                        color: context.binColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Privacy policy',
+                          style: AppTypography.title),
+                      subtitle: const Text(
+                        'How your data is handled',
+                        style: AppTypography.caption,
+                      ),
+                      trailing: Icon(Icons.open_in_new,
+                          size: 16, color: context.binColors.textMuted),
+                      onTap: _openPrivacyPolicy,
+                    ),
                   ],
-                  Text(
-                    'Not affiliated with or endorsed by any council.',
-                    textAlign: TextAlign.center,
-                    style: AppTypography.caption.copyWith(
-                      color: context.binColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  const Divider(height: 1),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Privacy policy',
-                        style: AppTypography.title),
-                    subtitle: const Text(
-                      'How your data is handled',
-                      style: AppTypography.caption,
-                    ),
-                    trailing: Icon(Icons.open_in_new,
-                        size: 16, color: context.binColors.textMuted),
-                    onTap: _openPrivacyPolicy,
-                  ),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),

@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/banded_gradient.dart';
 import 'calendar_screen.dart';
 import 'address_picker_screen.dart';
 
@@ -105,6 +106,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
             color: context.binColors.surfaceElevated,
             borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppSpacing.radiusXl)),
+            border: Border.all(color: context.binColors.border),
           ),
           child: Column(
             children: [
@@ -184,8 +186,11 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
+        backgroundColor: context.binColors.surfaceElevated,
         shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+          side: BorderSide(color: context.binColors.border),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -202,10 +207,14 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                     color: context.binColors.error, size: 24),
               ),
               const SizedBox(height: AppSpacing.md),
-              const Text('Oops', style: AppTypography.h2),
+              Text('Oops',
+                  style: AppTypography.h2
+                      .copyWith(color: context.binColors.textPrimary)),
               const SizedBox(height: AppSpacing.sm),
               Text(message,
-                  style: AppTypography.body, textAlign: TextAlign.center),
+                  style: AppTypography.body.copyWith(
+                      color: context.binColors.textSecondary),
+                  textAlign: TextAlign.center),
               const SizedBox(height: AppSpacing.lg),
               SizedBox(
                 width: double.infinity,
@@ -225,6 +234,111 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Shown when a postcode lookup finds no addresses. Lets the user enter a
+  /// UPRN instead (needed for councils without an address lookup, e.g. North
+  /// East Derbyshire). Returns the entered UPRN, or null if cancelled.
+  Future<String?> _showUprnFallback(CouncilInfo council, String rawPostcode) {
+    final controller = TextEditingController();
+    String? error;
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          backgroundColor: context.binColors.surfaceElevated,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: context.binColors.border),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: context.binColors.primaryLight,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Icon(Icons.home_work_outlined,
+                      color: context.binColors.primary, size: 24),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text('Address not found',
+                    style: AppTypography.h2
+                        .copyWith(color: context.binColors.textPrimary)),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'We couldn\u2019t find any addresses for that postcode in '
+                  '${council.name}. Enter your UPRN to continue, or check the '
+                  'postcode and try a different council.',
+                  style: AppTypography.body
+                      .copyWith(color: context.binColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    hintText: 'e.g. 100023456789',
+                    errorText: error,
+                    prefixIcon: const Icon(Icons.tag, size: 18),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextButton.icon(
+                  onPressed: () async {
+                    final clean = normalizePostcode(rawPostcode);
+                    final opened = await launchUrl(
+                      Uri.parse('https://uprn.uk/postcode/$clean'),
+                      mode: LaunchMode.externalApplication,
+                    );
+                    if (!opened && ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(content: Text('Could not open uprn.uk.')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('Find my UPRN on uprn.uk'),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final uprn = controller.text.trim();
+                          if (uprn.isEmpty) {
+                            setDialogState(() => error = 'Enter your UPRN');
+                            return;
+                          }
+                          Navigator.of(ctx).pop(uprn);
+                        },
+                        child: const Text('Continue'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -253,8 +367,31 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
           councilSlug: council.slug, councilName: council.name);
       if (result is ResolveUncovered) {
         if (mounted) {
-          _showError('We couldn\u2019t find any addresses for that '
-              'postcode in ${council.name}. Check the postcode or try a different council.');
+          final uprn = await _showUprnFallback(council, raw);
+          if (uprn == null || !mounted) return;
+          final r2 = await resolvePostcode(raw,
+              uprn: uprn,
+              councilSlug: council.slug,
+              councilName: council.name);
+          if (r2 is ResolveReady) {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => CalendarScreen(
+                  postcode: r2.postcode,
+                  councilSlug: council.slug,
+                  councilName: council.name,
+                  uprn: uprn,
+                  addressLabel: 'UPRN: $uprn',
+                ),
+              ),
+            );
+            return;
+          }
+          if (r2 is ResolveNoData) {
+            _showError('Couldn\u2019t load a schedule for that UPRN. '
+                'Check it and try again.');
+            return;
+          }
         }
         return;
       }
@@ -396,31 +533,15 @@ class _Hero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final colors = context.binColors;
-    final gradientColors = dark
-        ? const [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF3730A3)]
-        : const [Color(0xFF1E1B4B), Color(0xFF312E81), Color(0xFF4338CA)];
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradientColors,
-          stops: const [0.0, 0.55, 1.0],
-        ),
+        gradient: forestBandedGradient(dark: dark),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppSpacing.radiusXl),
           bottomRight: Radius.circular(AppSpacing.radiusXl),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: colors.primary.withValues(alpha: 0.22),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
-        ],
       ),
       padding: EdgeInsets.fromLTRB(
         AppSpacing.xl,
@@ -601,11 +722,11 @@ class _BinCircles extends StatelessWidget {
                   color: bins[i].color,
                   border:
                       Border.all(color: Colors.white.withValues(alpha: 0.85), width: 2),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                      color: Colors.black26,
+                      color: context.binColors.textMuted.withValues(alpha: 0.35),
                       blurRadius: 8,
-                      offset: Offset(0, 3),
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -654,7 +775,6 @@ class _FormCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.binColors;
-    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Opacity(
       opacity: opacity,
@@ -669,16 +789,8 @@ class _FormCard extends StatelessWidget {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 decoration: BoxDecoration(
                   color: colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                  boxShadow: [
-                    BoxShadow(
-                      color: dark
-                          ? colors.primaryLight.withValues(alpha: 0.22)
-                          : colors.primary.withValues(alpha: 0.18),
-                      blurRadius: 28,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  border: Border.all(color: colors.border),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -915,13 +1027,6 @@ class _SubmitButtonState extends State<_SubmitButton> {
             decoration: BoxDecoration(
               color: colors.primary,
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              boxShadow: [
-                BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.22),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
-                ),
-              ],
             ),
             child: widget.loading
                 ? Row(

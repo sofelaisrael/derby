@@ -171,13 +171,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         decoration: BoxDecoration(
           color: context.binColors.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.container),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          border: Border.all(color: context.binColors.border),
         ),
         padding: const EdgeInsets.all(Spacing.xxl),
         child: Column(
@@ -206,13 +200,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         decoration: BoxDecoration(
           color: context.binColors.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.container),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          border: Border.all(color: context.binColors.border),
         ),
         padding: const EdgeInsets.all(Spacing.xxl),
         child: Column(
@@ -277,13 +265,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         decoration: BoxDecoration(
           color: context.binColors.surfaceElevated,
           borderRadius: BorderRadius.circular(AppRadius.container),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          border: Border.all(color: context.binColors.border),
         ),
         padding: const EdgeInsets.all(Spacing.xxl),
         child: Column(

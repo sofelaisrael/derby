@@ -13,10 +13,10 @@ class AppSpacing {
   static const double page = 24;
 
   // Radii
-  static const double radiusSm = 12;
-  static const double radiusMd = 16;
-  static const double radiusLg = 20;
-  static const double radiusXl = 24;
+  static const double radiusSm = 8;
+  static const double radiusMd = 12;
+  static const double radiusLg = 16;
+  static const double radiusXl = 20;
   static const double radiusFull = 999;
 
   // Legacy aliases

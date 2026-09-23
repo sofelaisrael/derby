@@ -304,3 +304,192 @@ Body: srchText={postcode}
 
 ### Git commits
 - 3722ed9 Fix Amber Valley address lookup (GET instead of POST) + Bolsover calendar A/B selection
+
+## Cycle 14 - Copy Mansfield Flutter app into Derby, adapt for Derbyshire
+
+### What happened
+- User asked to copy the complete tested Mansfield Flutter app into the Derby project and adapt it (9 councils, food stream instead of glass, Derby branding, Derby proxy API)
+- Destination: Derby project root `C:\Users\PROGRESSIVE\Documents\Israel\derby\` (NOT derby\flutter_app — empty leftover dir). Package `derby_bins`, applicationId `uk.co.derbybins.derby_bins`
+- Copied lib/ (36 files), test/ (5), assets/fonts (5 TTFs), assets/illustrations (3 SVGs), assets/icon/, third_party/add_2_calendar (18)
+- Fixed Copy-Item nesting mistake (lib\lib, test\test → moved up one level)
+- Bulk import rewrite `package:mansfield_bin_app/` → `package:derby_bins/` (13 files)
+
+### Adaptation edits (implementer, all applied)
+- pubspec.yaml rewritten: derby_bins, Mansfield deps, Plus Jakarta Sans, launcher icons (app_icon_master.png + app_icon_fg.png, bg #1E293B)
+- bin_schedule.dart: WasteStream { general, recycling, garden, food } (no glass)
+- bin_scheme.dart: 9 same-scheme councils, Derby palette (general slate/Black bin, recycling blue/Blue bin, garden green/Green bin, food amber/Food caddy), Icons.restaurant
+- council_api.dart: proxyBaseUrl http://localhost:3000, User-Agent DerbyBins/1.0, /api/bins + /api/addresses paths
+- app_colors.dart: charcoal 0xFF1E293B / indigo 0xFF6366F1 brand
+- weather_service.dart: 9 Derby council coords, fallback [52.9219, -1.4756]
+- main.dart: appName DerbyBins
+- tests adapted
+
+### Final branding sweep (cycle 14b, implementer)
+- app_theme.dart: full light+dark ColorScheme green → charcoal/indigo (16 light + 19 dark mappings)
+- onboarding/postcode/report screens + upcoming_tile/hero_card/kerb_line widgets: green gradients → [0xFF1E293B, 0xFF4338CA]
+- settings_tab.dart: privacy URL → https://derbybins.web.app/privacy
+- notification_service.dart: MethodChannel nottsbins/battery → derbybins/battery
+- **Copied ic_notification.png from Mansfield android res (5 densities)** — Derby res had NO notification icon; notification_service references 'ic_notification' (build-critical)
+- test/bin_scheme_test.dart: removed WasteStream.glass assertions (enum no longer has glass — was a compile error)
+- Final grep sweep lib/ test/ android/ pubspec.yaml: clean (0 hits for notts/mansfield/nottinghamshire/glass/green hexes)
+
+### Blocked
+- **No Flutter/Dart toolchain on this machine** (no E: drive, no flutter.bat/dart.exe, not on PATH — verified twice). Cannot run pub get / analyze / test here
+- Verification must run on the Flutter machine: `E:\develop\flutter\bin\flutter.bat pub get` → `dart.bat analyze lib test` → `flutter.bat test` in C:\Users\PROGRESSIVE\Documents\Israel\derby
+
+### Next
+1. Run flutter pub get + dart analyze + flutter test on Flutter machine (all 42+ tests must pass)
+2. pubspec.lock will refresh on pub get (still references old deps)
+
+## Cycle 15 - VERIFIED: all 61 tests pass on Flutter machine
+
+### What happened
+- Flutter became available at E:\develop\flutter\bin\flutter.bat (user installed / E: drive now present)
+- `flutter pub get` ✅ — 48 deps changed; flutter_local_notifications 17.2.4→18.0.1, share_plus 7.2.2→13.3.0 (major bumps, no API breakage)
+- `dart analyze lib test` ✅ — 0 errors; 4 warnings (unused import calendar_screen.dart:13, dead null-aware weather_card.dart:118, dead code notification_service_test.dart:501/503 — pre-existing Mansfield patterns) + ~87 prefer_const style infos
+- `flutter test` — 1st run: 60 pass / 1 FAIL (`resolvePostcode never throws for a valid Derby postcode`)
+
+### Root cause of the failure
+- Derby council_api.dart had `proxyBaseUrl = 'http://localhost:3000'` (my dev spec) — no local proxy running → ScheduleError('NETWORK') thrown
+- Mansfield's app pointed at its LIVE proxy (https://mansfield-phi.vercel.app) — that's why its integration test passed
+- Probed live Derby proxy: derby-d6e5.onrender.com is ALIVE but serves `/bins`, `/addresses`, `/report` (NO /api prefix — root endpoint confirms: {"endpoints":["/bins","/addresses","/report"]}). App already builds `$proxyBaseUrl/bins` paths, so only the base URL was wrong
+- Verified live: GET /bins?council=derby&postcode=DE1 1AA → 200, 1 address (Derby Delivery Office, Midland Road)
+
+### Fix
+- council_api.dart line 25: `proxyBaseUrl = 'http://localhost:3000'` → `'https://derby-d6e5.onrender.com'` (matches Mansfield pattern; report_service.dart inherits it for /report)
+
+### Result
+- `flutter test` re-run: **ALL 61 TESTS PASSED** ✅ (bin_scheme 8, nav 53, schedule_service 7, notification_service, widget tests)
+- pubspec.lock refreshed on pub get
+
+### Remaining (optional)
+- 4 analyze warnings + ~87 prefer_const infos (cosmetic, pre-existing from Mansfield)
+- `flutter build apk` not run (needs Android SDK; tests already compile all lib/ code)
+
+## Cycle 16 - Pushed to GitHub for user testing
+
+- Commit `6534452` "Adapt Mansfield app for Derby - 9 councils, Derby branding, live proxy URL" — 83 files, +10744/-3982
+- Pushed to origin/main (sofelaisrael/derby): 74e6ffe..6534452
+- Added Flutter gitignore entries (.dart_tool/, build/, .flutter-plugins-dependencies, generated plugin registrants) — were missing; generated dirs never tracked
+- ooda-log intentionally left out of the commit (working memory)
+- User to test: run app, check onboarding → council picker (9 Derby councils) → postcode → address → home
+
+## Cycle 17 - Chesterfield S40 4AA: root cause found + fixed
+
+### What happened
+- User: "S404AA DOESN'T LOAD BIN SCHEDUES THO" — investigated via agent-browser against the REAL Chesterfield site + raw Aura API
+- **Root cause: timezone bug.** Aura API returns `nextInstance.currentScheduledDate` as `T23:00:00.000Z` = midnight UK local (BST summer = UTC+1). Driver formatted with `getFullYear/getMonth/getDate` in Render's UTC tz → every date off by one day. Verified: `2026-09-23T23:00:00.000Z` → London 24/09/2026 Thu (site: "Thursday 24 September"); `2026-09-30T23:00:00.000Z` → London 01/10/2026 Thu (site: "Thursday 1 October"). `lastInstance` (`05:30:00Z`) does not shift the day.
+- **Commercial/trade UPRNs genuinely have NO data** — real site shows empty table too (LWC `c-cbc_-ve_-collection-dates-for-address` shadow DOM, only `<tr class="spacer">`). Verified: 74061829 (36 Clarence Rd), 74089653 (Goldwell Manor), 74089623/74089637 (Jubilee House flats), 74085930 (nursery, 1 commercial date), 100032180503 (Goldhill House, 1 commercial date). Proxy returning 0/1 streams for these MATCHES the site — not a bug.
+- 74061085 (2 Ashgate Rd): site shows only "General waste (commercial) Wed 23→30 Sep" (skips communal refuse with next=none). API `2026-09-29T23:00:00.000Z` = 30 Sep London. Driver skips next=none schedules — consistent with site.
+- Site shows LAST + NEXT columns; proxy returns only nextCollections (fine for app model). Minor: commercial collections labeled "Domestic Refuse" via hardcoded stream map — misleading, low priority.
+
+### Fix (implementer, commit 58f370f, pushed)
+- chesterfield.js `formatDate()` → `Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London' }).formatToParts` → YYYY-MM-DD
+- `dayOfWeek` → London weekday via `Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'short' })`, map Sun=7, Mon=1…Sat=6
+- Only chesterfield.js touched; zero comments
+
+### Verified live on Render after auto-deploy
+- 74079299 (1A Ashgate Rd): general 2026-09-24 d4, recycling 2026-10-01 d4, food 2026-09-24 d4 — matches site exactly
+- 74061085: 2026-09-30 d3 (Wed) — matches site
+- 74089623 (Jubilee flat): [] — matches site's empty table
+
+### Leftover uncommitted (NOT part of this fix, from earlier session)
+- lib/screens/postcode_input_screen.dart + test/nav_test.dart — UPRN fallback dialog for NE Derbyshire (no address lookup). Untested here (no Flutter on PATH in this shell; E:\develop\flutter\bin\flutter.bat exists per Cycle 15). Left uncommitted.
+
+### Next
+1. Codemagic APK build still unverified after 74e6ffe — rebuild to confirm green
+2. REPORT_SCRIPT_URL env var not set → /report 503
+3. Auto-detect picks wrong council (Bolsover returns data for all UPRNs)
+
+## Cycle 18 - User supersedes "street at dusk": Derbyshire = clean modern household companion
+
+### What happened
+- User rejected the "street at dusk" charcoal/indigo concept. New direction (explicit, decisive):
+  - Derbyshire = "clean, modern household companion" — NOT a Notts Bins clone, NOT "same app different logo" (council-family strategy; more council versions planned after)
+  - Home screen: card/dashboard driven, NOT hero-driven: "Good morning" greeting → "Your schedule" → big collection card (RECYCLING / TOMORROW / 24 September) → "UP NEXT" list (General 27 Sep, Garden 30 Sep) → "View calendar →" link
+  - Calendar = MAJOR part of the identity
+  - Visual language: off-white/cream background, dark green/forest, muted earth tones, sharper cards / less floating UI, subtle line illustrations, more whitespace
+  - Notts (current app) = indigo, slate, warm gradients, rounded friendly cards, bin colours as accents — Derbyshire must differ
+  - Start with App Store/Play Store screenshots AND home screen together — visual system distinctive even from the store listing
+- Antislop mode decided: **1 = DURING** (user answered "1")
+- Flutter confirmed at `E:\develop\flutter\bin\flutter.bat` (Test-Path True) — earlier "missing" belief corrected
+- Re-read current design files: bin_scheme.dart (bin colours: general slate 0xFF64748B, recycling blue 0xFF3B82F6, garden green 0xFF10B981, food amber 0xFFF59E0B), upcoming_tile.dart (date chip 52x56 charcoal→indigo gradient, radiusMd 16, shadow blur 12), app_theme.dart (manual ColorScheme, primary 0xFF1E293B, secondary 0xFF6366F1, card radiusLg 20, buttons radiusMd 16)
+
+### Decision points for user (presented in revised plan)
+1. Banded gradient ("tones" hard ask from earlier): keep technique but rebuild in forest/earth tones (not 4 bin colours) — proposed as the big collection card's accent strip + calendar header. Alternative: drop entirely for sharper look.
+2. Palette hexes: proposed cream bg 0xFFF6F3EC, forest primary 0xFF1F3D2B, clay accent 0xFFA9714B, sage secondary 0xFF7C8B6F, ink 0xFF1C2620, hairline border 0xFFE4DFD3. Bin colours stay as functional data accents.
+3. Store screenshots: golden-test harness rendering real screens at store dims (1290x2796 / 1080x1920) → PNGs. Honest real screens, not mockups.
+
+### Next
+- Await user go/adjust on the 3 decision points, then delegate: theme tokens → home dashboard → calendar identity → onboarding → screenshot harness
+
+## Cycle 19 - Milestone 1 implemented + verified (user approved all 3 decision points)
+
+### What happened
+- User approved: (1) banded gradient in forest/earth tones, (2) palette hexes (cream #F6F3EC, forest #1F3D2B, clay #A9714B, sage #7C8B6F, ink #1C2620, border #E4DFD3), (3) golden-test screenshot harness. Flutter confirmed on E: drive (E:\develop\flutter\bin\flutter.bat).
+- Implementer delivered milestone 1: design tokens (app_colors/app_theme/spacing), NEW banded_gradient.dart (sharp-stop tones + binTones + forestBandedGradient), home dashboard (greeting, Your schedule, big collection card with banded strip, UP NEXT, View calendar link), NEW calendar_view_screen.dart (banded forest header, export/share moved from home), screenshot harness test/store_screenshots_test.dart.
+
+### Verified
+- flutter analyze: 82 → 77 issues, ZERO new (77 pre-existing in untouched files)
+- flutter test: 65 passed / 1 failed — the failure is nav_test.dart UPRN-fallback, PROVEN pre-existing via git-stash experiment (stashed only redesign files, test failed identically at line 160 on pre-redesign code; stash popped clean)
+- 4 goldens generated: test/store_screenshots/{home,calendar}_{iphone,android}.png (44.7/44.3/25.3/25.2 KB)
+- Pixel-sampled PNGs (model can't view images): home = cream #F6F3EC bg + white cards ✓; calendar = forest banded header #2F5D43 + cream body + recycling-blue #3B82F6 collection marker ✓
+- Reviewer: APPROVE. Countdown logic byte-identical to HEAD, calendar math identical, gradient stops valid (2N entries monotonic), now-threading consistent, dark mode consistent, no old-palette hexes in changed files, no comments added.
+
+### Minor non-blocking (reviewer notes)
+- binForeground still uses old slate 0xFF1F2937 (pre-existing, renders on TodayBanner)
+- Dark-mode button: white text on sage primary #7FA98C ~2.6:1 (pre-existing pattern, slightly worse than before)
+- hero_card progress param + calculateProgress now dead code; home_page/hero_card missing trailing newline
+- Stale comment in app_colors.dart:58-59 ("Accent indigo") now misleading
+
+### Leftover uncommitted (unchanged)
+- postcode_input_screen.dart + nav_test.dart UPRN fallback — pre-existing failing test, out of scope
+
+### Next
+1. Milestone 2: onboarding redesign (banded sky + KerbLine line illustration, cream bg, Skip/Back kept) + remaining store screenshots (onboarding, reminders, bin guide)
+2. Milestone 3: Codemagic rebuild to confirm green APK
+3. Optional: fix dark-mode button contrast, remove dead code, fix stale comment
+
+## Cycle 20 - Milestone 2 complete: onboarding redesign + 6 new store screenshots
+
+### What happened
+- Delegated M2 (onboarding restyle + screenshot harness extension) to implementer. First two task calls failed (provider error, then cancelled) — retried, succeeded.
+- Implementer found M2 work ALREADY in working tree (a prior cancelled run had completed it). Audited against brief line-by-line instead of re-implementing; only change: added `const` to BorderRadius.vertical in reminder bottom sheet (fixed 2 prefer_const_constructors infos).
+- User asked to "check the e drive now" — verified E:\develop\flutter\bin\flutter.bat exists, Flutter 3.44.6 stable (Dart 3.12.2). Toolchain intact.
+
+### What worked
+- Onboarding: _brandGradient indigo → forestBandedGradient(dark: isDark); kickers → clay 0xFFA9714B/0xFFC08A5E; step 0 UndrawArt → KerbLine (4 bin colors, highlightedIndex: 1 recycling, progress = CurvedAnimation Interval(0.14,0.40) on existing controller, showDots, size 240); steps 1-2 → custom calendar/reminder card art; bottom sheet restyled (surfaceElevated, hairline border, radiusLg, clay accent). Logic byte-identical (3 steps, Skip/Back, CTA labels, _enableReminders flow, AnimatedSwitcher, staggered entrances).
+- bin_guide_screen: 2 shadow→hairline-border swaps. settings_tab: 4 Material(type: transparency) wraps (correct ListTile ink fix) + reminder sheet restyle.
+- Screenshot harness: 6 new goldens (onboarding/reminders/binguide × iphone/android). 10 PNGs total. 4 stale goldens regenerated (6.59%/7.02%/0.37%/0.40% diffs); other 6 byte-identical.
+- Verified: analyze 75 (baseline 77, zero new — 2 fewer); tests 71 pass / 1 fail (nav_test pre-existing, untouched). schedule_service_test flaky once (live network, passed in isolation + final run).
+- Pixel-sampled new PNGs: onboarding = cream bg + forest banded sky #2F5D43/#306052 in art panel; reminders = cream + white cards; binguide = cream + white cards + #EFEAE0 tinted strip. Palette exact.
+- Reviewer APPROVE. Nitpicks (non-blocking): (1) reminder art header band uses amber 0xFFF59E0B while card says "Recycling tomorrow" (blue bin) — minor mismatch; (2) steps 1-2 art no longer animate in (static); (3) test/failures/ holds stale failure images, not gitignored — delete or gitignore before commit.
+
+### Known issues
+- nav_test.dart UPRN failure pre-existing (proven via stash experiment, Cycle 19).
+- test/failures/ stale dir — housekeeping before any commit.
+- M1+M2 changes still UNCOMMITTED (user reviews first).
+- M3 (Codemagic rebuild) pending — needs user trigger or token.
+
+## Cycle 21 - M3 complete: entry/report/error flows restyled (user caught under-scoping)
+
+### What happened
+- User challenged M2 completion: "are u sure thats all? what about where we report? the popups? not just colors and small changes... the error message popup... the address picker screen..."
+- User was RIGHT — M2 only covered home/calendar/onboarding/bin-guide/settings. Audit found old indigo/charcoal still in: postcode_input_screen.dart (_Hero gradient 522-524, Colors.black26 728, dialogs 184/240), report_missing_bin_screen.dart (157/227), report_missing_address_screen.dart (315), address_picker_screen.dart (shadow cards), calendar_screen.dart (loading/error/coverage shadow cards), centered_dialog.dart (hardcoded radius 16, no theme), settings_tab.dart battery dialog (209-211).
+- Delegated M3: restyle all 7 files to design system (forestBandedGradient hero, hairline borders, themed dialogs). Logic byte-identical.
+
+### What worked
+- postcode _Hero: indigo gradient → forestBandedGradient(dark:), heavy shadow removed; _BinCircles Colors.black26 → textMuted alpha; _FormCard shadow → hairline border + radiusXl→radiusLg; _showError/_showUprnFallback dialogs themed (surfaceElevated, hairline border, radiusLg); council sheet hairline border; _SubmitButton flat.
+- address_picker: Change pill + address cards shadow → hairline border.
+- report screens: indigo gradients → forestBandedGradient(dark:false); shadow cards → hairline borders; chip selected shadow removed.
+- calendar_screen: 3 state cards shadow → hairline border.
+- centered_dialog: surfaceElevated bg, radiusLg + hairline border, themed text (textPrimary — BinColors has NO ink field; AppColors.ink is static only, correct substitution). 3s auto-dismiss preserved.
+- settings_tab: battery dialog only (rest of file out of scope; retains 7 AppColors.shadow uses in reminder/section cards — flagged as possible follow-up).
+- Verified: analyze 57 (baseline 75 — restyle removed 18 stale issues, zero new); tests 71 pass / 1 fail (nav_test pre-existing; schedule_service_test flaky once on live network); grep zero old hexes in lib/.
+- Reviewer APPROVE: logic intact all 7 files, no old hexes, zero new comments. Notes: postcode:377 use_build_context_synchronously pre-existing; UPRN fallback silent no-op edge pre-existing; centered_dialog relative imports cosmetic; report screens hardcode dark:false (per brief).
+
+### Known issues
+- nav_test.dart UPRN failure pre-existing (proven Cycle 19).
+- settings_tab 7 AppColors.shadow uses remain (out of M3 scope) — convert if user wants full hairline consistency.
+- M1+M2+M3 all UNCOMMITTED. test/failures/ stale dir not gitignored — delete before commit.
+- M4 (Codemagic rebuild) pending — needs user trigger or token.

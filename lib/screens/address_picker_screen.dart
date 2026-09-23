@@ -61,13 +61,7 @@ class AddressPickerScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: colors.surfaceElevated,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadow,
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        border: Border.all(color: colors.border),
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: Spacing.md, vertical: Spacing.sm),
@@ -109,13 +103,7 @@ class AddressPickerScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: colors.surfaceElevated,
                         borderRadius: BorderRadius.circular(AppRadius.container),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadow,
-                            blurRadius: 16,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
+                        border: Border.all(color: colors.border),
                       ),
                       child: Material(
                         color: Colors.transparent,

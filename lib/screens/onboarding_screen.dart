@@ -5,16 +5,16 @@ import 'package:derby_bins/services/notification_service.dart';
 import 'package:derby_bins/services/onboarding_store.dart';
 import 'package:derby_bins/services/reminder_store.dart';
 import 'package:derby_bins/services/theme_service.dart';
+import '../models/bin_schedule.dart';
 import '../services/bin_scheme.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
-import '../widgets/undraw_art.dart';
+import '../widgets/banded_gradient.dart';
+import '../widgets/kerb_line.dart';
 
-const _brandGradient = [Color(0xFF1E293B), Color(0xFF4338CA)];
-
-const _kickerLight = Color(0xFF6366F1);
-const _kickerDark = Color(0xFFA5B4FC);
+const _kickerLight = Color(0xFFA9714B);
+const _kickerDark = Color(0xFFC08A5E);
 
 double _seg(Animation<double> c, double a, double b,
     [Curve curve = Curves.easeOutCubic]) {
@@ -64,95 +64,92 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF1E1E2E)
-              : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) {
+        final sheetColors = ctx.binColors;
+        final dark = Theme.of(ctx).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          decoration: BoxDecoration(
+            color: dark
+                ? AppColorsDark.surfaceElevated
+                : sheetColors.surfaceElevated,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSpacing.radiusLg),
+            ),
+            border: Border.all(color: sheetColors.border),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: sheetColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : const Color(0xFFEEF2F7),
-                  shape: BoxShape.circle,
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: sheetColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.notifications_active_outlined,
+                    size: 28,
+                    color: sheetColors.primary,
+                  ),
                 ),
-                child: Icon(
-                  Icons.notifications_active_outlined,
-                  size: 28,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white70
-                      : const Color(0xFF6366F1),
+                const SizedBox(height: 16),
+                Text(
+                  'Bin day reminders',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: sheetColors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Bin day reminders',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : const Color(0xFF1A1A2E),
+                const SizedBox(height: 8),
+                Text(
+                  'Get a reminder the evening before each collection and a heads-up on the morning. Local to your device, off anytime in Settings.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: sheetColors.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Get a reminder the evening before each collection and a heads-up on the morning. Local to your device, off anytime in Settings.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white60
-                      : const Color(0xFF6B7280),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white.withValues(alpha: 0.9)
-                        : const Color(0xFF6366F1),
-                    foregroundColor: Theme.of(context).brightness == Brightness.dark
-                        ? const Color(0xFF1A1A2E)
-                        : Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: sheetColors.accent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusMd),
+                      ),
+                    ),
+                    child: const Text(
+                      'Continue',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
     // Always show system dialog after custom explanation -- do not branch on Not Now.
     var granted = await NotificationService.notificationsPermissionGranted();
@@ -303,10 +300,8 @@ class _TopBar extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: _brandGradient,
+                gradient: forestBandedGradient(
+                  dark: Theme.of(context).brightness == Brightness.dark,
                 ),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
@@ -400,13 +395,7 @@ class _RoundButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.surfaceElevated,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-          boxShadow: const [
-            BoxShadow(
-              color: AppColors.shadow,
-              blurRadius: 12,
-              offset: Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: colors.borderLight),
         ),
         child: Icon(icon, size: iconSize, color: colors.textPrimary),
       ),
@@ -499,13 +488,6 @@ class _StepPageState extends State<_StepPage>
       children: [
         Center(
           child: _StagePanel(
-            tint: dark
-                ? colors.surface
-                : const [
-                    Color(0xFFEEF2F7),
-                    Color(0xFFE0E7FF),
-                    Color(0xFFE2E8F0),
-                  ][widget.step],
             height: widget.artHeight,
             artBuilder: _buildArt,
           ),
@@ -555,42 +537,289 @@ class _StepPageState extends State<_StepPage>
   Widget _buildArt(double w) {
     switch (widget.step) {
       case 0:
+        final streams = CouncilScheme.streamsFor('derby');
+        final binColors = [
+          for (final s in streams)
+            CouncilScheme.resolve('derby', s).themed(context),
+        ];
         return SizedBox(
           width: w,
           height: widget.artHeight,
-          child: UndrawArt(
-            asset: 'assets/illustrations/onboarding_step0.svg',
-            progress: CurvedAnimation(
-              parent: _controller,
-              curve: const Interval(0.14, 0.40, curve: Curves.easeOutCubic),
+          child: Center(
+            child: KerbLine(
+              colors: binColors,
+              highlightedIndex: streams.indexOf(WasteStream.recycling),
+              progress: CurvedAnimation(
+                parent: _controller,
+                curve: const Interval(0.14, 0.40, curve: Curves.easeOutCubic),
+              ),
+              showDots: true,
+              size: Size(240, widget.artHeight),
             ),
           ),
         );
       case 1:
-        return SizedBox(
-          width: w,
-          height: widget.artHeight,
-          child: UndrawArt(
-            asset: 'assets/illustrations/onboarding_calendar.svg',
-            progress: CurvedAnimation(
-              parent: _controller,
-              curve: const Interval(0.16, 0.40, curve: Curves.easeOutCubic),
-            ),
-          ),
-        );
+        return _buildCalendarArt(w);
       default:
-        return SizedBox(
-          width: w,
-          height: widget.artHeight,
-          child: UndrawArt(
-            asset: 'assets/illustrations/onboarding_notification.svg',
-            progress: CurvedAnimation(
-              parent: _controller,
-              curve: const Interval(0.20, 0.50, curve: Curves.easeOutCubic),
+        return _buildReminderArt(w);
+    }
+  }
+
+  Widget _buildCalendarArt(double w) {
+    final colors = context.binColors;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final streams = CouncilScheme.streamsFor('derby');
+    final binColors = [
+      for (final s in streams)
+        CouncilScheme.resolve('derby', s).themed(context),
+    ];
+    return SizedBox(
+      width: w,
+      height: widget.artHeight,
+      child: Center(
+        child: Container(
+          width: math.min(w * 0.72, 240),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(color: colors.borderLight),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  gradient: forestBandedGradient(dark: dark),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.chevron_left_rounded,
+                        size: 14, color: colors.textMuted),
+                    Expanded(
+                      child: Text(
+                        'September',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded,
+                        size: 14, color: colors.textMuted),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        for (final d in const ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                d,
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    for (var r = 0; r < 3; r++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            for (var c = 0; c < 7; c++)
+                              Expanded(
+                                child: _calendarDayCell(
+                                  r * 7 + c + 1,
+                                  chip: _chipForDay(r * 7 + c + 1, binColors),
+                                  today: r * 7 + c + 1 == 10,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _calendarDayCell(int day, {Color? chip, bool today = false}) {
+    final colors = context.binColors;
+    final Widget content;
+    if (today) {
+      content = Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          color: colors.primary,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '$day',
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      );
+    } else if (chip != null) {
+      content = Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          gradient: binBandedGradient(chip),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '$day',
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      );
+    } else {
+      content = SizedBox(
+        width: 20,
+        height: 20,
+        child: Center(
+          child: Text(
+            '$day',
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: colors.textMuted,
             ),
           ),
-        );
+        ),
+      );
     }
+    return Center(child: content);
+  }
+
+  Color? _chipForDay(int day, List<Color> binColors) {
+    switch (day) {
+      case 3:
+        return binColors[1];
+      case 6:
+        return binColors[0];
+      case 12:
+        return binColors[3];
+      case 17:
+        return binColors[2];
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildReminderArt(double w) {
+    final colors = context.binColors;
+    return SizedBox(
+      width: w,
+      height: widget.artHeight,
+      child: Center(
+        child: Container(
+          width: math.min(w * 0.72, 240),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: colors.surfaceElevated,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(color: colors.borderLight),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  gradient: binBandedGradient(const Color(0xFFF59E0B)),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: colors.primaryLight,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.notifications_active_outlined,
+                        size: 20,
+                        color: colors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Recycling tomorrow',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '24 September',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colors.primaryLight,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      ),
+                      child: Text(
+                        'Reminder set',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: colors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   List<Widget> _buildChildren(BinColors colors, bool dark) {
@@ -681,13 +910,7 @@ class _FeatureCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 16,
-            offset: Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: colors.borderLight),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -738,13 +961,7 @@ class _BinPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceElevated,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 10,
-            offset: Offset(0, 3),
-          ),
-        ],
+        border: Border.all(color: colors.borderLight),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -775,51 +992,32 @@ class _BinPill extends StatelessWidget {
 // â”€â”€â”€ Stage panel behind the art â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _StagePanel extends StatelessWidget {
-  final Color tint;
   final double height;
   final Widget Function(double width) artBuilder;
 
   const _StagePanel({
-    required this.tint,
     required this.height,
     required this.artBuilder,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.binColors;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       height: height,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: tint,
+        gradient: forestBandedGradient(dark: dark),
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: const Alignment(0, -0.35),
-                radius: 1.0,
-                colors: [
-                  colors.primaryLight.withValues(alpha: 0.5),
-                  colors.primaryLight.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          ),
-          Center(
-            child: LayoutBuilder(
-              builder: (context, c) {
-                final w = math.min(c.maxWidth, 360.0);
-                return SizedBox(width: w, child: artBuilder(w));
-              },
-            ),
-          ),
-        ],
+      child: Center(
+        child: LayoutBuilder(
+          builder: (context, c) {
+            final w = math.min(c.maxWidth, 360.0);
+            return SizedBox(width: w, child: artBuilder(w));
+          },
+        ),
       ),
     );
   }
@@ -1063,14 +1261,7 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: colors.primary,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: colors.primary.withValues(alpha: 0.22),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           ),
           child: widget.busy
               ? const SizedBox(

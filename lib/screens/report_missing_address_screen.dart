@@ -3,6 +3,7 @@ import '../services/report_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../widgets/banded_gradient.dart';
 
 class ReportMissingAddressScreen extends StatefulWidget {
   final String postcode;
@@ -121,13 +122,7 @@ class _ReportMissingAddressScreenState extends State<ReportMissingAddressScreen>
                         color: context.binColors.surfaceElevated,
                         borderRadius:
                             BorderRadius.circular(AppSpacing.radiusMd),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadow,
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        border: Border.all(color: context.binColors.border),
                       ),
                       child: Icon(Icons.arrow_back_ios_new,
                           size: 18, color: context.binColors.textMuted),
@@ -201,13 +196,7 @@ class _ReportMissingAddressScreenState extends State<ReportMissingAddressScreen>
               decoration: BoxDecoration(
                 color: context.binColors.surfaceElevated,
                 borderRadius: BorderRadius.circular(AppRadius.container),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+                border: Border.all(color: context.binColors.border),
               ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,11 +298,7 @@ class _HeaderMark extends StatelessWidget {
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1E293B), Color(0xFF4338CA)],
-        ),
+        gradient: forestBandedGradient(dark: false),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(icon, size: 24, color: Colors.white),

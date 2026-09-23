@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
+import '../theme/spacing.dart';
+import '../theme/typography.dart';
 
 void showCenteredPopup(BuildContext context, String message) {
   showDialog(
@@ -28,12 +31,16 @@ class _CenteredPopupState extends State<_CenteredPopup> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      backgroundColor: context.binColors.surfaceElevated,
       contentPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: context.binColors.border),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      ),
       content: Text(
         widget.message,
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+        style: AppTypography.body.copyWith(color: context.binColors.textPrimary),
       ),
     );
   }
