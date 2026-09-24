@@ -157,8 +157,13 @@ class NotificationService {
       // version exist. The app works without scheduled notifications.
     }
 
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    AndroidFlutterLocalNotificationsPlugin? android;
+    try {
+      android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+    } catch (_) {
+      android = null;
+    }
     if (android != null) {
       await android.createNotificationChannel(
         const AndroidNotificationChannel(
@@ -222,8 +227,13 @@ class NotificationService {
   /// prompt - never mimic Allow/Don't Allow or skip the system dialog.
   static Future<bool> requestPermissions() async {
     if (Platform.isAndroid) {
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      AndroidFlutterLocalNotificationsPlugin? android;
+      try {
+        android = _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+      } catch (_) {
+        android = null;
+      }
       if (android != null) {
         // Notifications prompt only. Exact-alarm access is escalated later in
         // Settings via the explainer dialog + openExactAlarmSettings(); until
@@ -252,8 +262,13 @@ class NotificationService {
   /// granted.
   static Future<bool> notificationsPermissionGranted() async {
     if (Platform.isAndroid) {
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      AndroidFlutterLocalNotificationsPlugin? android;
+      try {
+        android = _plugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+      } catch (_) {
+        return false;
+      }
       if (android == null) return false;
       try {
         return await android.areNotificationsEnabled() ?? false;
@@ -309,7 +324,7 @@ class NotificationService {
         ),
         _onFetch,
         _onFetchTimeout,
-      );
+      ).timeout(const Duration(seconds: 5));
       _fetchConfigured = true;
       debugPrint('[Notif] BackgroundFetch configured (15min, headless, '
           'forceAlarmManager)');
@@ -493,8 +508,13 @@ class NotificationService {
   /// Whether the device can schedule exact alarms (granted by default on
   /// Android <= 13; user-granted on Android 14+).
   static Future<bool> exactAlarmsAllowed() async {
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    AndroidFlutterLocalNotificationsPlugin? android;
+    try {
+      android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+    } catch (_) {
+      return false;
+    }
     if (android == null) return false;
     try {
       return await android.canScheduleExactNotifications() ?? false;
@@ -515,8 +535,13 @@ class NotificationService {
   /// Opens the system "Alarms & reminders" special-access page. Android-only.
   static Future<void> openExactAlarmSettings() async {
     if (!Platform.isAndroid) return;
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    AndroidFlutterLocalNotificationsPlugin? android;
+    try {
+      android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+    } catch (_) {
+      return;
+    }
     try {
       await android?.requestExactAlarmsPermission();
     } catch (_) {
