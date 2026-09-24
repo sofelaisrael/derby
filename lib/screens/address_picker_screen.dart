@@ -14,6 +14,7 @@ class AddressPickerScreen extends StatelessWidget {
   final String councilSlug;
   final String councilName;
   final List<CouncilAddress> addresses;
+  final bool isCalendar;
   final ThemeService? themeService;
   const AddressPickerScreen({
     super.key,
@@ -21,6 +22,7 @@ class AddressPickerScreen extends StatelessWidget {
     required this.councilSlug,
     required this.councilName,
     required this.addresses,
+    this.isCalendar = false,
     this.themeService,
   });
 
@@ -41,11 +43,16 @@ class AddressPickerScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Choose your address',
+                        Text(
+                            isCalendar
+                                ? 'Choose your calendar'
+                                : 'Choose your address',
                             style: AppText.h1),
                         const SizedBox(height: 2),
                         Text(
-                          '${addresses.length} addresses found Â· $postcode',
+                          isCalendar
+                              ? '2 calendars · $councilName'
+                              : '${addresses.length} addresses found Â· $postcode',
                           style: AppTypography.caption
                               .copyWith(color: colors.textSecondary),
                         ),
@@ -170,65 +177,67 @@ class AddressPickerScreen extends StatelessWidget {
                     );
                   }),
                   const SizedBox(height: Spacing.sm),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ReportMissingAddressScreen(
-                              postcode: postcode,
-                              councilSlug: councilSlug,
-                              councilName: councilName,
+                  if (!isCalendar)
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ReportMissingAddressScreen(
+                                postcode: postcode,
+                                councilSlug: councilSlug,
+                                councilName: councilName,
+                              ),
                             ),
+                          );
+                        },
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.container),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: Spacing.md, vertical: Spacing.lg),
+                          decoration: BoxDecoration(
+                            color: colors.surfaceTinted,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.container),
                           ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(AppRadius.container),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: Spacing.md, vertical: Spacing.lg),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceTinted,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.container),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: colors.surfaceElevated,
-                                borderRadius: BorderRadius.circular(12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceElevated,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(Icons.add_circle_outline,
+                                    size: 20, color: colors.primary),
                               ),
-                              child: Icon(Icons.add_circle_outline,
-                                  size: 20, color: colors.primary),
-                            ),
-                            const SizedBox(width: Spacing.md),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Text('My address isn\u2019t listed',
-                                      style: AppTypography.title.copyWith(
-                                          color: colors.textPrimary)),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Let us know and we\u2019ll work on adding it',
-                                    style: AppTypography.caption,
-                                  ),
-                                ],
+                              const SizedBox(width: Spacing.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text('My address isn\u2019t listed',
+                                        style: AppTypography.title.copyWith(
+                                            color: colors.textPrimary)),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Let us know and we\u2019ll work on adding it',
+                                      style: AppTypography.caption,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Icon(Icons.chevron_right,
-                                size: 18, color: colors.textMuted),
-                          ],
+                              Icon(Icons.chevron_right,
+                                  size: 18, color: colors.textMuted),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   const SizedBox(height: Spacing.xxl),
                 ],
               ),

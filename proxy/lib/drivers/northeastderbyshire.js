@@ -17,6 +17,18 @@ function determineArea(town) {
   return 'north';
 }
 
+function formatTownsForDisplay(towns) {
+  return towns
+    .map(t => {
+      let s = t;
+      let open = 0;
+      for (const ch of s) { if (ch === '(') open++; else if (ch === ')') open--; }
+      if (open > 0) s += ')'.repeat(open);
+      return s.replace(/(^|\s)([a-z])/g, (_, pre, ch) => pre + ch.toUpperCase());
+    })
+    .join(', ');
+}
+
 function stripTags(html) {
   return html.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -113,34 +125,44 @@ module.exports = {
   id: 'northeastderbyshire',
   slug: 'northeastderbyshire',
   name: 'North East Derbyshire District Council',
+  calendarBased: true,
 
   async lookupAddresses(postcode) {
-    const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
-    if (!normalized) return [];
-    return [];
+    return [
+      { uprn: 'calendar-a', label: `Calendar A - The North: ${formatTownsForDisplay(NORTH_TOWNS)}`, town: 'The North' },
+      { uprn: 'calendar-b', label: `Calendar B - The South: ${formatTownsForDisplay(SOUTH_TOWNS)}`, town: 'The South' },
+    ];
   },
 
   async getCollections(uprn, postcode) {
-    if (!postcode) return [];
+    const isCalendar = uprn === 'calendar-a' || uprn === 'calendar-b';
+    if (!postcode && !isCalendar) return [];
     try {
-      const normalized = postcode.trim().toUpperCase().replace(/\s+/g, '');
-      let town = '';
-      try {
-        const key = process.env.OS_API_KEY;
-        if (key) {
-          const { status, body } = await httpGet(
-            `https://api.os.uk/search/places/v1/postcode?postcode=${encodeURIComponent(normalized)}&key=${key}&output_srs=EPSG:4326`
-          );
-          if (status === 200) {
-            const data = JSON.parse(body);
-            if (data.results && data.results.length > 0 && data.results[0].DPA) {
-              town = data.results[0].DPA.TOWN_NAME || data.results[0].DPA.LOCALITY || '';
+      let area;
+      if (uprn === 'calendar-a') {
+        area = 'north';
+      } else if (uprn === 'calendar-b') {
+        area = 'south';
+      } else {
+        const normalized = postcode.trim().toUpperCase().replace(/\s+/g, '');
+        let town = '';
+        try {
+          const key = process.env.OS_API_KEY;
+          if (key) {
+            const { status, body } = await httpGet(
+              `https://api.os.uk/search/places/v1/postcode?postcode=${encodeURIComponent(normalized)}&key=${key}&output_srs=EPSG:4326`
+            );
+            if (status === 200) {
+              const data = JSON.parse(body);
+              if (data.results && data.results.length > 0 && data.results[0].DPA) {
+                town = data.results[0].DPA.TOWN_NAME || data.results[0].DPA.LOCALITY || '';
+              }
             }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
 
-      const area = determineArea(town);
+        area = determineArea(town);
+      }
 
       const r = await httpGet(PAGE_URL);
       if (r.status !== 200) return [];

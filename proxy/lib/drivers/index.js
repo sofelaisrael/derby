@@ -30,7 +30,12 @@ function getDriver(councilId) {
 }
 
 function listDrivers() {
-  return Object.values(drivers).map(d => ({ id: d.id, name: d.name, slug: d.slug }));
+  return Object.values(drivers).map(d => ({
+    id: d.id,
+    name: d.name,
+    slug: d.slug,
+    calendarBased: d.calendarBased || false,
+  }));
 }
 
 module.exports = { getDriver, listDrivers };

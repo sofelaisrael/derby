@@ -231,7 +231,9 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
-                            '${widget.addressLabel ?? 'Your address'}, ${widget.postcode} · ${widget.councilName}',
+                            widget.postcode.isEmpty
+                                ? '${widget.addressLabel ?? 'Your address'} · ${widget.councilName}'
+                                : '${widget.addressLabel ?? 'Your address'}, ${widget.postcode} · ${widget.councilName}',
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.caption.copyWith(

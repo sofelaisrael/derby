@@ -39,6 +39,14 @@ module.exports = async (req, res) => {
         return res.status(200).json({ council: { id: driver.id, name: driver.name }, addresses });
       }
 
+      // Calendar-based councils (e.g. Bolsover, North East Derbyshire) don't
+      // need a postcode: a council-only request returns the calendar options.
+      if (driver.calendarBased) {
+        const addresses = await driver.lookupAddresses('');
+        res.setHeader('Content-Type', 'application/json');
+        return res.status(200).json({ council: { id: driver.id, name: driver.name }, addresses });
+      }
+
       res.setHeader('Content-Type', 'application/json');
       return res.status(400).json({ error: 'Provide council + postcode or council + uprn' });
     } catch (e) {

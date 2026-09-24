@@ -24,12 +24,22 @@ async function run() {
       assert.ok(drivers.length >= 9, `expected >= 9, got ${drivers.length}`);
     });
 
-    it('each item has id, name, slug properties', () => {
+    it('each item has id, name, slug, calendarBased properties', () => {
       for (const d of drivers) {
         assert.ok(d.id, `missing id on ${JSON.stringify(d)}`);
         assert.ok(d.name, `missing name on ${JSON.stringify(d)}`);
         assert.ok(d.slug, `missing slug on ${JSON.stringify(d)}`);
+        assert.strictEqual(typeof d.calendarBased, 'boolean', `missing calendarBased on ${JSON.stringify(d)}`);
       }
+    });
+
+    it('bolsover and northeastderbyshire are calendar-based, others are not', () => {
+      const bol = drivers.find(d => d.slug === 'bolsover');
+      const ned = drivers.find(d => d.slug === 'northeastderbyshire');
+      const derby = drivers.find(d => d.slug === 'derby');
+      assert.strictEqual(bol.calendarBased, true);
+      assert.strictEqual(ned.calendarBased, true);
+      assert.strictEqual(derby.calendarBased, false);
     });
 
     it('derby is in the list', () => {
@@ -263,6 +273,18 @@ async function run() {
       assert.strictEqual(typeof bol.lookupAddresses, 'function');
       assert.strictEqual(typeof bol.getCollections, 'function');
     });
+
+    it('lookupAddresses("") returns the two calendar options', async () => {
+      const result = await bol.lookupAddresses('');
+      assert.strictEqual(result.length, 2);
+      assert.strictEqual(result[0].uprn, 'calendar-a');
+      assert.strictEqual(result[1].uprn, 'calendar-b');
+    });
+
+    it('lookupAddresses(null) returns the two calendar options', async () => {
+      const result = await bol.lookupAddresses(null);
+      assert.strictEqual(result.length, 2);
+    });
   });
 
   describe('Chesterfield driver', () => {
@@ -329,19 +351,25 @@ async function run() {
       assert.deepStrictEqual(result, []);
     });
 
-    it('lookupAddresses("") returns []', async () => {
+    it('lookupAddresses("") returns the two calendar options', async () => {
       const result = await ned.lookupAddresses('');
-      assert.deepStrictEqual(result, []);
+      assert.strictEqual(result.length, 2);
+      assert.strictEqual(result[0].uprn, 'calendar-a');
+      assert.ok(result[0].label.startsWith('Calendar A - The North:'), `expected north label prefix, got: ${result[0].label}`);
+      assert.ok(result[0].label.includes('Dronfield'), `expected north label to include Dronfield, got: ${result[0].label}`);
+      assert.strictEqual(result[1].uprn, 'calendar-b');
+      assert.ok(result[1].label.startsWith('Calendar B - The South:'), `expected south label prefix, got: ${result[1].label}`);
+      assert.ok(result[1].label.includes('Clay Cross'), `expected south label to include Clay Cross, got: ${result[1].label}`);
     });
 
-    it('lookupAddresses(null) returns []', async () => {
+    it('lookupAddresses(null) returns the two calendar options', async () => {
       const result = await ned.lookupAddresses(null);
-      assert.deepStrictEqual(result, []);
+      assert.strictEqual(result.length, 2);
     });
 
-    it('lookupAddresses("   ") returns []', async () => {
+    it('lookupAddresses("   ") returns the two calendar options', async () => {
       const result = await ned.lookupAddresses('   ');
-      assert.deepStrictEqual(result, []);
+      assert.strictEqual(result.length, 2);
     });
   });
 
@@ -381,6 +409,29 @@ async function run() {
       const res = mockRes();
       await handler(req, res);
       assert.strictEqual(res._status, 400);
+    });
+
+    await itAsync('calendar-based council without postcode returns calendar options', async () => {
+      drivers.getDriver = () => ({
+        id: 'bolsover',
+        name: 'Bolsover District Council',
+        calendarBased: true,
+        lookupAddresses: async () => [
+          { uprn: 'calendar-a', label: 'Calendar A' },
+          { uprn: 'calendar-b', label: 'Calendar B' },
+        ],
+        getCollections: async () => [],
+      });
+
+      const req = { method: 'GET', query: { council: 'bolsover' } };
+      const res = mockRes();
+      await handler(req, res);
+      assert.strictEqual(res._status, 200);
+      assert.ok(Array.isArray(res._body.addresses), 'addresses should be an array');
+      assert.strictEqual(res._body.addresses.length, 2);
+      assert.strictEqual(res._body.addresses[0].uprn, 'calendar-a');
+
+      drivers.getDriver = origGet;
     });
 
     await itAsync('postcode query with mock driver returns addresses', async () => {

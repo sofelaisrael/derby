@@ -103,10 +103,9 @@ module.exports = {
   id: 'bolsover',
   slug: 'bolsover',
   name: 'Bolsover District Council',
+  calendarBased: true,
 
   async lookupAddresses(postcode) {
-    const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
-    if (!normalized) return [];
     return [
       { uprn: 'calendar-a', label: 'Calendar A - Bolsover, Clowne, Shuttlewood, Stanfree, Barlborough, Whitwell, Creswell, Langwith, Hodthorpe, Whaley Thorns, Upper Langwith' },
       { uprn: 'calendar-b', label: 'Calendar B - Shirebrook, Tibshelf, Blackwell, South Normanton, Pinxton, Glapwell, Pleasley, New Houghton, Doe Lea, Bramley Vale, Westhouses, Hilcote, Newton, Stoney Houghton, Langwith Junction' },

@@ -172,7 +172,8 @@ Future<ResolveResult> resolvePostcode(String postcode,
     {bool force = false, String? uprn, String? addressLabel,
      String councilSlug = 'derby', String councilName = 'Derby City Council'}) async {
   final raw = postcode.trim();
-  if (!_ukPostcode.hasMatch(raw.toUpperCase())) {
+  final hasUprn = uprn != null && uprn.isNotEmpty;
+  if (!hasUprn && !_ukPostcode.hasMatch(raw.toUpperCase())) {
     throw ScheduleError('INVALID',
         "That doesn't look like a UK postcode. Try something like DE1 1AA.");
   }

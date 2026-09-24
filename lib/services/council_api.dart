@@ -7,7 +7,13 @@ class CouncilInfo {
   final String id;
   final String name;
   final String slug;
-  const CouncilInfo({required this.id, required this.name, required this.slug});
+  final bool calendarBased;
+  const CouncilInfo({
+    required this.id,
+    required this.name,
+    required this.slug,
+    this.calendarBased = false,
+  });
 }
 
 class CouncilAddress {
@@ -65,6 +71,21 @@ class CouncilApi {
     CouncilInfo(id: 'NEDDC', name: 'North East Derbyshire District Council', slug: 'northeastderbyshire'),
   ];
 
+  /// Slugs of councils that use a calendar-based (no postcode) flow. Applied
+  /// to the fallback council list when the proxy list is unavailable.
+  static const Set<String> _calendarBasedSlugs = {'bolsover', 'northeastderbyshire'};
+
+  static List<CouncilInfo> _applyCalendarFlags(List<CouncilInfo> councils) => [
+        for (final c in councils)
+          CouncilInfo(
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            calendarBased:
+                c.calendarBased || _calendarBasedSlugs.contains(c.slug),
+          ),
+      ];
+
   static const Map<String, String> _councilWebsites = {
     'derby': 'https://www.derby.gov.uk',
     'erewash': 'https://www.erewash.gov.uk',
@@ -84,9 +105,11 @@ class CouncilApi {
     try {
       final uri = Uri.parse('$proxyBaseUrl/bins');
       final res = await client.get(uri, headers: _headers).timeout(_timeout);
-      if (res.statusCode != 200) return _fallbackCouncils;
+      if (res.statusCode != 200) return _applyCalendarFlags(_fallbackCouncils);
       final decoded = jsonDecode(res.body);
-      if (decoded is! Map || decoded['councils'] is! List) return _fallbackCouncils;
+      if (decoded is! Map || decoded['councils'] is! List) {
+        return _applyCalendarFlags(_fallbackCouncils);
+      }
       final list = [
         for (final item in decoded['councils'])
           if (item is Map && item['slug'] != null && item['name'] != null)
@@ -94,11 +117,14 @@ class CouncilApi {
               id: item['id']?.toString() ?? '',
               name: item['name'].toString(),
               slug: item['slug'].toString(),
+              calendarBased: item['calendarBased'] == true,
             ),
       ];
-      return list.isNotEmpty ? list : _fallbackCouncils;
+      return list.isNotEmpty
+          ? _applyCalendarFlags(list)
+          : _applyCalendarFlags(_fallbackCouncils);
     } on Exception {
-      return _fallbackCouncils;
+      return _applyCalendarFlags(_fallbackCouncils);
     }
   }
 
