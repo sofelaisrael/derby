@@ -1,4 +1,4 @@
-﻿import '../main.dart';
+import '../main.dart';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
@@ -63,7 +63,8 @@ class _SettingsTabState extends State<SettingsTab> {
 
   Future<void> _loadReminders() async {
     final enabled = await ReminderStore.isEnabled();
-    final batteryOptimized = await NotificationService.isIgnoringBatteryOptimizations();
+    final batteryOptimized =
+        await NotificationService.isIgnoringBatteryOptimizations();
     if (mounted) {
       setState(() {
         _remindersEnabled = enabled;
@@ -193,9 +194,12 @@ class _SettingsTabState extends State<SettingsTab> {
         return;
       }
       await ReminderStore.setEnabled(true);
-      await NotificationService.scheduleReminders(widget.area, widget.councilSlug);
+      await NotificationService.scheduleReminders(
+          widget.area, widget.councilSlug);
       if (gen != _toggleGeneration) return;
-      if (mounted && Platform.isAndroid && !await NotificationService.exactAlarmsAllowed()) {
+      if (mounted &&
+          Platform.isAndroid &&
+          !await NotificationService.exactAlarmsAllowed()) {
         await _maybePromptExactAlarms();
       }
     } else {
@@ -262,488 +266,508 @@ class _SettingsTabState extends State<SettingsTab> {
     }
     final councilWebsite = CouncilApi.websiteFor(widget.councilSlug);
     return Scaffold(
-      body: ScreenBackground(child: SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.page),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: context.binColors.surfaceElevated,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMd),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.shadow,
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.arrow_back_ios_new,
-                      size: 18,
-                      color: context.binColors.textMuted,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Text('Settings', style: AppTypography.h1),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── Address ──────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: context.binColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                boxShadow: [
-                  BoxShadow(
-                      color: AppColors.shadow,
-                      blurRadius: 18,
-                      offset: Offset(0, 6))
-                ],
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: ScreenBackground(
+          child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.page),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: context.binColors.primaryLight,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(Icons.location_on_outlined,
-                        size: 20, color: context.binColors.primary),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Current address',
-                            style: AppTypography.caption),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          widget.addressLabel ?? widget.area.areaName,
-                          style: AppTypography.title,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(widget.postcode,
-                            style: AppTypography.caption),
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.business_outlined,
-                              size: 14,
-                              color: context.binColors.textMuted,
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Flexible(
-                              child: Text(widget.councilName,
-                                  style: AppTypography.caption,
-                                  overflow: TextOverflow.ellipsis),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: widget.isLive
-                                    ? context.binColors.primaryLight
-                                    : context.binColors.background,
-                                borderRadius:
-                                    BorderRadius.circular(AppSpacing.radiusSm),
-                              ),
-                              child: Text(
-                                widget.isLive ? 'Live' : 'Demo',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: widget.isLive
-                                      ? Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? Colors.white
-                                          : context.binColors.primary
-                                      : context.binColors.textMuted,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // ── Change address ───────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () => _changeAddress(context),
-                style: TextButton.styleFrom(
-                  backgroundColor: context.binColors.primaryLight,
-                  foregroundColor: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : context.binColors.primary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.radiusMd),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.edit_location_alt_outlined, size: 18),
-                    SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'Change address',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── Report an issue ─────────────────────
-            _SectionLabel('Bin schedules'),
-            const SizedBox(height: AppSpacing.sm),
-            ...widget.area.schedules.map((s) => Container(
-                  margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: context.binColors.surfaceElevated,
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.radiusMd),
-                    boxShadow: [
-                      BoxShadow(
-                          color: AppColors.shadow,
-                          blurRadius: 12,
-                          offset: Offset(0, 4))
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      BinBadge(
-                        presentation:
-                            CouncilScheme.resolve(widget.councilSlug, s.stream),
-                        size: 36,
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                                CouncilScheme.resolve(
-                                        widget.councilSlug, s.stream)
-                                    .label,
-                                style: AppTypography.title),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${weekdayNames[s.dayOfWeek - 1]} · ${frequencyLabel[s.frequency]}',
-                              style: AppTypography.caption,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                )),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── Bin guide ──────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const BinGuideScreen(),
-                    ),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: context.binColors.surfaceElevated,
-                  foregroundColor: context.binColors.textPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppSpacing.radiusMd),
-                    side: BorderSide.none,
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.recycling_outlined, size: 18),
-                    SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Bin guide',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── Reminders ────────────────────────────
-            _SectionLabel('Reminders'),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              decoration: BoxDecoration(
-                color: context.binColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 18, offset: Offset(0, 6))],
-              ),
-              child: Material(
-                type: MaterialType.transparency,
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: Text('Enable reminders',
-                          style: AppTypography.title),
-                      subtitle: Text(
-                        "A reminder the evening before and a heads-up on the morning",
-                        style: AppTypography.caption,
-                      ),
-                      value: _remindersEnabled,
-                      activeTrackColor:
-                          context.binColors.primary.withValues(alpha: 0.3),
-                      activeThumbColor: context.binColors.primary,
-                      onChanged: _toggleReminder,
-                    ),
-                    Divider(height: 1, color: context.binColors.borderLight),
-                    if (!Platform.isIOS)
-                      ListTile(
-                        title: Text('Keep reminders reliable',
-                            style: AppTypography.title),
-                        subtitle: Text(
-                          _batteryOptimized == null
-                              ? 'Check battery optimisation'
-                              : _batteryOptimized!
-                                  ? 'Battery optimisation is off — reminders can run in the background.'
-                                  : 'Allow DerbyBins to run in the background so reminders fire even after you swipe the app away.',
-                          style: AppTypography.caption,
-                        ),
-                        trailing: Icon(
-                          Icons.battery_saver,
-                          size: 20,
-                          color: _batteryOptimized == true
-                              ? context.binColors.primary
-                              : context.binColors.textMuted,
-                        ),
-                        onTap: () async {
-                          await NotificationService.openBatterySettings();
-                          final updated =
-                              await NotificationService.isIgnoringBatteryOptimizations();
-                          if (mounted) {
-                            setState(() => _batteryOptimized = updated);
-                          }
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── Appearance ──────────────────────────
-            _SectionLabel('Appearance'),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              decoration: BoxDecoration(
-                color: context.binColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 18, offset: Offset(0, 6))],
-              ),
-              child: Material(
-                type: MaterialType.transparency,
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: Text('Dark mode',
-                          style: AppTypography.title),
-                      subtitle: Text(
-                        'Easier on the eyes at night',
-                        style: AppTypography.caption,
-                      ),
-                      value: widget.themeService?.isDark ?? false,
-                      activeTrackColor:
-                          context.binColors.primary.withValues(alpha: 0.3),
-                      activeThumbColor: context.binColors.primary,
-                      onChanged: widget.themeService != null
-                          ? (_) => widget.themeService!.toggle()
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── Report an issue ─────────────────────
-            _SectionLabel('Report an issue'),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              decoration: BoxDecoration(
-                color: context.binColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 18, offset: Offset(0, 6))],
-              ),
-              child: Material(
-                type: MaterialType.transparency,
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: context.binColors.background,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.report_problem_outlined,
-                            size: 18, color: context.binColors.textMuted),
-                      ),
-                      title: Text('Report a problem',
-                          style: AppTypography.title),
-                      subtitle: Text(
-                        'Missing bin, wrong collection, or damaged bin',
-                        style: AppTypography.caption,
-                      ),
-                      trailing: Icon(Icons.chevron_right,
-                          size: 18, color: context.binColors.textMuted),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ReportMissingBinScreen(
-                              postcode: widget.postcode,
-                              councilName: widget.councilName,
-                              addressLabel: widget.addressLabel,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── About ────────────────────────────────
-            _SectionLabel('About'),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: context.binColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                boxShadow: [BoxShadow(color: AppColors.shadow, blurRadius: 18, offset: Offset(0, 6))],
-              ),
-              child: Material(
-                type: MaterialType.transparency,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(appName, style: AppTypography.title),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text('Bin collection schedule',
-                        style: AppTypography.caption),
-                    const SizedBox(height: AppSpacing.md),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
-                        color: context.binColors.background,
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                      ),
-                      child: Text(
-                        supportedCouncilsText,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.binColors.textMuted,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    if (councilWebsite != null) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      GestureDetector(
-                        onTap: () async {
-                          final opened = await launchUrl(
-                            Uri.parse(councilWebsite),
-                            mode: LaunchMode.externalApplication,
-                          );
-                          if (!opened && mounted) {
-                            _showSnack('Could not open the council website.');
-                          }
-                        },
-                        child: Text(
-                          councilWebsite.replaceFirst('https://www.', ''),
-                          textAlign: TextAlign.center,
-                          style: AppTypography.caption.copyWith(
-                            color: context.binColors.primary,
-                            fontWeight: FontWeight.w700,
-                            decoration: TextDecoration.underline,
+                        color: context.binColors.surfaceElevated,
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusMd),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.shadow,
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(height: AppSpacing.xs),
-                    ],
-                    Text(
-                      'Not affiliated with or endorsed by any council.',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.caption.copyWith(
+                      child: Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 18,
                         color: context.binColors.textMuted,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    const Divider(height: 1),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Privacy policy',
-                          style: AppTypography.title),
-                      subtitle: const Text(
-                        'How your data is handled',
-                        style: AppTypography.caption,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Text('Settings', style: AppTypography.h1),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── Address ──────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: context.binColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.shadow,
+                        blurRadius: 18,
+                        offset: Offset(0, 6))
+                  ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: context.binColors.primaryLight,
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      trailing: Icon(Icons.open_in_new,
-                          size: 16, color: context.binColors.textMuted),
-                      onTap: _openPrivacyPolicy,
+                      child: Icon(Icons.location_on_outlined,
+                          size: 20, color: context.binColors.primary),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Current address', style: AppTypography.caption),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            widget.addressLabel ?? widget.area.areaName,
+                            style: AppTypography.title,
+                          ),
+                          if (widget.postcode.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(widget.postcode, style: AppTypography.caption),
+                          ],
+                          const SizedBox(height: AppSpacing.sm),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.business_outlined,
+                                size: 14,
+                                color: context.binColors.textMuted,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Flexible(
+                                child: Text(widget.councilName,
+                                    style: AppTypography.caption,
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.sm,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: widget.isLive
+                                      ? context.binColors.primaryLight
+                                      : context.binColors.background,
+                                  borderRadius: BorderRadius.circular(
+                                      AppSpacing.radiusSm),
+                                ),
+                                child: Text(
+                                  widget.isLive ? 'Live' : 'Demo',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: widget.isLive
+                                        ? Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.white
+                                            : context.binColors.primary
+                                        : context.binColors.textMuted,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-          ],
+              const SizedBox(height: AppSpacing.md),
+
+              // ── Change address ───────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => _changeAddress(context),
+                  style: TextButton.styleFrom(
+                    backgroundColor:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? AppColors.primary
+                            : context.binColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.edit_location_alt_outlined, size: 18),
+                      SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Change address',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── Report an issue ─────────────────────
+              _SectionLabel('Bin schedules'),
+              const SizedBox(height: AppSpacing.sm),
+              ...widget.area.schedules.map((s) => Container(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: context.binColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      boxShadow: [
+                        BoxShadow(
+                            color: AppColors.shadow,
+                            blurRadius: 12,
+                            offset: Offset(0, 4))
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        BinBadge(
+                          presentation: CouncilScheme.resolve(
+                              widget.councilSlug, s.stream),
+                          size: 36,
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                  CouncilScheme.resolve(
+                                          widget.councilSlug, s.stream)
+                                      .label,
+                                  style: AppTypography.title),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${weekdayNames[s.dayOfWeek - 1]} · ${frequencyLabel[s.frequency]}',
+                                style: AppTypography.caption,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── Bin guide ──────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const BinGuideScreen(),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: context.binColors.surfaceElevated,
+                    foregroundColor: context.binColors.textPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      side: BorderSide.none,
+                    ),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.recycling_outlined, size: 18),
+                      SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Bin guide',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── Reminders ────────────────────────────
+              _SectionLabel('Reminders'),
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                decoration: BoxDecoration(
+                  color: context.binColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.shadow,
+                        blurRadius: 18,
+                        offset: Offset(0, 6))
+                  ],
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        title: Text('Enable reminders',
+                            style: AppTypography.title),
+                        subtitle: Text(
+                          "A reminder the evening before and a heads-up on the morning",
+                          style: AppTypography.caption,
+                        ),
+                        value: _remindersEnabled,
+                        activeTrackColor:
+                            context.binColors.primary.withValues(alpha: 0.3),
+                        activeThumbColor: context.binColors.primary,
+                        onChanged: _toggleReminder,
+                      ),
+                      Divider(height: 1, color: context.binColors.borderLight),
+                      if (!Platform.isIOS)
+                        ListTile(
+                          title: Text('Keep reminders reliable',
+                              style: AppTypography.title),
+                          subtitle: Text(
+                            _batteryOptimized == null
+                                ? 'Check battery optimisation'
+                                : _batteryOptimized!
+                                    ? 'Battery optimisation is off — reminders can run in the background.'
+                                    : 'Allow DerbyBins to run in the background so reminders fire even after you swipe the app away.',
+                            style: AppTypography.caption,
+                          ),
+                          trailing: Icon(
+                            Icons.battery_saver,
+                            size: 20,
+                            color: _batteryOptimized == true
+                                ? context.binColors.primary
+                                : context.binColors.textMuted,
+                          ),
+                          onTap: () async {
+                            await NotificationService.openBatterySettings();
+                            final updated = await NotificationService
+                                .isIgnoringBatteryOptimizations();
+                            if (mounted) {
+                              setState(() => _batteryOptimized = updated);
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── Appearance ──────────────────────────
+              _SectionLabel('Appearance'),
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                decoration: BoxDecoration(
+                  color: context.binColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.shadow,
+                        blurRadius: 18,
+                        offset: Offset(0, 6))
+                  ],
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        title: Text('Dark mode', style: AppTypography.title),
+                        subtitle: Text(
+                          'Easier on the eyes at night',
+                          style: AppTypography.caption,
+                        ),
+                        value: widget.themeService?.isDark ?? false,
+                        activeTrackColor:
+                            context.binColors.primary.withValues(alpha: 0.3),
+                        activeThumbColor: context.binColors.primary,
+                        onChanged: widget.themeService != null
+                            ? (_) => widget.themeService!.toggle()
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── Report an issue ─────────────────────
+              _SectionLabel('Report an issue'),
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                decoration: BoxDecoration(
+                  color: context.binColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.shadow,
+                        blurRadius: 18,
+                        offset: Offset(0, 6))
+                  ],
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: context.binColors.background,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.report_problem_outlined,
+                              size: 18, color: context.binColors.textMuted),
+                        ),
+                        title: Text('Report a problem',
+                            style: AppTypography.title),
+                        subtitle: Text(
+                          'Missing bin, wrong collection, or damaged bin',
+                          style: AppTypography.caption,
+                        ),
+                        trailing: Icon(Icons.chevron_right,
+                            size: 18, color: context.binColors.textMuted),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ReportMissingBinScreen(
+                                postcode: widget.postcode,
+                                councilName: widget.councilName,
+                                addressLabel: widget.addressLabel,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // ── About ────────────────────────────────
+              _SectionLabel('About'),
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: context.binColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.shadow,
+                        blurRadius: 18,
+                        offset: Offset(0, 6))
+                  ],
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(appName, style: AppTypography.title),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text('Bin collection schedule',
+                          style: AppTypography.caption),
+                      const SizedBox(height: AppSpacing.md),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12, horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: context.binColors.background,
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusSm),
+                        ),
+                        child: Text(
+                          supportedCouncilsText,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.binColors.textMuted,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      if (councilWebsite != null) ...[
+                        const SizedBox(height: AppSpacing.xs),
+                        GestureDetector(
+                          onTap: () async {
+                            final opened = await launchUrl(
+                              Uri.parse(councilWebsite),
+                              mode: LaunchMode.externalApplication,
+                            );
+                            if (!opened && mounted) {
+                              _showSnack('Could not open the council website.');
+                            }
+                          },
+                          child: Text(
+                            councilWebsite.replaceFirst('https://www.', ''),
+                            textAlign: TextAlign.center,
+                            style: AppTypography.caption.copyWith(
+                              color: context.binColors.primary,
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                      ],
+                      Text(
+                        'Not affiliated with or endorsed by any council.',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.caption.copyWith(
+                          color: context.binColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      const Divider(height: 1),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Privacy policy',
+                            style: AppTypography.title),
+                        subtitle: const Text(
+                          'How your data is handled',
+                          style: AppTypography.caption,
+                        ),
+                        trailing: Icon(Icons.open_in_new,
+                            size: 16, color: context.binColors.textMuted),
+                        onTap: _openPrivacyPolicy,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
+          ),
         ),
-      ),
       )),
     );
   }

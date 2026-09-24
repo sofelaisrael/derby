@@ -134,13 +134,6 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              height: 6,
-              decoration: BoxDecoration(
-                gradient: binBandedGradient(const Color(0xFF3B82F6)),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.sm),

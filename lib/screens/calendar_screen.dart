@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:derby_bins/models/bin_schedule.dart';
 import 'package:derby_bins/services/council_api.dart';
 import 'package:derby_bins/services/notification_service.dart';
@@ -51,23 +51,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Future<void> _load({bool force = false}) async {
     try {
       final result = await resolvePostcode(widget.postcode,
-          force: force, uprn: widget.uprn, addressLabel: widget.addressLabel,
-          councilSlug: widget.councilSlug, councilName: widget.councilName);
-      if (result is ResolveUncovered) {
+          force: force,
+          uprn: widget.uprn,
+          addressLabel: widget.addressLabel,
+          councilSlug: widget.councilSlug,
+          councilName: widget.councilName);
+      if (result is ResolveUncovered || result is ResolveNoData) {
         if (await _loadCached()) return;
         setState(() {
           _status = 'error';
-          _errorMsg =
-              'We could not find collection data for this postcode, and the live council feed could not identify it either. Try a different postcode.';
-        });
-        return;
-      }
-      if (result is ResolveNoData) {
-        if (await _loadCached()) return;
-        setState(() {
-          _status = 'error';
-          _errorMsg =
-              'Couldn\u2019t reach the server. Check your internet connection and try again.';
+          _errorMsg = widget.postcode.isEmpty
+              ? "We couldn't find collection data for this calendar. Check your connection and try again, or choose a different calendar."
+              : "We couldn't find collection data for this address. Check your connection and try again, or choose a different address.";
         });
         return;
       }
@@ -130,14 +125,41 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (cached != null && mounted) {
       setState(() {
         _resolution = ResolveReady(
-          widget.postcode, widget.councilSlug, cached.councilName,
-          cached.area, null, cached.isLive,
+          widget.postcode,
+          widget.councilSlug,
+          cached.councilName,
+          cached.area,
+          null,
+          cached.isLive,
         );
         _status = 'ready';
       });
       return true;
     }
     return false;
+  }
+
+  Future<void> _openDifferentAddress() async {
+    clearResolveCache();
+    await SessionStore.clear();
+    if (!mounted) return;
+    final addresses = widget.addresses;
+    if (addresses == null || addresses.isEmpty) {
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddressPickerScreen(
+          postcode: widget.postcode,
+          councilSlug: widget.councilSlug,
+          councilName: widget.councilName,
+          addresses: addresses,
+          isCalendar: widget.postcode.isEmpty,
+          themeService: widget.themeService,
+        ),
+      ),
+    );
   }
 
   @override
@@ -159,8 +181,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   // return the user to postcode entry instead of closing the app.
   Widget _poppable(Widget child) => PopScope(
         canPop: false,
-        onPopInvoked: (_) =>
-            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false),
+        onPopInvoked: (_) => Navigator.of(context)
+            .pushNamedAndRemoveUntil('/', (route) => false),
         child: Scaffold(body: ScreenBackground(child: child)),
       );
 
@@ -183,7 +205,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             const Text('Finding your collections', style: AppText.h2),
             const SizedBox(height: Spacing.sm),
             Text(
-              'Looking up bin collections for ${widget.postcode}...',
+              widget.postcode.isEmpty
+                  ? 'Looking up bin collections...'
+                  : 'Looking up bin collections for ${widget.postcode}...',
               textAlign: TextAlign.center,
               style: AppText.body,
             ),
@@ -220,9 +244,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             const SizedBox(height: Spacing.lg),
             const Text("Couldn't load your schedule", style: AppText.h2),
             const SizedBox(height: Spacing.sm),
-            Text(_errorMsg,
-                textAlign: TextAlign.center,
-                style: AppText.body),
+            Text(_errorMsg, textAlign: TextAlign.center, style: AppText.body),
             const SizedBox(height: Spacing.xl),
             SizedBox(
               width: double.infinity,
@@ -233,7 +255,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.refresh, size: 15, color: context.binColors.primary),
+                    Icon(Icons.refresh,
+                        size: 15, color: context.binColors.primary),
                     const SizedBox(width: 7),
                     const Text('Try again', style: AppText.button),
                   ],
@@ -241,12 +264,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
-                clearResolveCache();
-                Navigator.of(context)
-                    .pushNamedAndRemoveUntil('/', (route) => false);
-              },
-              child: Text('Use a different postcode',
+              onPressed: _openDifferentAddress,
+              child: Text(
+                  widget.postcode.isEmpty
+                      ? 'Choose a different calendar'
+                      : 'Use a different address',
                   style: TextStyle(
                       decoration: TextDecoration.underline,
                       color: context.binColors.primary,
@@ -279,7 +301,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 color: context.binColors.primaryLight,
                 borderRadius: BorderRadius.circular(27),
               ),
-              child: Icon(Icons.check, size: 26, color: context.binColors.primary),
+              child:
+                  Icon(Icons.check, size: 26, color: context.binColors.primary),
             ),
             const SizedBox(height: Spacing.lg),
             Text(c.councilName,
@@ -300,7 +323,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 Navigator.of(context)
                     .pushNamedAndRemoveUntil('/', (route) => false);
               },
-              child: Text('Try another postcode',
+              child: Text(
+                  widget.postcode.isEmpty
+                      ? 'Choose a different calendar'
+                      : 'Try another postcode',
                   style: TextStyle(
                       decoration: TextDecoration.underline,
                       color: context.binColors.primary,

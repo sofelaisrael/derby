@@ -169,7 +169,7 @@ class _HeroBinChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = presentation.themed(context);
-    final foreground = binForeground(color);
+    const foreground = Colors.white;
     return Container(
       constraints: BoxConstraints(maxWidth: maxWidth),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -193,7 +193,7 @@ class _HeroBinChip extends StatelessWidget {
               semanticsLabel: presentation.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: const TextStyle(
                 color: foreground,
                 letterSpacing: 1.1,
                 fontSize: 10,

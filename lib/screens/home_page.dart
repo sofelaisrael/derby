@@ -241,27 +241,6 @@ class _HomePageState extends State<HomePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        tooltip: 'View calendar',
-                        onPressed: _openCalendar,
-                        style: IconButton.styleFrom(
-                          backgroundColor: colors.surfaceElevated,
-                          foregroundColor: colors.textMuted,
-                          side: BorderSide(color: colors.borderLight),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusMd),
-                          ),
-                          fixedSize: const Size(44, 44),
-                          minimumSize: const Size(44, 44),
-                          padding: EdgeInsets.zero,
-                        ),
-                        icon: const Icon(
-                          Icons.calendar_month_outlined,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      IconButton(
                         tooltip: 'Settings',
                         onPressed: () {
                           Navigator.of(context).push(
@@ -329,6 +308,26 @@ class _HomePageState extends State<HomePage> {
                 councilSlug: widget.councilSlug,
                 weatherStatus: _weatherStatus,
                 weatherData: _weather,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _openCalendar,
+                  icon: const Icon(Icons.chevron_right, size: 18),
+                  iconAlignment: IconAlignment.end,
+                  label: const Text('view calendar'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: colors.primary,
+                    minimumSize: const Size(44, 44),
+                    padding: EdgeInsets.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Row(

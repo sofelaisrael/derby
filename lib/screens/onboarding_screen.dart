@@ -562,7 +562,6 @@ class _StepPageState extends State<_StepPage>
 
   Widget _buildCalendarArt(double w) {
     final colors = context.binColors;
-    final dark = Theme.of(context).brightness == Brightness.dark;
     final streams = CouncilScheme.streamsFor('derby');
     final binColors = [
       for (final s in streams)
@@ -586,7 +585,7 @@ class _StepPageState extends State<_StepPage>
               Container(
                 height: 6,
                 decoration: BoxDecoration(
-                  gradient: forestBandedGradient(dark: dark),
+                  color: colors.primary,
                 ),
               ),
               Padding(
@@ -694,7 +693,7 @@ class _StepPageState extends State<_StepPage>
         width: 20,
         height: 20,
         decoration: BoxDecoration(
-          gradient: binBandedGradient(chip),
+          color: chip,
           borderRadius: BorderRadius.circular(5),
         ),
         alignment: Alignment.center,
@@ -766,7 +765,7 @@ class _StepPageState extends State<_StepPage>
                   height: 44,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    gradient: binBandedGradient(const Color(0xFF3B82F6)),
+                    color: colors.primary,
                   ),
                   child: const Text(
                     'BIN DAY REMINDERS',
@@ -944,7 +943,7 @@ class _FeatureCard extends StatelessWidget {
           Container(
             height: 3,
             decoration: BoxDecoration(
-              gradient: binBandedGradient(accent),
+              color: accent,
             ),
           ),
           Padding(

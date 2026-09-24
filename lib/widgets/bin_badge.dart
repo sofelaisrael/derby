@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/bin_scheme.dart';
 import '../widgets/bin_icon.dart';
 import '../widgets/bin_swatch.dart';
-import '../theme/app_colors.dart';
 
 /// A colour-coded bin "token" chip: solid bin colour with a white glyph.
 /// Stands in for the literal illustrated wheelie bin in compact schedule and
@@ -22,7 +21,7 @@ class BinBadge extends StatelessWidget {
         BinSwatch(p: presentation, size: size, radius: size * 0.28),
         BinIcon(
           presentation: presentation,
-          color: binForeground(presentation.themed(context).bodyColor),
+          color: Colors.white,
           size: size * 0.46,
           semanticLabel: presentation.label,
         ),

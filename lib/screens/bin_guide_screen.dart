@@ -16,13 +16,6 @@ const _wasteNames = {
   WasteStream.food: 'Food waste',
 };
 
-const _frequencyNames = {
-  WasteStream.general: 'Collected weekly',
-  WasteStream.recycling: 'Collected fortnightly',
-  WasteStream.garden: 'Collected fortnightly',
-  WasteStream.food: 'Collected weekly',
-};
-
 class BinGuideScreen extends StatefulWidget {
   const BinGuideScreen({super.key});
 
@@ -50,7 +43,8 @@ class _BinGuideScreenState extends State<BinGuideScreen> {
     final streams = CouncilScheme.streamsFor(_councilSlug);
     return Scaffold(
       backgroundColor: colors.background,
-      body: ScreenBackground(child: SafeArea(
+      body: ScreenBackground(
+          child: SafeArea(
         child: Column(
           children: [
             Padding(
@@ -87,8 +81,8 @@ class _BinGuideScreenState extends State<BinGuideScreen> {
                   children: [
                     Text(
                       'What goes where',
-                      style: AppTypography.h2
-                          .copyWith(color: colors.textPrimary),
+                      style:
+                          AppTypography.h2.copyWith(color: colors.textPrimary),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -158,7 +152,6 @@ class _BinSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.binColors;
     final subtitle = _wasteNames[stream] ?? '';
-    final frequency = _frequencyNames[stream] ?? '';
     final color = presentation.themed(context);
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -201,30 +194,6 @@ class _BinSection extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.event_repeat, size: 14, color: color),
-                      const SizedBox(width: 6),
-                      Text(
-                        frequency,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: color,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Divider(height: 1, color: colors.borderLight),

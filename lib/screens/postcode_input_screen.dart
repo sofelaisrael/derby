@@ -254,12 +254,13 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => Dialog(
           backgroundColor: context.binColors.surfaceElevated,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 14),
           shape: RoundedRectangleBorder(
             side: BorderSide(color: context.binColors.border),
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -405,8 +406,8 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
             return;
           }
           if (r2 is ResolveNoData) {
-            _showError('Couldn\u2019t load a schedule for that UPRN. '
-                'Check it and try again.');
+            _showError(
+                "We couldn't find collection data for this UPRN. Check your connection and try again.");
             return;
           }
         }
@@ -453,6 +454,43 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
     }
   }
 
+  Future<void> _chooseCalendar() async {
+    if (_loading) return;
+    final council = _selectedCouncil;
+    if (council == null) {
+      _showError('Select a council first.');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final addresses = await CouncilApi().lookupAddresses(council.slug, '');
+      if (!mounted) return;
+      if (addresses.isEmpty) {
+        _showError(
+            'Couldn\u2019t load the calendar options. Please try again.');
+        return;
+      }
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => AddressPickerScreen(
+            postcode: '',
+            councilSlug: council.slug,
+            councilName: council.name,
+            addresses: addresses,
+            isCalendar: true,
+            themeService: widget.themeService,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        _showError('Something went wrong. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.binColors;
@@ -487,6 +525,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                     wide: wide,
                     themeService: widget.themeService,
                     councilSlug: _selectedCouncil?.slug ?? 'derby',
+                    calendarBased: _selectedCouncil?.calendarBased ?? false,
                   ),
                   Center(
                     child: ConstrainedBox(
@@ -501,6 +540,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                         loading: _loading,
                         checking: _checkingPostcode,
                         fieldError: _fieldError,
+                        calendarBased: _selectedCouncil?.calendarBased ?? false,
                         controller: _controller,
                         onPickCouncil: () => _pickCouncil(context),
                         onChanged: (_) {
@@ -515,6 +555,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                           setState(() {});
                         },
                         onSubmit: () => _submit(_controller.text),
+                        onChooseCalendar: _chooseCalendar,
                       ),
                     ),
                   ),
@@ -537,6 +578,7 @@ class _Hero extends StatelessWidget {
   final bool wide;
   final ThemeService? themeService;
   final String councilSlug;
+  final bool calendarBased;
 
   const _Hero({
     required this.herKerb,
@@ -546,6 +588,7 @@ class _Hero extends StatelessWidget {
     required this.wide,
     required this.themeService,
     this.councilSlug = 'derby',
+    this.calendarBased = false,
   });
 
   @override
@@ -665,7 +708,9 @@ class _Hero extends StatelessWidget {
                 child: Transform.translate(
                   offset: Offset(0, 12 * (1 - sub)),
                   child: Text(
-                    'Enter your postcode and we\u2019ll show you exactly what goes out, and when.',
+                    calendarBased
+                        ? 'Choose your bin calendar and we\u2019ll show you what goes out, and when.'
+                        : 'Enter your postcode and we\u2019ll show you exactly what goes out, and when.',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w400,
@@ -748,8 +793,8 @@ class _BinCircles extends StatelessWidget {
                 ),
                 child: BinIcon(
                   presentation: bins[i].presentation,
-                  color: binForeground(bins[i].color),
-                  size: 20,
+                  color: Colors.white,
+                  size: bins[i].presentation.assetPath != null ? 18 : 20,
                   semanticLabel: bins[i].presentation.label,
                 ),
               ),
@@ -768,11 +813,13 @@ class _FormCard extends StatelessWidget {
   final bool loading;
   final String checking;
   final String? fieldError;
+  final bool calendarBased;
   final TextEditingController controller;
   final VoidCallback onPickCouncil;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
   final VoidCallback onSubmit;
+  final VoidCallback onChooseCalendar;
 
   const _FormCard({
     required this.opacity,
@@ -782,11 +829,13 @@ class _FormCard extends StatelessWidget {
     required this.loading,
     required this.checking,
     required this.fieldError,
+    this.calendarBased = false,
     required this.controller,
     required this.onPickCouncil,
     required this.onChanged,
     required this.onClear,
     required this.onSubmit,
+    required this.onChooseCalendar,
   });
 
   @override
@@ -817,62 +866,69 @@ class _FormCard extends StatelessWidget {
                       onTap: onPickCouncil,
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusSm),
+                    if (calendarBased)
+                      _CalendarButton(
+                        loading: loading,
+                        onSubmit: onChooseCalendar,
+                      )
+                    else ...[
+                      Container(
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusSm),
+                        ),
+                        child: TextField(
+                          controller: controller,
+                          textCapitalization: TextCapitalization.characters,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[a-zA-Z0-9 ]')),
+                            _UppercaseFormatter(),
+                          ],
+                          maxLength: 8,
+                          scrollPadding: const EdgeInsets.only(bottom: 220),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                            color: colors.textPrimary,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Enter your postcode',
+                            hintStyle: TextStyle(color: colors.textMuted),
+                            prefixIcon: const Icon(Icons.location_on_outlined,
+                                size: 18),
+                            prefixIconColor: colors.textMuted,
+                            suffixIcon: controller.text.isNotEmpty
+                                ? GestureDetector(
+                                    onTap: onClear,
+                                    child: Icon(Icons.cancel,
+                                        size: 18, color: colors.textMuted),
+                                  )
+                                : null,
+                            counterText: '',
+                          ),
+                          onChanged: onChanged,
+                          onSubmitted: (_) => onSubmit(),
+                        ),
                       ),
-                      child: TextField(
-                        controller: controller,
-                        textCapitalization: TextCapitalization.characters,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                              RegExp(r'[a-zA-Z0-9 ]')),
-                          _UppercaseFormatter(),
-                        ],
-                        maxLength: 8,
-                        scrollPadding: const EdgeInsets.only(bottom: 220),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1,
-                          color: colors.textPrimary,
+                      if (fieldError != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          fieldError!,
+                          style: AppTypography.caption.copyWith(
+                            color: colors.error,
+                          ),
                         ),
-                        decoration: InputDecoration(
-                          hintText: 'Enter your postcode',
-                          hintStyle: TextStyle(color: colors.textMuted),
-                          prefixIcon:
-                              const Icon(Icons.location_on_outlined, size: 18),
-                          prefixIconColor: colors.textMuted,
-                          suffixIcon: controller.text.isNotEmpty
-                              ? GestureDetector(
-                                  onTap: onClear,
-                                  child: Icon(Icons.cancel,
-                                      size: 18, color: colors.textMuted),
-                                )
-                              : null,
-                          counterText: '',
-                        ),
-                        onChanged: onChanged,
-                        onSubmitted: (_) => onSubmit(),
-                      ),
-                    ),
-                    if (fieldError != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        fieldError!,
-                        style: AppTypography.caption.copyWith(
-                          color: colors.error,
-                        ),
+                      ],
+                      const SizedBox(height: AppSpacing.lg),
+                      _SubmitButton(
+                        loading: loading,
+                        checking: checking,
+                        onSubmit: onSubmit,
                       ),
                     ],
-                    const SizedBox(height: AppSpacing.lg),
-                    _SubmitButton(
-                      loading: loading,
-                      checking: checking,
-                      onSubmit: onSubmit,
-                    ),
                   ],
                 ),
               ),
@@ -1065,6 +1121,58 @@ class _SubmitButtonState extends State<_SubmitButton> {
                     style: AppTypography.title.copyWith(color: Colors.white)),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CalendarButton extends StatelessWidget {
+  final bool loading;
+  final VoidCallback onSubmit;
+
+  const _CalendarButton({required this.loading, required this.onSubmit});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: loading ? null : onSubmit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colors.primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: colors.primary.withValues(alpha: 0.6),
+          disabledForegroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          ),
+        ),
+        child: loading
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Finding calendars\u2026',
+                    style: AppTypography.title.copyWith(color: Colors.white),
+                  ),
+                ],
+              )
+            : Text(
+                'Choose your bin calendar',
+                style: AppTypography.title.copyWith(color: Colors.white),
+              ),
       ),
     );
   }
