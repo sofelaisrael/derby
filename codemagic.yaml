@@ -4,6 +4,7 @@ workflows:
     max_build_duration: 30
     environment:
       flutter: stable
+      ubuntu: 24.04
     triggering:
       events:
         - push
