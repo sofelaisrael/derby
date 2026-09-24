@@ -448,40 +448,24 @@ class _DayCell extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: bg,
+          color: singleBin ? null : bg,
+          gradient: singleBin ? binBandedGradient(binColor!) : null,
           borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          border: (singleBin && (isToday || isSelected))
+              ? Border.all(color: colors.primary, width: 2)
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (singleBin)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
-                  color: binColor,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                ),
-                child: Text(
-                  "$day",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: binForeground(binColor!),
-                  ),
-                ),
-              )
-            else
-              Text(
-                "$day",
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                  color: dayColor,
-                ),
+            Text(
+              "$day",
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: singleBin ? 18 : 15,
+                color: singleBin ? binForeground(binColor!) : dayColor,
               ),
+            ),
             if (binStreams.length > 1) ...[
               const SizedBox(height: 4),
               FittedBox(
