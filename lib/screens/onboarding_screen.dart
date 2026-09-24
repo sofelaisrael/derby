@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:derby_bins/services/notification_service.dart';
@@ -11,6 +11,7 @@ import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/banded_gradient.dart';
+import '../widgets/bin_icon.dart';
 
 const _kickerLight = Color(0xFFA9714B);
 const _kickerDark = Color(0xFFC08A5E);
@@ -233,8 +234,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             _SegmentedProgress(current: _step),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.page, AppSpacing.lg, AppSpacing.page, AppSpacing.xl),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.page,
+                    AppSpacing.lg, AppSpacing.page, AppSpacing.xl),
                 child: AnimatedSwitcher(
                   duration: switchDuration,
                   switchInCurve: Curves.easeOut,
@@ -426,8 +427,7 @@ class _StepPageState extends State<_StepPage>
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: _duration);
+    _controller = AnimationController(vsync: this, duration: _duration);
   }
 
   @override
@@ -537,16 +537,19 @@ class _StepPageState extends State<_StepPage>
         return SizedBox(
           width: w,
           height: widget.artHeight,
-          child: Center(
-            child: _WheelieBinArt(
-              color: CouncilScheme.resolve('derby', WasteStream.recycling)
-                  .themed(context),
-              progress: CurvedAnimation(
-                parent: _controller,
-                curve: const Interval(0.14, 0.40, curve: Curves.easeOutCubic),
+          child: Image.asset(
+            'assets/illustrations/onboarding_step0.png',
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            semanticLabel: 'Green wheelie bin illustration',
+            errorBuilder: (context, error, stackTrace) => Center(
+              child: BinIcon(
+                presentation:
+                    CouncilScheme.resolve('derby', WasteStream.general),
+                color: Colors.white,
+                size: widget.artHeight * 0.8,
+                semanticLabel: 'Green wheelie bin illustration unavailable',
               ),
-              width: 240,
-              height: widget.artHeight,
             ),
           ),
         );
@@ -614,7 +617,15 @@ class _StepPageState extends State<_StepPage>
                   children: [
                     Row(
                       children: [
-                        for (final d in const ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+                        for (final d in const [
+                          'M',
+                          'T',
+                          'W',
+                          'T',
+                          'F',
+                          'S',
+                          'S'
+                        ])
                           Expanded(
                             child: Center(
                               child: Text(
@@ -884,7 +895,8 @@ class _StepPageState extends State<_StepPage>
               end: 0.62 + i * 0.08,
               rise: 18,
               child: Padding(
-                padding: EdgeInsets.only(bottom: i < cards.length - 1 ? AppSpacing.md : 0),
+                padding: EdgeInsets.only(
+                    bottom: i < cards.length - 1 ? AppSpacing.md : 0),
                 child: _FeatureCard(data: cards[i]),
               ),
             ),
@@ -1288,237 +1300,33 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
           duration: Duration(milliseconds: _pressed ? 90 : 140),
           curve: _pressed ? Curves.easeOutCubic : Curves.easeOutBack,
           child: Container(
-          width: double.infinity,
-          height: 56,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: colors.primary,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            width: double.infinity,
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: colors.primary,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            ),
+            child: widget.busy
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
+                    widget.label,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
           ),
-          child: widget.busy
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: Colors.white,
-                  ),
-                )
-              : Text(
-                  widget.label,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
         ),
       ),
-      ),
     );
   }
-}
-
-class _WheelieBinArt extends StatelessWidget {
-  final Color color;
-  final Animation<double> progress;
-  final double width;
-  final double height;
-
-  const _WheelieBinArt({
-    required this.color,
-    required this.progress,
-    required this.width,
-    required this.height,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      height: height,
-      child: CustomPaint(
-        painter: _WheelieBinPainter(color: color, progress: progress),
-      ),
-    );
-  }
-}
-
-class _WheelieBinPainter extends CustomPainter {
-  final Color color;
-  final Animation<double> progress;
-
-  _WheelieBinPainter({required this.color, required this.progress})
-      : super(repaint: progress);
-
-  double _segP(double p, double a, double b) {
-    if (p <= a) return 0;
-    if (p >= b) return 1;
-    return Curves.easeOutCubic.transform((p - a) / (b - a));
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final p = progress.value;
-
-    final entrance = _segP(p, 0.00, 0.26);
-    if (entrance <= 0) return;
-
-    final bw = w * 0.46;
-    final bh = bw * 1.45;
-    final cx = w / 2;
-    final gy = h * 0.90;
-    final drop = bh * 0.35 * (1 - entrance);
-    final box = Rect.fromLTWH(cx - bw / 2, gy - bh + drop, bw, bh);
-
-    _drawFeatheredEllipse(
-      canvas,
-      center: Offset(cx, gy + h * 0.015),
-      rx: bw * 0.45,
-      ry: bw * 0.10,
-      color: Colors.black.withValues(alpha: 0.10 * entrance),
-    );
-
-    final glowEnt = _segP(p, 0.45, 0.75);
-    if (glowEnt > 0) {
-      final lift = _segP(p, 0.45, 0.65);
-      _drawFeatheredEllipse(
-        canvas,
-        center: Offset(cx, gy - bh * 0.55 - h * 0.03 * lift),
-        rx: bw * 0.80,
-        ry: bh * 0.58,
-        color: color.withValues(alpha: 0.30 * glowEnt),
-      );
-    }
-
-    _paintBin(canvas, box, color);
-
-    final dots = [
-      (Offset(w * 0.12, h * 0.24), 8.0),
-      (Offset(w * 0.88, h * 0.18), 6.0),
-      (Offset(w * 0.80, h * 0.34), 7.0),
-    ];
-    for (final d in dots) {
-      _drawFeatheredEllipse(
-        canvas,
-        center: d.$1,
-        rx: d.$2 * 0.5,
-        ry: d.$2 * 0.5,
-        color: color.withValues(alpha: 0.18),
-      );
-    }
-  }
-
-  void _paintBin(Canvas canvas, Rect box, Color color) {
-    final w = box.width;
-    final h = box.height;
-    final dark = Color.lerp(color, const Color(0xFF000000), 0.16)!;
-    final darker = Color.lerp(color, const Color(0xFF000000), 0.32)!;
-    final light = Color.lerp(color, const Color(0xFFFFFFFF), 0.28)!;
-
-    canvas.save();
-    canvas.translate(box.left, box.top);
-
-    final body = Path()
-      ..moveTo(w * 0.20, h * 0.48)
-      ..lineTo(w * 0.80, h * 0.48)
-      ..quadraticBezierTo(w * 0.82, h * 0.60, w * 0.80, h * 0.80)
-      ..lineTo(w * 0.64, h * 0.88)
-      ..lineTo(w * 0.36, h * 0.88)
-      ..lineTo(w * 0.20, h * 0.80)
-      ..quadraticBezierTo(w * 0.18, h * 0.60, w * 0.20, h * 0.48)
-      ..close();
-    canvas.drawPath(body, Paint()..color = color);
-
-    final bodyShade = Path()
-      ..moveTo(w * 0.68, h * 0.50)
-      ..lineTo(w * 0.80, h * 0.48)
-      ..quadraticBezierTo(w * 0.82, h * 0.60, w * 0.80, h * 0.80)
-      ..lineTo(w * 0.64, h * 0.88)
-      ..lineTo(w * 0.60, h * 0.88)
-      ..lineTo(w * 0.74, h * 0.80)
-      ..quadraticBezierTo(w * 0.76, h * 0.60, w * 0.66, h * 0.50)
-      ..close();
-    canvas.drawPath(bodyShade, Paint()..color = dark.withValues(alpha: 0.55));
-
-    final rib = RRect.fromRectAndCorners(
-      Rect.fromLTRB(w * 0.21, h * 0.52, w * 0.795, h * 0.60),
-      bottomLeft: Radius.circular(w * 0.02),
-      bottomRight: Radius.circular(w * 0.02),
-    );
-    canvas.drawRRect(rib, Paint()..color = light.withValues(alpha: 0.5));
-
-    final sheen = Path()
-      ..moveTo(w * 0.30, h * 0.56)
-      ..lineTo(w * 0.36, h * 0.56)
-      ..lineTo(w * 0.34, h * 0.82)
-      ..lineTo(w * 0.28, h * 0.82)
-      ..close();
-    canvas.drawPath(
-        sheen, Paint()..color = Colors.white.withValues(alpha: 0.28));
-
-    final lid = RRect.fromRectAndCorners(
-      Rect.fromLTRB(w * 0.14, h * 0.30, w * 0.86, h * 0.50),
-      topLeft: Radius.circular(w * 0.14),
-      topRight: Radius.circular(w * 0.14),
-    );
-    canvas.drawRRect(lid, Paint()..color = dark);
-
-    canvas.drawRRect(
-      RRect.fromRectAndCorners(
-        Rect.fromLTRB(w * 0.14, h * 0.30, w * 0.86, h * 0.36),
-        topLeft: Radius.circular(w * 0.14),
-        topRight: Radius.circular(w * 0.14),
-      ),
-      Paint()..color = _lighter(dark),
-    );
-
-    final handle = RRect.fromRectAndCorners(
-      Rect.fromLTRB(w * 0.44, h * 0.22, w * 0.56, h * 0.32),
-      topLeft: Radius.circular(w * 0.06),
-      topRight: Radius.circular(w * 0.06),
-    );
-    canvas.drawRRect(handle, Paint()..color = _lighter(darker));
-
-    final wheelPaint = Paint()..color = const Color(0xFF2A2F2B);
-    canvas.drawCircle(Offset(w * 0.34, h * 0.86), w * 0.10, wheelPaint);
-    canvas.drawCircle(Offset(w * 0.66, h * 0.86), w * 0.10, wheelPaint);
-    final hubPaint = Paint()..color = const Color(0xFF545C56);
-    canvas.drawCircle(Offset(w * 0.34, h * 0.86), w * 0.035, hubPaint);
-    canvas.drawCircle(Offset(w * 0.66, h * 0.86), w * 0.035, hubPaint);
-
-    canvas.restore();
-  }
-
-  Color _lighter(Color c) => Color.lerp(c, const Color(0xFFFFFFFF), 0.42)!;
-
-  void _drawFeatheredEllipse(
-    Canvas canvas, {
-    required Offset center,
-    required double rx,
-    required double ry,
-    required Color color,
-  }) {
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(1.0, ry / rx);
-    canvas.translate(-center.dx, -center.dy);
-    final rr = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center, width: rx * 2, height: rx * 2),
-      Radius.circular(rx),
-    );
-    canvas.drawRRect(
-      rr,
-      Paint()
-        ..color = color
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-    );
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(_WheelieBinPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.progress != progress;
 }

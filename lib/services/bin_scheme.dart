@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../models/bin_schedule.dart';
 
 /// Council-independent presentation data for a bin: the colour, the
@@ -9,8 +8,8 @@ class BinPresentation {
   final int colorLight;
   final int colorDark;
   final String label;
-  final IconData icon;
-  final IconData badgeIcon;
+  final IconData? icon;
+  final String? assetPath;
   final List<String> items;
 
   /// Two-tone body/lid colours for swatches. For single-colour bins these
@@ -24,8 +23,8 @@ class BinPresentation {
     required this.colorLight,
     required this.colorDark,
     required this.label,
-    required this.icon,
-    required this.badgeIcon,
+    this.icon,
+    this.assetPath,
     required this.items,
     Color? bodyColor,
     Color? lidColor,
@@ -90,10 +89,10 @@ const _foodItems = <String>[
   'Out-of-date food',
 ];
 
-IconData _iconFor(WasteStream s) {
+IconData? _iconFor(WasteStream s) {
   switch (s) {
     case WasteStream.general:
-      return FontAwesomeIcons.dumpster.data;
+      return null;
     case WasteStream.recycling:
       return Icons.recycling;
     case WasteStream.garden:
@@ -119,7 +118,7 @@ BinPresentation _mk(
       colorDark: dark,
       label: label,
       icon: _iconFor(stream),
-      badgeIcon: _iconFor(stream),
+      assetPath: stream == WasteStream.general ? 'assets/icons/bin.svg' : null,
       items: items,
       bodyColor: bodyColor,
       lidColor: lidColor,
@@ -167,10 +166,10 @@ class CouncilScheme {
   // ── Derby (shared across all Derbyshire councils) ───────────
   static final _derbyGeneral = _mk(
       0xFF64748B, 0xFF94A3B8, 'Black bin', WasteStream.general, _generalItems);
-  static final _derbyRecycling = _mk(
-      0xFF3B82F6, 0xFF60A5FA, 'Blue bin', WasteStream.recycling, _recyclingItems);
+  static final _derbyRecycling = _mk(0xFF3B82F6, 0xFF60A5FA, 'Blue bin',
+      WasteStream.recycling, _recyclingItems);
   static final _derbyGarden = _mk(
       0xFF10B981, 0xFF34D399, 'Green bin', WasteStream.garden, _gardenItems);
-  static final _derbyFood = _mk(
-      0xFFF59E0B, 0xFFFBBF24, 'Food caddy', WasteStream.food, _foodItems);
+  static final _derbyFood =
+      _mk(0xFFF59E0B, 0xFFFBBF24, 'Food caddy', WasteStream.food, _foodItems);
 }

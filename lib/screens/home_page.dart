@@ -4,6 +4,7 @@ import '../models/bin_schedule.dart';
 import '../services/bin_scheme.dart';
 import '../services/schedule_service.dart';
 import '../services/theme_service.dart';
+import '../services/weather_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -23,6 +24,7 @@ class HomePage extends StatefulWidget {
   final bool isLive;
   final ThemeService? themeService;
   final DateTime? now;
+  final WeatherBundle? weatherOverride;
 
   const HomePage({
     super.key,
@@ -35,6 +37,7 @@ class HomePage extends StatefulWidget {
     required this.isLive,
     this.themeService,
     this.now,
+    this.weatherOverride,
   });
 
   @override
@@ -42,12 +45,69 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  WeatherLoadStatus _weatherStatus = WeatherLoadStatus.loading;
+  WeatherBundle? _weather;
+  int _weatherRequest = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.weatherOverride == null) {
+      _loadWeather();
+    } else {
+      _setWeatherOverride(widget.weatherOverride!);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.councilSlug != widget.councilSlug ||
+        oldWidget.weatherOverride != widget.weatherOverride) {
+      _loadWeather();
+    }
+  }
+
+  void _setWeatherOverride(WeatherBundle weather) {
+    _weather = weather;
+    _weatherStatus = weather.now == null
+        ? WeatherLoadStatus.failure
+        : WeatherLoadStatus.success;
+  }
+
+  Future<void> _loadWeather() async {
+    final request = ++_weatherRequest;
+    final override = widget.weatherOverride;
+    if (override != null) {
+      _setWeatherOverride(override);
+      return;
+    }
+
+    _weather = null;
+    _weatherStatus = WeatherLoadStatus.loading;
+    WeatherBundle data;
+    try {
+      data = await WeatherService.fetchWeather(widget.councilSlug);
+    } catch (_) {
+      data = const WeatherBundle();
+    }
+    if (!mounted || request != _weatherRequest) return;
+    setState(() {
+      _weather = data;
+      _weatherStatus = data.now == null
+          ? WeatherLoadStatus.failure
+          : WeatherLoadStatus.success;
+    });
+  }
+
   DateTime get _now => widget.now ?? DateTime.now();
 
   AreaSchedule get _area => widget.area;
 
-  List<CollectionDay> get _upcomingDays =>
-      getNextCollectionDays(_area, 5, _now);
+  List<CollectionDay> get _upcomingDays {
+    final tomorrow = DateTime(_now.year, _now.month, _now.day + 1);
+    return getNextCollectionDays(_area, 5, tomorrow);
+  }
 
   bool get _hasTodayCollection {
     final todayDate = DateTime(_now.year, _now.month, _now.day);
@@ -68,8 +128,18 @@ class _HomePageState extends State<HomePage> {
 
   String _shortDateLabel(DateTime date) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
     return '${date.day} ${months[date.month - 1]}';
   }
@@ -94,10 +164,10 @@ class _HomePageState extends State<HomePage> {
     final colors = context.binColors;
     final upcoming = _upcomingDays;
     final hasToday = _hasTodayCollection;
-    final next = upcoming.length > (hasToday ? 1 : 0)
-        ? upcoming[hasToday ? 1 : 0]
-        : null;
+    final next = upcoming.isEmpty ? null : upcoming.first;
     final todayDate = DateTime(_now.year, _now.month, _now.day);
+    final heroCollections = next?.collections ??
+        (hasToday ? _todayCollections : const <BinCollection>[]);
 
     String display;
     String? subtitle;
@@ -116,6 +186,9 @@ class _HomePageState extends State<HomePage> {
         display = '$daysUntil ${daysUntil == 1 ? "Day" : "Days"}';
         subtitle = _shortDateLabel(next.date);
       }
+    } else if (hasToday) {
+      display = 'All caught up';
+      subtitle = null;
     } else {
       display = 'No collections';
       subtitle = null;
@@ -123,7 +196,8 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: ScreenBackground(child: SafeArea(
+      body: ScreenBackground(
+          child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.page,
@@ -163,59 +237,69 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  GestureDetector(
-                    onTap: _openCalendar,
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                        border: Border.all(color: colors.borderLight),
-                      ),
-                      child: Icon(
-                        Icons.calendar_month_outlined,
-                        size: 20,
-                        color: colors.textMuted,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => SettingsTab(
-                            postcode: widget.postcode,
-                            councilSlug: widget.councilSlug,
-                            councilName: widget.councilName,
-                            addressLabel: widget.addressLabel,
-                            area: widget.area,
-                            isLive: widget.isLive,
-                            themeService: widget.themeService,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        tooltip: 'View calendar',
+                        onPressed: _openCalendar,
+                        style: IconButton.styleFrom(
+                          backgroundColor: colors.surfaceElevated,
+                          foregroundColor: colors.textMuted,
+                          side: BorderSide(color: colors.borderLight),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusMd),
                           ),
+                          fixedSize: const Size(44, 44),
+                          minimumSize: const Size(44, 44),
+                          padding: EdgeInsets.zero,
                         ),
-                      );
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: colors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                        border: Border.all(color: colors.borderLight),
+                        icon: const Icon(
+                          Icons.calendar_month_outlined,
+                          size: 20,
+                        ),
                       ),
-                      child: Icon(
-                        Icons.settings_outlined,
-                        size: 20,
-                        color: colors.textMuted,
+                      const SizedBox(width: AppSpacing.xs),
+                      IconButton(
+                        tooltip: 'Settings',
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => SettingsTab(
+                                postcode: widget.postcode,
+                                councilSlug: widget.councilSlug,
+                                councilName: widget.councilName,
+                                addressLabel: widget.addressLabel,
+                                area: widget.area,
+                                isLive: widget.isLive,
+                                themeService: widget.themeService,
+                              ),
+                            ),
+                          );
+                        },
+                        style: IconButton.styleFrom(
+                          backgroundColor: colors.surfaceElevated,
+                          foregroundColor: colors.textMuted,
+                          side: BorderSide(color: colors.borderLight),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusMd),
+                          ),
+                          fixedSize: const Size(44, 44),
+                          minimumSize: const Size(44, 44),
+                          padding: EdgeInsets.zero,
+                        ),
+                        icon: const Icon(
+                          Icons.settings_outlined,
+                          size: 20,
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-
               Text(
                 'Your schedule',
                 style: AppTypography.h2.copyWith(
@@ -223,62 +307,30 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-
               if (hasToday)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.md),
                   child: TodayBanner(
+                    date: todayDate,
                     collections: _todayCollections,
                     councilSlug: widget.councilSlug,
                   ),
                 ),
-
               HeroCollectionCard(
-                binLabel: next?.collections
-                        .map((c) =>
-                            CouncilScheme.resolve(widget.councilSlug, c.stream)
-                                .label)
-                        .join(', ') ??
-                    '',
+                binLabel: heroCollections
+                    .map((c) =>
+                        CouncilScheme.resolve(widget.councilSlug, c.stream)
+                            .label)
+                    .join(', '),
                 display: display,
                 subtitle: subtitle,
-                collections: next?.collections ?? [],
+                collections: heroCollections,
                 onTap: _openCalendar,
                 councilSlug: widget.councilSlug,
+                weatherStatus: _weatherStatus,
+                weatherData: _weather,
               ),
               const SizedBox(height: AppSpacing.xl),
-
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonal(
-                  onPressed: _openCalendar,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: colors.primaryLight,
-                    foregroundColor: colors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                    shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMd),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.calendar_month_outlined, size: 18),
-                      SizedBox(width: AppSpacing.sm),
-                      Text(
-                        'View calendar',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
               Row(
                 children: [
                   Text(
@@ -297,7 +349,6 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               const SizedBox(height: AppSpacing.md),
-
               ...upcoming.map((d) {
                 return UpcomingTile(
                   date: d.date,
@@ -307,7 +358,6 @@ class _HomePageState extends State<HomePage> {
                 );
               }),
               const SizedBox(height: AppSpacing.lg),
-
               Center(
                 child: Column(
                   children: [

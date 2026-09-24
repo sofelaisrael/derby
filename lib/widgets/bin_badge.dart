@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/bin_scheme.dart';
+import '../widgets/bin_icon.dart';
 import '../widgets/bin_swatch.dart';
 import '../theme/app_colors.dart';
 
@@ -19,10 +20,11 @@ class BinBadge extends StatelessWidget {
       alignment: Alignment.center,
       children: [
         BinSwatch(p: presentation, size: size, radius: size * 0.28),
-        Icon(
-          presentation.badgeIcon,
+        BinIcon(
+          presentation: presentation,
           color: binForeground(presentation.themed(context).bodyColor),
           size: size * 0.46,
+          semanticLabel: presentation.label,
         ),
       ],
     );

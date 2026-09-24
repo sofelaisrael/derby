@@ -45,10 +45,12 @@ class AppColors {
   static const danger = error;
 }
 
-/// Adaptive foreground colour for text/icons sitting ON a bin-colour swatch:
-/// dark ink on light bins, white on dark bins, so every label stays legible.
-Color binForeground(Color bg) =>
-    bg.computeLuminance() > 0.5 ? const Color(0xFF1F2937) : Colors.white;
+Color binForeground(Color bg) {
+  final luminance = bg.computeLuminance();
+  final blackContrast = (luminance + 0.05) / 0.05;
+  final whiteContrast = 1.05 / (luminance + 0.05);
+  return blackContrast >= whiteContrast ? Colors.black : Colors.white;
+}
 
 // ─── Dark Colors ──────────────────────────────────────────────
 
@@ -276,8 +278,10 @@ class BinColors extends ThemeExtension<BinColors> {
       warning: Color.lerp(warning, other.warning, t)!,
       error: Color.lerp(error, other.error, t)!,
       calendarToday: Color.lerp(calendarToday, other.calendarToday, t)!,
-      calendarDisabled: Color.lerp(calendarDisabled, other.calendarDisabled, t)!,
-      calendarCollection: Color.lerp(calendarCollection, other.calendarCollection, t)!,
+      calendarDisabled:
+          Color.lerp(calendarDisabled, other.calendarDisabled, t)!,
+      calendarCollection:
+          Color.lerp(calendarCollection, other.calendarCollection, t)!,
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+enum WeatherLoadStatus { loading, success, failure }
+
 class WeatherData {
   final double temperature;
   final int weatherCode;

@@ -82,8 +82,8 @@ class _WeatherCardState extends State<WeatherCard> {
 
   Widget _section(BuildContext context, String label, WeatherData w,
       {required bool isNow}) {
-    final icon = _iconForCode(w.weatherCode);
-    final color = _colorForCode(w.weatherCode);
+    final icon = weatherIconForCode(w.weatherCode);
+    final color = weatherColorForCode(w.weatherCode);
     final temp = '${w.temperature.round()}°C';
     final message = isNow
         ? (w.willRain ? 'Raining now' : 'Dry now')
@@ -138,26 +138,26 @@ class _WeatherCardState extends State<WeatherCard> {
       ),
     );
   }
+}
 
-  IconData _iconForCode(int code) {
-    if (code == 0) return Icons.wb_sunny;
-    if (code <= 3) return Icons.cloud;
-    if (code <= 49) return Icons.foggy;
-    if (code <= 59) return Icons.grain;
-    if (code <= 69) return Icons.water_drop;
-    if (code <= 79) return Icons.ac_unit;
-    if (code <= 82) return Icons.show_chart;
-    if (code <= 99) return Icons.thunderstorm;
-    return Icons.wb_cloudy;
-  }
+IconData weatherIconForCode(int code) {
+  if (code == 0) return Icons.wb_sunny;
+  if (code <= 3) return Icons.cloud;
+  if (code <= 49) return Icons.foggy;
+  if (code <= 59) return Icons.grain;
+  if (code <= 69) return Icons.water_drop;
+  if (code <= 79) return Icons.ac_unit;
+  if (code <= 82) return Icons.show_chart;
+  if (code <= 99) return Icons.thunderstorm;
+  return Icons.wb_cloudy;
+}
 
-  Color _colorForCode(int code) {
-    if (code == 0) return const Color(0xFFE68A2E);
-    if (code <= 3) return const Color(0xFF5A8FBF);
-    if (code <= 49) return const Color(0xFF8A918D);
-    if (code <= 69) return const Color(0xFF4A7FB5);
-    if (code <= 82) return const Color(0xFF4A7FB5);
-    if (code <= 99) return const Color(0xFF7B61A5);
-    return const Color(0xFF5A8FBF);
-  }
+Color weatherColorForCode(int code) {
+  if (code == 0) return const Color(0xFFE68A2E);
+  if (code <= 3) return const Color(0xFF5A8FBF);
+  if (code <= 49) return const Color(0xFF8A918D);
+  if (code <= 69) return const Color(0xFF4A7FB5);
+  if (code <= 82) return const Color(0xFF4A7FB5);
+  if (code <= 99) return const Color(0xFF7B61A5);
+  return const Color(0xFF5A8FBF);
 }

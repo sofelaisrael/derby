@@ -67,8 +67,8 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
         Frequency.twelveWeekly => 84,
       };
       final diff = d
-          .difference(DateTime(
-              s.anchorDate.year, s.anchorDate.month, s.anchorDate.day))
+          .difference(
+              DateTime(s.anchorDate.year, s.anchorDate.month, s.anchorDate.day))
           .inDays;
       if (((diff % interval) + interval) % interval == 0) {
         streams.add(s.stream);
@@ -126,7 +126,8 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
       backgroundColor: colors.surfaceElevated,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
       ),
       builder: (sheet) => SafeArea(
         child: Column(
@@ -208,12 +209,12 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
     final todayDate = DateTime(_now.year, _now.month, _now.day);
     final first = DateTime(_viewMonth.year, _viewMonth.month, 1);
     final leadBlanks = (first.weekday + 6) % 7;
-    final daysInMonth =
-        DateTime(_viewMonth.year, _viewMonth.month + 1, 0).day;
+    final daysInMonth = DateTime(_viewMonth.year, _viewMonth.month + 1, 0).day;
 
     return Scaffold(
       backgroundColor: colors.background,
-      body: ScreenBackground(child: Column(
+      body: ScreenBackground(
+          child: Column(
         children: [
           _header(context),
           Expanded(
@@ -240,8 +241,8 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                         icon: Icons.chevron_left,
                         onTap: () {
                           setState(() {
-                            _viewMonth = DateTime(
-                                _viewMonth.year, _viewMonth.month - 1);
+                            _viewMonth =
+                                DateTime(_viewMonth.year, _viewMonth.month - 1);
                           });
                         },
                       ),
@@ -250,8 +251,8 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                         icon: Icons.chevron_right,
                         onTap: () {
                           setState(() {
-                            _viewMonth = DateTime(
-                                _viewMonth.year, _viewMonth.month + 1);
+                            _viewMonth =
+                                DateTime(_viewMonth.year, _viewMonth.month + 1);
                           });
                         },
                       ),
@@ -463,7 +464,7 @@ class _DayCell extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: singleBin ? 18 : 15,
-                color: singleBin ? binForeground(binColor!) : dayColor,
+                color: singleBin ? Colors.white : dayColor,
               ),
             ),
             if (binStreams.length > 1) ...[
@@ -560,12 +561,11 @@ class _DayDetail extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: context.binColors.primaryLight,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusSm),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                     ),
                     child: Text(
                       frequencyLabel[c.schedule.frequency] ?? '',

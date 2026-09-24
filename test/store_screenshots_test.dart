@@ -11,6 +11,7 @@ import 'package:derby_bins/screens/calendar_view_screen.dart';
 import 'package:derby_bins/screens/home_page.dart';
 import 'package:derby_bins/screens/onboarding_screen.dart';
 import 'package:derby_bins/screens/settings_tab.dart';
+import 'package:derby_bins/services/weather_service.dart';
 import 'package:derby_bins/theme/app_theme.dart';
 
 Future<void> _loadRealFonts() async {
@@ -62,8 +63,16 @@ void main() {
     await _loadRealFonts();
   });
 
-  final now = DateTime(2026, 9, 23);
+  final now = DateTime(2026, 9, 24);
   final area = _sampleArea();
+  const previewWeather = WeatherBundle(
+    now: WeatherData(
+      temperature: 14,
+      weatherCode: 2,
+      condition: 'Partly Cloudy',
+      willRain: false,
+    ),
+  );
 
   Future<void> setSurface(WidgetTester tester, Size logical, double dpr) async {
     tester.view.physicalSize = logical * dpr;
@@ -85,6 +94,7 @@ void main() {
           area: area,
           isLive: false,
           now: now,
+          weatherOverride: previewWeather,
         ),
       ),
     ));
@@ -108,6 +118,7 @@ void main() {
           area: area,
           isLive: false,
           now: now,
+          weatherOverride: previewWeather,
         ),
       ),
     ));
@@ -182,6 +193,12 @@ void main() {
       theme: AppTheme.light,
       home: OnboardingScreen(onDone: () {}, themeService: null),
     ));
+    await tester.runAsync(() async {
+      await precacheImage(
+        const AssetImage('assets/illustrations/onboarding_step0.png'),
+        tester.element(find.byType(OnboardingScreen)),
+      );
+    });
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(OnboardingScreen),
@@ -195,6 +212,12 @@ void main() {
       theme: AppTheme.light,
       home: OnboardingScreen(onDone: () {}, themeService: null),
     ));
+    await tester.runAsync(() async {
+      await precacheImage(
+        const AssetImage('assets/illustrations/onboarding_step0.png'),
+        tester.element(find.byType(OnboardingScreen)),
+      );
+    });
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(OnboardingScreen),
@@ -221,7 +244,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Enable reminders'));
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -220));
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(0, -220));
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(SettingsTab),
@@ -248,7 +272,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Enable reminders'));
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -220));
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(0, -220));
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(SettingsTab),

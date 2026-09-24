@@ -33,12 +33,6 @@ class UpcomingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeColors = context.binColors;
-    final chipBases = collections.isNotEmpty
-        ? [
-            for (final c in collections)
-              CouncilScheme.resolve(councilSlug, c.stream).themed(context),
-          ]
-        : [themeColors.primary];
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       decoration: BoxDecoration(
@@ -55,7 +49,9 @@ class UpcomingTile extends StatelessWidget {
               width: 52,
               height: 56,
               decoration: BoxDecoration(
-                gradient: multiBinBandedGradient(chipBases),
+                gradient: forestBandedGradient(
+                  dark: Theme.of(context).brightness == Brightness.dark,
+                ),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Column(
@@ -88,20 +84,29 @@ class UpcomingTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                       for (final c in collections)
-                         Builder(builder: (context) {
-                           final p =
-                               CouncilScheme.resolve(councilSlug, c.stream);
-                           return _BinPill(
-                             presentation: p,
-                             name: p.label,
-                           );
-                         }),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final collection in collections)
+                            Builder(
+                              builder: (context) {
+                                final presentation = CouncilScheme.resolve(
+                                  councilSlug,
+                                  collection.stream,
+                                );
+                                return _BinPill(
+                                  presentation: presentation,
+                                  name: presentation.label,
+                                  maxWidth: constraints.maxWidth,
+                                );
+                              },
+                            ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -128,14 +133,20 @@ const _weekNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 class _BinPill extends StatelessWidget {
   final BinPresentation presentation;
   final String name;
+  final double maxWidth;
 
-  const _BinPill({required this.presentation, required this.name});
+  const _BinPill({
+    required this.presentation,
+    required this.name,
+    required this.maxWidth,
+  });
 
   @override
   Widget build(BuildContext context) {
     final themeColors = context.binColors;
     final color = presentation.themed(context);
     return Container(
+      constraints: BoxConstraints(maxWidth: maxWidth),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
@@ -144,15 +155,19 @@ class _BinPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          BinSwatch(
-              p: presentation, size: 8, radius: AppSpacing.radiusFull),
+          BinSwatch(p: presentation, size: 8, radius: AppSpacing.radiusFull),
           const SizedBox(width: 5),
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: themeColors.textPrimary,
+          Flexible(
+            child: Text(
+              name,
+              semanticsLabel: name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: themeColors.textPrimary,
+              ),
             ),
           ),
         ],

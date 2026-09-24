@@ -1,4 +1,4 @@
-﻿import '../main.dart';
+import '../main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:derby_bins/services/bin_scheme.dart';
@@ -11,6 +11,7 @@ import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_background.dart';
 import '../widgets/banded_gradient.dart';
+import '../widgets/bin_icon.dart';
 import 'calendar_screen.dart';
 import 'address_picker_screen.dart';
 
@@ -135,8 +136,9 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                       margin: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                       decoration: BoxDecoration(
-                        color:
-                            selected ? context.binColors.primaryLight : Colors.transparent,
+                        color: selected
+                            ? context.binColors.primaryLight
+                            : Colors.transparent,
                         borderRadius:
                             BorderRadius.circular(AppSpacing.radiusMd),
                       ),
@@ -213,8 +215,8 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                       .copyWith(color: context.binColors.textPrimary)),
               const SizedBox(height: AppSpacing.sm),
               Text(message,
-                  style: AppTypography.body.copyWith(
-                      color: context.binColors.textSecondary),
+                  style: AppTypography.body
+                      .copyWith(color: context.binColors.textSecondary),
                   textAlign: TextAlign.center),
               const SizedBox(height: AppSpacing.lg),
               SizedBox(
@@ -224,10 +226,10 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.binColors.primary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.md),
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusMd),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                     ),
                   ),
                   child: Text('OK',
@@ -387,9 +389,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
           final uprn = await _showUprnFallback(council, raw);
           if (uprn == null || !mounted) return;
           final r2 = await resolvePostcode(raw,
-              uprn: uprn,
-              councilSlug: council.slug,
-              councilName: council.name);
+              uprn: uprn, councilSlug: council.slug, councilName: council.name);
           if (r2 is ResolveReady) {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -463,7 +463,8 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: colors.background,
-        body: ScreenBackground(child: SingleChildScrollView(
+        body: ScreenBackground(
+            child: SingleChildScrollView(
           controller: _scrollController,
           child: AnimatedBuilder(
             animation: _entrance,
@@ -611,13 +612,10 @@ class _Hero extends StatelessWidget {
                 child: Row(
                   children: [
                     _BinCircles(
-                      bins: CouncilScheme.streamsFor(councilSlug)
-                          .map((s) {
-                            final p =
-                                CouncilScheme.resolve(councilSlug, s);
-                            return _BinCircle(p.themed(context), p.icon);
-                          })
-                          .toList(),
+                      bins: CouncilScheme.streamsFor(councilSlug).map((s) {
+                        final p = CouncilScheme.resolve(councilSlug, s);
+                        return _BinCircle(p, p.themed(context));
+                      }).toList(),
                     ),
                     const Spacer(),
                     if (themeService != null)
@@ -705,10 +703,10 @@ class _HeroDot extends StatelessWidget {
 
 /// A single coloured bin "token" inside the hero.
 class _BinCircle {
+  final BinPresentation presentation;
   final Color color;
-  final IconData icon;
 
-  const _BinCircle(this.color, this.icon);
+  const _BinCircle(this.presentation, this.color);
 }
 
 /// The four bin types as overlapping colour discs. Replaces the literal bin
@@ -737,20 +735,22 @@ class _BinCircles extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: bins[i].color,
-                  border:
-                      Border.all(color: Colors.white.withValues(alpha: 0.85), width: 2),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.85), width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: context.binColors.textMuted.withValues(alpha: 0.35),
+                      color:
+                          context.binColors.textMuted.withValues(alpha: 0.35),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-                child: Icon(
-                  bins[i].icon,
+                child: BinIcon(
+                  presentation: bins[i].presentation,
                   color: binForeground(bins[i].color),
                   size: 20,
+                  semanticLabel: bins[i].presentation.label,
                 ),
               ),
             ),
@@ -832,8 +832,7 @@ class _FormCard extends StatelessWidget {
                           _UppercaseFormatter(),
                         ],
                         maxLength: 8,
-                        scrollPadding:
-                            const EdgeInsets.only(bottom: 220),
+                        scrollPadding: const EdgeInsets.only(bottom: 220),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -842,17 +841,15 @@ class _FormCard extends StatelessWidget {
                         ),
                         decoration: InputDecoration(
                           hintText: 'Enter your postcode',
-                          hintStyle:
-                              TextStyle(color: colors.textMuted),
-                          prefixIcon: const Icon(
-                              Icons.location_on_outlined, size: 18),
+                          hintStyle: TextStyle(color: colors.textMuted),
+                          prefixIcon:
+                              const Icon(Icons.location_on_outlined, size: 18),
                           prefixIconColor: colors.textMuted,
                           suffixIcon: controller.text.isNotEmpty
                               ? GestureDetector(
                                   onTap: onClear,
                                   child: Icon(Icons.cancel,
-                                      size: 18,
-                                      color: colors.textMuted),
+                                      size: 18, color: colors.textMuted),
                                 )
                               : null,
                           counterText: '',
@@ -894,8 +891,7 @@ class _FormCard extends StatelessWidget {
                     );
                     if (!opened && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Could not open GOV.UK.')),
+                        const SnackBar(content: Text('Could not open GOV.UK.')),
                       );
                     }
                   },
@@ -1066,8 +1062,7 @@ class _SubmitButtonState extends State<_SubmitButton> {
                     ],
                   )
                 : Text('Find my bins',
-                    style:
-                        AppTypography.title.copyWith(color: Colors.white)),
+                    style: AppTypography.title.copyWith(color: Colors.white)),
           ),
         ),
       ),

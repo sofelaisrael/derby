@@ -1,9 +1,45 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:derby_bins/models/bin_schedule.dart';
 import 'package:derby_bins/services/bin_scheme.dart';
+import 'package:derby_bins/theme/app_colors.dart';
+
+double _contrastRatio(Color first, Color second) {
+  final firstLuminance = first.computeLuminance();
+  final secondLuminance = second.computeLuminance();
+  final lighter =
+      firstLuminance > secondLuminance ? firstLuminance : secondLuminance;
+  final darker =
+      firstLuminance > secondLuminance ? secondLuminance : firstLuminance;
+  return (lighter + 0.05) / (darker + 0.05);
+}
 
 void main() {
+  test('all Derby bin colours use a WCAG AA black or white foreground', () {
+    for (final presentation in CouncilScheme.streamsFor('derby')
+        .map((stream) => CouncilScheme.resolve('derby', stream))) {
+      final themedColours = [
+        (name: 'light', colour: Color(presentation.colorLight)),
+        (name: 'dark', colour: Color(presentation.colorDark)),
+      ];
+      for (final themed in themedColours) {
+        final blackRatio = _contrastRatio(Colors.black, themed.colour);
+        final whiteRatio = _contrastRatio(Colors.white, themed.colour);
+        final expected = blackRatio >= whiteRatio ? Colors.black : Colors.white;
+        expect(
+          binForeground(themed.colour),
+          expected,
+          reason: '${presentation.label} ${themed.name}',
+        );
+        expect(
+          _contrastRatio(binForeground(themed.colour), themed.colour),
+          greaterThanOrEqualTo(4.5),
+          reason: '${presentation.label} ${themed.name}',
+        );
+      }
+    }
+  });
+
   group('CouncilScheme.resolve', () {
     test('Derby general is Black bin with slate colour', () {
       final p = CouncilScheme.resolve('derby', WasteStream.general);
@@ -70,12 +106,20 @@ void main() {
       expect(p.label, 'Black bin');
     });
 
-    test('icon and badgeIcon match per stream', () {
-      expect(
-          CouncilScheme.resolve('derby', WasteStream.general).icon,
-          CouncilScheme.resolve('derby', WasteStream.general).badgeIcon);
-      expect(CouncilScheme.resolve('derby', WasteStream.general).icon,
-          isA<IconData>());
+    test('icons and assets are configured per stream', () {
+      final general = CouncilScheme.resolve('derby', WasteStream.general);
+      expect(general.icon, isNull);
+      expect(general.assetPath, 'assets/icons/bin.svg');
+
+      for (final stream in [
+        WasteStream.recycling,
+        WasteStream.garden,
+        WasteStream.food,
+      ]) {
+        final presentation = CouncilScheme.resolve('derby', stream);
+        expect(presentation.icon, isA<IconData>());
+        expect(presentation.assetPath, isNull);
+      }
     });
   });
 }

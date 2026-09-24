@@ -22,7 +22,6 @@ dependencies:
   background_fetch: ^1.4.1
   url_launcher: ^6.3.2
   flutter_svg: ^2.3.0
-  font_awesome_flutter: ^11.0.0
 
 dev_dependencies:
   flutter_test:
@@ -34,6 +33,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/illustrations/
+    - assets/icons/
   fonts:
     - family: Plus Jakarta Sans
       fonts:
