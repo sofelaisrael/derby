@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:derby_bins/services/council_api.dart';
 import 'package:derby_bins/services/schedule_service.dart';
 import 'package:derby_bins/services/theme_service.dart';
@@ -31,7 +31,8 @@ class AddressPickerScreen extends StatelessWidget {
     final colors = context.binColors;
     return Scaffold(
       backgroundColor: colors.background,
-      body: ScreenBackground(child: SafeArea(
+      body: ScreenBackground(
+          child: SafeArea(
         child: Column(
           children: [
             Padding(
@@ -52,7 +53,7 @@ class AddressPickerScreen extends StatelessWidget {
                         Text(
                           isCalendar
                               ? '2 calendars · $councilName'
-                              : '${addresses.length} addresses found Â· $postcode',
+                              : '${addresses.length} ${addresses.length == 1 ? 'address' : 'addresses'} found - $postcode',
                           style: AppTypography.caption
                               .copyWith(color: colors.textSecondary),
                         ),
@@ -77,8 +78,7 @@ class AddressPickerScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.close,
-                              size: 14,
-                              color: colors.textSecondary),
+                              size: 14, color: colors.textSecondary),
                           const SizedBox(width: 6),
                           Text('Change',
                               style: TextStyle(
@@ -100,17 +100,16 @@ class AddressPickerScreen extends StatelessWidget {
                   const SizedBox(height: Spacing.sm),
                   ...addresses.map((a) {
                     final idx = a.label.lastIndexOf(',');
-                    final street = idx < 0
-                        ? a.label
-                        : a.label.substring(0, idx).trim();
-                    final sub = idx < 0
-                        ? null
-                        : a.label.substring(idx + 1).trim();
+                    final street =
+                        idx < 0 ? a.label : a.label.substring(0, idx).trim();
+                    final sub =
+                        idx < 0 ? null : a.label.substring(idx + 1).trim();
                     return Container(
                       margin: const EdgeInsets.only(bottom: Spacing.sm),
                       decoration: BoxDecoration(
                         color: colors.surfaceElevated,
-                        borderRadius: BorderRadius.circular(AppRadius.container),
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.container),
                         border: Border.all(color: colors.border),
                       ),
                       child: Material(
@@ -138,14 +137,14 @@ class AddressPickerScreen extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 vertical: Spacing.lg, horizontal: Spacing.md),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Container(
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
                                     color: colors.primaryLight,
-                                    borderRadius:
-                                        BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Icon(Icons.home_outlined,
                                       size: 20, color: colors.primary),
@@ -161,8 +160,7 @@ class AddressPickerScreen extends StatelessWidget {
                                               color: colors.textPrimary)),
                                       if (sub != null) ...[
                                         const SizedBox(height: 2),
-                                        Text(sub,
-                                            style: AppTypography.caption),
+                                        Text(sub, style: AppTypography.caption),
                                       ],
                                     ],
                                   ),
@@ -217,8 +215,7 @@ class AddressPickerScreen extends StatelessWidget {
                               const SizedBox(width: Spacing.md),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text('My address isn\u2019t listed',
                                         style: AppTypography.title.copyWith(

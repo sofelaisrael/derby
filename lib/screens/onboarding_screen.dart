@@ -582,12 +582,6 @@ class _StepPageState extends State<_StepPage>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: colors.primary,
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
                 child: Row(
@@ -760,23 +754,6 @@ class _StepPageState extends State<_StepPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: double.infinity,
-                  height: 44,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                  ),
-                  child: const Text(
-                    'BIN DAY REMINDERS',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.2,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
                   child: Column(

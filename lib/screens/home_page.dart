@@ -209,7 +209,7 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Column(
@@ -311,10 +311,10 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: AppSpacing.xl),
               Align(
-                alignment: Alignment.centerLeft,
+                alignment: Alignment.centerRight,
                 child: TextButton.icon(
                   onPressed: _openCalendar,
-                  icon: const Icon(Icons.chevron_right, size: 18),
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   iconAlignment: IconAlignment.end,
                   label: const Text('view calendar'),
                   style: TextButton.styleFrom(

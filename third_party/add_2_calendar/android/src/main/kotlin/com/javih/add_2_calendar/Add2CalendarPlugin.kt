@@ -1,9 +1,9 @@
 package com.javih.add_2_calendar
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.provider.CalendarContract
 import androidx.annotation.NonNull
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -116,11 +116,12 @@ class Add2CalendarPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-        if (intent.resolveActivity(mContext.packageManager) != null) {
+        try {
             mContext.startActivity(intent)
             return true
+        } catch (_: ActivityNotFoundException) {
+            return false
         }
-        return false;
     }
 
 
