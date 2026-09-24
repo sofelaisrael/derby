@@ -127,7 +127,7 @@ void main() {
         councilSlug: 'derby',
         councilName: 'Derby City Council',
         postcode: 'DE1 1AA',
-        addressLabel: '1 Test Street, Derby',
+        addressLabel: '1 Test Street',
         now: now,
       ),
     ));
@@ -147,7 +147,7 @@ void main() {
         councilSlug: 'derby',
         councilName: 'Derby City Council',
         postcode: 'DE1 1AA',
-        addressLabel: '1 Test Street, Derby',
+        addressLabel: '1 Test Street',
         now: now,
       ),
     ));

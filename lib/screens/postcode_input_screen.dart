@@ -274,6 +274,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text('Address not found',
+                    textAlign: TextAlign.left,
                     style: AppTypography.h2
                         .copyWith(color: context.binColors.textPrimary)),
                 const SizedBox(height: AppSpacing.sm),
@@ -281,7 +282,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                   'Enter your UPRN to continue.',
                   style: AppTypography.body
                       .copyWith(color: context.binColors.textSecondary),
-                  textAlign: TextAlign.center,
+                  textAlign: TextAlign.left,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 TextField(

@@ -321,66 +321,34 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
           height: 180,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
-            child: Column(
+            child: Row(
               children: [
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _HeaderButton(
-                      icon: Icons.arrow_back,
-                      onTap: () => Navigator.of(context).pop(),
-                    ),
-                    const Expanded(
-                      child: Text(
-                        'Your calendar',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ),
-                    _HeaderButton(
-                      icon: Icons.ios_share,
-                      onTap: () {
-                        final box = context.findRenderObject() as RenderBox?;
-                        final origin = (box != null && box.hasSize)
-                            ? box.localToGlobal(Offset.zero) & box.size
-                            : const Rect.fromLTWH(0, 0, 1, 1);
-                        _showExportSheet(context, origin);
-                      },
-                    ),
-                  ],
+                _HeaderButton(
+                  icon: Icons.arrow_back,
+                  onTap: () => Navigator.of(context).pop(),
                 ),
-                const Spacer(),
-                Column(
-                  children: [
-                    if (widget.addressLabel != null) ...[
-                      Text(
-                        widget.addressLabel!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                    ],
-                    Text(
-                      widget.postcode,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.70),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                const Expanded(
+                  child: Text(
+                    'Your calendar',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 14),
+                _HeaderButton(
+                  icon: Icons.ios_share,
+                  onTap: () {
+                    final box = context.findRenderObject() as RenderBox?;
+                    final origin = (box != null && box.hasSize)
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : const Rect.fromLTWH(0, 0, 1, 1);
+                    _showExportSheet(context, origin);
+                  },
+                ),
               ],
             ),
           ),

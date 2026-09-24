@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../models/bin_schedule.dart';
 
 /// Council-independent presentation data for a bin: the colour, the
@@ -92,7 +93,7 @@ const _foodItems = <String>[
 IconData _iconFor(WasteStream s) {
   switch (s) {
     case WasteStream.general:
-      return Icons.delete_sweep_outlined;
+      return FontAwesomeIcons.dumpster.data;
     case WasteStream.recycling:
       return Icons.recycling;
     case WasteStream.garden:

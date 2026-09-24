@@ -6,6 +6,7 @@ import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../widgets/app_background.dart';
+import '../widgets/banded_gradient.dart';
 import '../widgets/bin_badge.dart';
 
 const _wasteNames = {
@@ -13,6 +14,13 @@ const _wasteNames = {
   WasteStream.recycling: 'Recycling',
   WasteStream.garden: 'Garden waste',
   WasteStream.food: 'Food waste',
+};
+
+const _frequencyNames = {
+  WasteStream.general: 'Collected weekly',
+  WasteStream.recycling: 'Collected fortnightly',
+  WasteStream.garden: 'Collected fortnightly',
+  WasteStream.food: 'Collected weekly',
 };
 
 class BinGuideScreen extends StatefulWidget {
@@ -150,86 +158,126 @@ class _BinSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.binColors;
     final subtitle = _wasteNames[stream] ?? '';
+    final frequency = _frequencyNames[stream] ?? '';
     final color = presentation.themed(context);
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(color: colors.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              BinBadge(presentation: presentation, size: 52),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(presentation.label,
-                        style: AppTypography.title
-                            .copyWith(color: colors.textPrimary)),
-                    const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: AppTypography.caption
-                            .copyWith(color: colors.textSecondary)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Divider(height: 1, color: colors.borderLight),
-          const SizedBox(height: AppSpacing.md),
-          ...presentation.items.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.check_rounded,
-                          size: 11, color: color),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 1),
-                        child: Text(item,
-                            style: AppTypography.body.copyWith(
-                              fontSize: 14,
-                              color: colors.textPrimary,
-                            )),
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-          const SizedBox(height: AppSpacing.xs),
           Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            height: 4,
             decoration: BoxDecoration(
-              color: colors.surfaceTinted,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              gradient: binBandedGradient(color),
             ),
-            child: Row(
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline,
-                    size: 14, color: colors.textMuted),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                      'Belongs in your ${presentation.label.toLowerCase()}.',
-                      style: AppTypography.caption.copyWith(
-                          fontSize: 12, color: colors.textSecondary)),
+                Row(
+                  children: [
+                    BinBadge(presentation: presentation, size: 52),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(presentation.label,
+                              style: AppTypography.title.copyWith(
+                                  color: colors.textPrimary,
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 2),
+                          Text(subtitle,
+                              style: AppTypography.caption
+                                  .copyWith(color: colors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.event_repeat, size: 14, color: color),
+                      const SizedBox(width: 6),
+                      Text(
+                        frequency,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Divider(height: 1, color: colors.borderLight),
+                const SizedBox(height: AppSpacing.md),
+                ...presentation.items.map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.14),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.check_rounded,
+                                size: 11, color: color),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 1),
+                              child: Text(item,
+                                  style: AppTypography.body.copyWith(
+                                    fontSize: 14,
+                                    color: colors.textPrimary,
+                                  )),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                const SizedBox(height: AppSpacing.xs),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: colors.surfaceTinted,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline,
+                          size: 14, color: colors.textMuted),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                            'Belongs in your ${presentation.label.toLowerCase()}.',
+                            style: AppTypography.caption.copyWith(
+                                fontSize: 12, color: colors.textSecondary)),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

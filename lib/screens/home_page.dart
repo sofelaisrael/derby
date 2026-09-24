@@ -248,6 +248,37 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: AppSpacing.xl),
 
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonal(
+                  onPressed: _openCalendar,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors.primaryLight,
+                    foregroundColor: colors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusMd),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.calendar_month_outlined, size: 18),
+                      SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'View calendar',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+
               Row(
                 children: [
                   Text(

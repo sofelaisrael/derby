@@ -130,7 +130,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: FilledButton(
                     onPressed: () => Navigator.of(ctx).pop(),
                     style: FilledButton.styleFrom(
-                      backgroundColor: sheetColors.accent,
+                      backgroundColor: sheetColors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius:
@@ -559,6 +559,7 @@ class _StepPageState extends State<_StepPage>
 
   Widget _buildCalendarArt(double w) {
     final colors = context.binColors;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final streams = CouncilScheme.streamsFor('derby');
     final binColors = [
       for (final s in streams)
@@ -569,7 +570,7 @@ class _StepPageState extends State<_StepPage>
       height: widget.artHeight,
       child: Center(
         child: Container(
-          width: math.min(w * 0.82, 260),
+          width: math.min(w * 0.72, 240),
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: colors.surfaceElevated,
@@ -579,59 +580,76 @@ class _StepPageState extends State<_StepPage>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                height: 6,
+                decoration: BoxDecoration(
+                  gradient: forestBandedGradient(dark: dark),
+                ),
+              ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.chevron_left_rounded,
+                        size: 14, color: colors.textMuted),
+                    Expanded(
+                      child: Text(
+                        'September',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded,
+                        size: 14, color: colors.textMuted),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Column(
                   children: [
-                    _scheduleRow('Thu 24 Sep', [binColors[1], binColors[3]]),
-                    _scheduleRow('Mon 28 Sep', [binColors[0]]),
-                    _scheduleRow('Wed 30 Sep', [binColors[2]]),
-                  ],
-                ),
-              ),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-                decoration: BoxDecoration(color: colors.primaryLight),
-                child: Row(
-                  children: [
-                    Icon(Icons.notifications_active_outlined,
-                        size: 12, color: colors.primary),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Evening nudge before each collection',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: colors.primary,
+                    Row(
+                      children: [
+                        for (final d in const ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                d,
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    for (var r = 0; r < 3; r++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            for (var c = 0; c < 7; c++)
+                              Expanded(
+                                child: _calendarDayCell(
+                                  r * 7 + c + 1,
+                                  chip: _chipForDay(r * 7 + c + 1, binColors),
+                                  today: r * 7 + c + 1 == 10,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.flag_outlined,
-                        size: 12, color: colors.textMuted),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Missed a bin? Flag it in seconds.',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: colors.textMuted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -639,37 +657,77 @@ class _StepPageState extends State<_StepPage>
     );
   }
 
-  Widget _scheduleRow(String label, List<Color> chips) {
+  Widget _calendarDayCell(int day, {Color? chip, bool today = false}) {
     final colors = context.binColors;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: colors.textPrimary,
-              ),
+    final Widget content;
+    if (today) {
+      content = Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          color: colors.primary,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '$day',
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      );
+    } else if (chip != null) {
+      content = Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          gradient: binBandedGradient(chip),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '$day',
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      );
+    } else {
+      content = SizedBox(
+        width: 20,
+        height: 20,
+        child: Center(
+          child: Text(
+            '$day',
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: colors.textMuted,
             ),
           ),
-          for (final c in chips)
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  gradient: binBandedGradient(c),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
+        ),
+      );
+    }
+    return Center(child: content);
+  }
+
+  Color? _chipForDay(int day, List<Color> binColors) {
+    switch (day) {
+      case 3:
+        return binColors[1];
+      case 6:
+        return binColors[0];
+      case 12:
+        return binColors[3];
+      case 17:
+        return binColors[2];
+      default:
+        return null;
+    }
   }
 
   Widget _buildReminderArt(double w) {
@@ -677,91 +735,95 @@ class _StepPageState extends State<_StepPage>
     return SizedBox(
       width: w,
       height: widget.artHeight,
-      child: Center(
-        child: Container(
-          width: math.min(w * 0.82, 260),
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: colors.surfaceElevated,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            border: Border.all(color: colors.borderLight),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: double.infinity,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  gradient: binBandedGradient(const Color(0xFF3B82F6)),
-                ),
-                child: const Text(
-                  'BIN DAY REMINDERS',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                    color: Colors.white,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Container(
+            width: math.min(w * 0.82, 260),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: colors.surfaceElevated,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(color: colors.borderLight),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: binBandedGradient(const Color(0xFF3B82F6)),
+                  ),
+                  child: const Text(
+                    'BIN DAY REMINDERS',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: colors.primaryLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.notifications_active_outlined,
-                        size: 16,
-                        color: colors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      'Recycling tomorrow',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: colors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      '24 September',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: colors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: colors.primaryLight,
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusSm),
-                      ),
-                      child: Text(
-                        'Reminder set',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: colors.primaryLight,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.notifications_active_outlined,
+                          size: 16,
                           color: colors.primary,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'Recycling tomorrow',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '24 September',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: colors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: colors.primaryLight,
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusSm),
+                        ),
+                        child: Text(
+                          'Reminder set',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: colors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -799,16 +861,19 @@ class _StepPageState extends State<_StepPage>
             icon: Icons.calendar_month_outlined,
             title: 'Full schedule',
             caption: 'Every bin, every week — all in one place.',
+            stream: WasteStream.recycling,
           ),
           _FeatureCardData(
             icon: Icons.notifications_active_outlined,
             title: 'Evening nudges',
             caption: 'A gentle reminder the night before collection.',
+            stream: WasteStream.food,
           ),
           _FeatureCardData(
             icon: Icons.flag_outlined,
             title: 'Missed a bin?',
             caption: 'Flag it to your council in a couple of taps.',
+            stream: WasteStream.garden,
           ),
         ];
         return [
@@ -834,11 +899,13 @@ class _FeatureCardData {
   final IconData icon;
   final String title;
   final String caption;
+  final WasteStream stream;
 
   const _FeatureCardData({
     required this.icon,
     required this.title,
     required this.caption,
+    required this.stream,
   });
 }
 
@@ -850,39 +917,58 @@ class _FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.binColors;
+    final accent = CouncilScheme.resolve('derby', data.stream).themed(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(color: colors.borderLight),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            height: 3,
             decoration: BoxDecoration(
-              color: colors.primaryLight,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              gradient: binBandedGradient(accent),
             ),
-            child: Icon(data.icon, size: 21, color: colors.primary),
           ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(data.title,
-                    style: AppTypography.title
-                        .copyWith(color: colors.textPrimary)),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  data.caption,
-                  style: AppTypography.caption
-                      .copyWith(color: colors.textSecondary),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  child: Icon(data.icon, size: 21, color: accent),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.title,
+                        style: AppTypography.title.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        data.caption,
+                        style: AppTypography.caption
+                            .copyWith(color: colors.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

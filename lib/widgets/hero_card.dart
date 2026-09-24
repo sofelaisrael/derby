@@ -62,13 +62,6 @@ class TodayBanner extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  collections.length == 1 ? 'Hope your bin is out!' : 'Hope your bins are out!',
-                  style: AppTypography.caption.copyWith(
-                    color: context.binColors.textMuted,
-                  ),
-                ),
               ],
             ),
           ),
@@ -134,7 +127,7 @@ class HeroCollectionCard extends StatelessWidget {
             Container(
               height: 10,
               decoration: BoxDecoration(
-                gradient: multiBinBandedGradient(bases),
+                gradient: binBandedGradient(bases.first),
               ),
             ),
             Padding(
@@ -245,7 +238,7 @@ class HeroCollectionCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              gradient: multiBinBandedGradient(bases),
+                              gradient: binBandedGradient(bases.first),
                               borderRadius:
                                   BorderRadius.circular(AppSpacing.radiusMd),
                             ),
