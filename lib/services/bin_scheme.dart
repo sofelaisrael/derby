@@ -165,7 +165,7 @@ class CouncilScheme {
 
   // ── Derby (shared across all Derbyshire councils) ───────────
   static final _derbyGeneral = _mk(
-      0xFF64748B, 0xFF94A3B8, 'Black bin', WasteStream.general, _generalItems);
+      0xFF343A40, 0xFF4B5563, 'Black bin', WasteStream.general, _generalItems);
   static final _derbyRecycling = _mk(0xFF3B82F6, 0xFF60A5FA, 'Blue bin',
       WasteStream.recycling, _recyclingItems);
   static final _derbyGarden = _mk(

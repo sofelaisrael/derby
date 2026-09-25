@@ -137,7 +137,7 @@ class AddressPickerScreen extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 vertical: Spacing.lg, horizontal: Spacing.md),
                             child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Container(
                                   width: 40,

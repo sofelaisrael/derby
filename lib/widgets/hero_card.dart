@@ -26,6 +26,15 @@ class TodayBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.binColors;
     final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+    final dateTileGradient = dark
+        ? forestBandedGradient(dark: true)
+        : const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFD7E7D7), Color(0xFFA9C6AE)],
+          );
+    final dateTileTextColor = dark ? Colors.white : const Color(0xFF1F3D2B);
     final presentations = collections
         .map((collection) =>
             CouncilScheme.resolve(councilSlug, collection.stream))
@@ -71,45 +80,36 @@ class TodayBanner extends StatelessWidget {
               width: 56,
               height: 60,
               decoration: BoxDecoration(
-                gradient: forestBandedGradient(
-                  dark: theme.brightness == Brightness.dark,
-                ),
+                gradient: dateTileGradient,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
-              child: Stack(
-                children: [
-                  const Positioned.fill(
-                    child: ColoredBox(color: Color(0x40000000)),
-                  ),
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          weekdayNames[date.weekday - 1]
-                              .substring(0, 3)
-                              .toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          '${date.day}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            height: 1,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      weekdayNames[date.weekday - 1]
+                          .substring(0, 3)
+                          .toUpperCase(),
+                      style: TextStyle(
+                        color: dateTileTextColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 1),
+                    Text(
+                      '${date.day}',
+                      style: TextStyle(
+                        color: dateTileTextColor,
+                        fontSize: 22,
+                        height: 1,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.md),

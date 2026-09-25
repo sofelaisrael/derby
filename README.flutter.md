@@ -1,4 +1,4 @@
-# derby_bins
+# Derby Bins
 
 A new Flutter project.
 

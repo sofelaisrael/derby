@@ -1,6 +1,6 @@
 {
-    "name": "derby_bins",
-    "short_name": "derby_bins",
+    "name": "Derby Bins",
+    "short_name": "Derby Bins",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

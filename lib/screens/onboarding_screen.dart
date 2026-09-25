@@ -309,7 +309,7 @@ class _TopBar extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              'DerbyBins',
+              'Derby Bins',
               style: AppTypography.title.copyWith(
                 color: colors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -740,9 +740,9 @@ class _StepPageState extends State<_StepPage>
       width: w,
       height: widget.artHeight,
       child: Align(
-        alignment: Alignment.topCenter,
+        alignment: Alignment.center,
         child: Padding(
-          padding: const EdgeInsets.only(top: 10),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Container(
             width: math.min(w * 0.82, 260),
             clipBehavior: Clip.antiAlias,

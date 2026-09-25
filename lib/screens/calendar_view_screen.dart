@@ -472,13 +472,13 @@ class _DayCell extends StatelessWidget {
                                 const EdgeInsets.symmetric(horizontal: 1.5),
                             child: Container(
                               width: 16,
-                              height: 3,
+                              height: 5,
                               decoration: BoxDecoration(
                                 gradient: binBandedGradient(
                                   CouncilScheme.resolve(councilSlug, stream)
                                       .themed(context),
                                 ),
-                                borderRadius: BorderRadius.circular(2),
+                                borderRadius: BorderRadius.circular(3),
                               ),
                             ),
                           ))

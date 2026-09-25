@@ -28,7 +28,7 @@ class CalendarExportService {
       buffer.writeAll([
         'BEGIN:VCALENDAR\r\n',
         'VERSION:2.0\r\n',
-        'PRODID:-//DerbyBins//EN\r\n',
+        'PRODID:-//Derby Bins//EN\r\n',
         'CALSCALE:GREGORIAN\r\n',
       ]);
 
@@ -58,7 +58,8 @@ class CalendarExportService {
       buffer.writeln('END:VCALENDAR');
 
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/derby_bins_${safePostcode}_$councilSlug.ics');
+      final file =
+          File('${dir.path}/derby_bins_${safePostcode}_$councilSlug.ics');
       await file.writeAsString(buffer.toString());
 
       await SharePlus.instance.share(ShareParams(
@@ -90,8 +91,7 @@ class CalendarExportService {
       final bins = day.collections
           .map((c) => CouncilScheme.resolve(councilSlug, c.stream).label)
           .join(', ');
-      final start =
-          DateTime(day.date.year, day.date.month, day.date.day, 7);
+      final start = DateTime(day.date.year, day.date.month, day.date.day, 7);
       final event = Event(
         title: '$bins bin collection - $label',
         description: '$bins bin - upcoming collection for $label',

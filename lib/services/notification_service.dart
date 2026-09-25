@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:background_fetch/background_fetch.dart';
 import 'package:flutter/foundation.dart';
@@ -14,8 +14,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:url_launcher/url_launcher.dart';
 
 const _channelId = 'bin_reminders_v2';
-const _channelName = 'Bin reminders';
-const _channelDesc = 'Reminders for upcoming bin collections';
+const _channelName = 'Derby Bins reminders';
+const _channelDesc = 'Reminders for upcoming bin collections from Derby Bins';
 
 /// Fixed reminder times. Each entry is (hour, minute, day offset from the
 /// collection date): slot 0 is 12:00 the day before, slot 1 is 20:00 the
@@ -125,8 +125,7 @@ class NotificationService {
     final tzName = _timezoneNameFromOffset(localOffset);
     tz.setLocalLocation(tz.getLocation(tzName));
 
-    const androidSettings =
-        AndroidInitializationSettings('ic_notification');
+    const androidSettings = AndroidInitializationSettings('ic_notification');
     const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(
       android: androidSettings,
@@ -349,7 +348,8 @@ class NotificationService {
     try {
       await init();
       final enabled = await ReminderStore.isEnabled();
-      debugPrint('[Notif] bgFetchCheck: enabled=$enabled now=${DateTime.now()}');
+      debugPrint(
+          '[Notif] bgFetchCheck: enabled=$enabled now=${DateTime.now()}');
       if (!enabled) return;
 
       if (!_deliveredLoaded) {
@@ -380,7 +380,8 @@ class NotificationService {
             hour,
             minute,
           );
-          final windowEnd = windowStart.add(Duration(hours: _windowHours[slot]));
+          final windowEnd =
+              windowStart.add(Duration(hours: _windowHours[slot]));
           final id = _uniqueReminderId(reminderDate, slot: slot);
 
           if (now.isAfter(windowStart) && now.isBefore(windowEnd)) {
@@ -414,8 +415,8 @@ class NotificationService {
   /// alarms when it's swiped away from recents.
   static Future<bool?> isIgnoringBatteryOptimizations() async {
     try {
-      return await _batteryChannel.invokeMethod<bool>(
-          'isIgnoringBatteryOptimizations');
+      return await _batteryChannel
+          .invokeMethod<bool>('isIgnoringBatteryOptimizations');
     } catch (_) {
       return null;
     }
@@ -475,9 +476,8 @@ class NotificationService {
   ) {
     final multipleBins = allBinLabels.length > 1;
     final binLabel = allBinLabels.first;
-    final binNames = allBinLabels
-        .map((label) => label.replaceAll(' bin', ''))
-        .join(' and ');
+    final binNames =
+        allBinLabels.map((label) => label.replaceAll(' bin', '')).join(' and ');
 
     if (slot == 0) {
       // Lunchtime the day before â€” heads-up.
@@ -562,7 +562,8 @@ class NotificationService {
       final area = await ReminderStore.getCachedArea();
       final slug = await ReminderStore.getCachedCouncilSlug();
       if (area == null || slug == null) return;
-      debugPrint('[Notif] exact alarms now permitted - rescheduling on-time reminders');
+      debugPrint(
+          '[Notif] exact alarms now permitted - rescheduling on-time reminders');
       await scheduleReminders(area, slug);
     } catch (e) {
       debugPrint('[Notif] maybeRescheduleIfExactAlarmGranted error: $e');

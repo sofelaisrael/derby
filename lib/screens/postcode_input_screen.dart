@@ -791,11 +791,16 @@ class _BinCircles extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: BinIcon(
-                  presentation: bins[i].presentation,
-                  color: Colors.white,
-                  size: bins[i].presentation.assetPath != null ? 12 : 20,
-                  semanticLabel: bins[i].presentation.label,
+                child: Center(
+                  child: Transform.scale(
+                    scale: bins[i].presentation.assetPath != null ? 0.8 : 1.0,
+                    child: BinIcon(
+                      presentation: bins[i].presentation,
+                      color: Colors.white,
+                      size: 20,
+                      semanticLabel: bins[i].presentation.label,
+                    ),
+                  ),
                 ),
               ),
             ),

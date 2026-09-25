@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "uk.co.derbybins" "\0"
-            VALUE "FileDescription", "derby_bins" "\0"
+            VALUE "FileDescription", "Derby Bins" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "derby_bins" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 uk.co.derbybins. All rights reserved." "\0"
             VALUE "OriginalFilename", "derby_bins.exe" "\0"
-            VALUE "ProductName", "derby_bins" "\0"
+            VALUE "ProductName", "Derby Bins" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

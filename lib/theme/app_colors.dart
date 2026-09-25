@@ -23,7 +23,7 @@ class AppColors {
 
   static const greenBin = Color(0xFF10B981);
   static const blueBin = Color(0xFF3B82F6);
-  static const glassBin = Color(0xFF64748B);
+  static const glassBin = Color(0xFF343A40);
   static const foodBin = Color(0xFFF59E0B);
 
   static const success = Color(0xFF16A34A);
@@ -75,7 +75,7 @@ class AppColorsDark {
 
   static const greenBin = Color(0xFF34D399);
   static const blueBin = Color(0xFF60A5FA);
-  static const glassBin = Color(0xFF94A3B8);
+  static const glassBin = Color(0xFF4B5563);
   static const foodBin = Color(0xFFFBBF24);
 
   static const success = Color(0xFF4ADE80);

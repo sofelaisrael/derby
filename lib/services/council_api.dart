@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:derby_bins/models/bin_schedule.dart';
@@ -33,11 +33,10 @@ class CouncilApi {
   static const Duration _cacheTtl = Duration(hours: 24);
   static const Map<String, String> _headers = {
     'Accept': 'application/json',
-    'User-Agent': 'DerbyBins/1.0 (bin-collection-app)',
+    'User-Agent': 'Derby Bins/1.0 (bin-collection-app)',
   };
 
-  static Future<SharedPreferences> _prefs() =>
-      SharedPreferences.getInstance();
+  static Future<SharedPreferences> _prefs() => SharedPreferences.getInstance();
 
   static String _cacheKey(String council, String uprn) =>
       'api_cache_${council}_$uprn';
@@ -62,18 +61,33 @@ class CouncilApi {
   static const List<CouncilInfo> _fallbackCouncils = [
     CouncilInfo(id: 'DCC', name: 'Derby City Council', slug: 'derby'),
     CouncilInfo(id: 'EBC', name: 'Erewash Borough Council', slug: 'erewash'),
-    CouncilInfo(id: 'AVBC', name: 'Amber Valley Borough Council', slug: 'ambervalley'),
-    CouncilInfo(id: 'HPBC', name: 'High Peak Borough Council', slug: 'highpeak'),
-    CouncilInfo(id: 'DDDC', name: 'Derbyshire Dales District Council', slug: 'derbyshiredales'),
+    CouncilInfo(
+        id: 'AVBC', name: 'Amber Valley Borough Council', slug: 'ambervalley'),
+    CouncilInfo(
+        id: 'HPBC', name: 'High Peak Borough Council', slug: 'highpeak'),
+    CouncilInfo(
+        id: 'DDDC',
+        name: 'Derbyshire Dales District Council',
+        slug: 'derbyshiredales'),
     CouncilInfo(id: 'BDC', name: 'Bolsover District Council', slug: 'bolsover'),
-    CouncilInfo(id: 'CBC', name: 'Chesterfield Borough Council', slug: 'chesterfield'),
-    CouncilInfo(id: 'SDDC', name: 'South Derbyshire District Council', slug: 'southderbyshire'),
-    CouncilInfo(id: 'NEDDC', name: 'North East Derbyshire District Council', slug: 'northeastderbyshire'),
+    CouncilInfo(
+        id: 'CBC', name: 'Chesterfield Borough Council', slug: 'chesterfield'),
+    CouncilInfo(
+        id: 'SDDC',
+        name: 'South Derbyshire District Council',
+        slug: 'southderbyshire'),
+    CouncilInfo(
+        id: 'NEDDC',
+        name: 'North East Derbyshire District Council',
+        slug: 'northeastderbyshire'),
   ];
 
   /// Slugs of councils that use a calendar-based (no postcode) flow. Applied
   /// to the fallback council list when the proxy list is unavailable.
-  static const Set<String> _calendarBasedSlugs = {'bolsover', 'northeastderbyshire'};
+  static const Set<String> _calendarBasedSlugs = {
+    'bolsover',
+    'northeastderbyshire'
+  };
 
   static List<CouncilInfo> _applyCalendarFlags(List<CouncilInfo> councils) => [
         for (final c in councils)
@@ -129,9 +143,10 @@ class CouncilApi {
   }
 
   /// Look up addresses for a postcode in the given council.
-  Future<List<CouncilAddress>> lookupAddresses(String councilSlug, String postcode) async {
-    final uri = Uri.parse('$proxyBaseUrl/bins')
-        .replace(queryParameters: {'council': councilSlug, 'postcode': postcode});
+  Future<List<CouncilAddress>> lookupAddresses(
+      String councilSlug, String postcode) async {
+    final uri = Uri.parse('$proxyBaseUrl/bins').replace(
+        queryParameters: {'council': councilSlug, 'postcode': postcode});
     final res = await client.get(uri, headers: _headers).timeout(_timeout);
     if (res.statusCode == 200) {
       final decoded = jsonDecode(res.body);
@@ -150,7 +165,8 @@ class CouncilApi {
     return const [];
   }
 
-  Future<List<BinSchedule>?> getCollections(String councilSlug, String uprn, {String? postcode}) async {
+  Future<List<BinSchedule>?> getCollections(String councilSlug, String uprn,
+      {String? postcode}) async {
     final key = _cacheKey(councilSlug, uprn);
     final cached = await _readCache(key);
     if (cached != null) {
@@ -165,8 +181,10 @@ class CouncilApi {
 
     try {
       final params = <String, String>{'council': councilSlug, 'uprn': uprn};
-      if (postcode != null && postcode.isNotEmpty) params['postcode'] = postcode;
-      final uri = Uri.parse('$proxyBaseUrl/bins').replace(queryParameters: params);
+      if (postcode != null && postcode.isNotEmpty)
+        params['postcode'] = postcode;
+      final uri =
+          Uri.parse('$proxyBaseUrl/bins').replace(queryParameters: params);
       final res = await client.get(uri, headers: _headers).timeout(_timeout);
       if (res.statusCode == 501) return null;
       if (res.statusCode == 200) {
@@ -213,11 +231,16 @@ class CouncilApi {
 
   WasteStream? _streamFromString(String s) {
     switch (s.toLowerCase()) {
-      case 'general': return WasteStream.general;
-      case 'recycling': return WasteStream.recycling;
-      case 'garden': return WasteStream.garden;
-      case 'food': return WasteStream.food;
-      default: return null;
+      case 'general':
+        return WasteStream.general;
+      case 'recycling':
+        return WasteStream.recycling;
+      case 'garden':
+        return WasteStream.garden;
+      case 'food':
+        return WasteStream.food;
+      default:
+        return null;
     }
   }
 

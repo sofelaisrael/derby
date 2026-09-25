@@ -41,11 +41,13 @@ void main() {
   });
 
   group('CouncilScheme.resolve', () {
-    test('Derby general is Black bin with slate colour', () {
+    test('Derby general is Black bin with charcoal colour', () {
       final p = CouncilScheme.resolve('derby', WasteStream.general);
       expect(p.label, 'Black bin');
-      expect(p.colorLight, 0xFF64748B);
-      expect(p.colorDark, 0xFF94A3B8);
+      expect(p.colorLight, 0xFF343A40);
+      expect(p.colorDark, 0xFF4B5563);
+      expect(Color(p.colorLight), AppColors.glassBin);
+      expect(Color(p.colorDark), AppColorsDark.glassBin);
     });
 
     test('Derby recycling is Blue bin with blue colour', () {
@@ -71,9 +73,9 @@ void main() {
 
     test('Single-colour bins keep a uniform body/lid', () {
       final p = CouncilScheme.resolve('derby', WasteStream.general);
-      expect(p.colorLight, 0xFF64748B);
-      expect(p.bodyColor, const Color(0xFF64748B));
-      expect(p.lidColor, const Color(0xFF64748B));
+      expect(p.colorLight, 0xFF343A40);
+      expect(p.bodyColor, const Color(0xFF343A40));
+      expect(p.lidColor, const Color(0xFF343A40));
     });
 
     test('All nine councils share the same four-stream scheme', () {

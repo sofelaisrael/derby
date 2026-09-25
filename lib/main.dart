@@ -10,8 +10,9 @@ import 'services/onboarding_store.dart';
 import 'services/session_store.dart';
 import 'services/theme_service.dart';
 
-const String appName = 'DerbyBins';
-const String supportedCouncilsText = 'Covers Derby City, Erewash, Amber Valley, High Peak, Derbyshire Dales, Bolsover, Chesterfield, South Derbyshire & North East Derbyshire. More councils coming soon.';
+const String appName = 'Derby Bins';
+const String supportedCouncilsText =
+    'Covers Derby City, Erewash, Amber Valley, High Peak, Derbyshire Dales, Bolsover, Chesterfield, South Derbyshire & North East Derbyshire. More councils coming soon.';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

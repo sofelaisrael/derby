@@ -223,7 +223,7 @@ class _SettingsTabState extends State<SettingsTab> {
             style: AppTypography.title
                 .copyWith(color: context.binColors.textPrimary)),
         content: Text(
-          'Exact alarms are currently off for DerbyBins, so reminders may '
+          'Exact alarms are currently off for Derby Bins, so reminders may '
           'be delayed in low-power modes. Allow "Alarms & reminders" in '
           'system settings for on-time alerts.',
           style: AppTypography.body
@@ -552,7 +552,7 @@ class _SettingsTabState extends State<SettingsTab> {
                                 ? 'Check battery optimisation'
                                 : _batteryOptimized!
                                     ? 'Battery optimisation is off — reminders can run in the background.'
-                                    : 'Allow DerbyBins to run in the background so reminders fire even after you swipe the app away.',
+                                    : 'Allow Derby Bins to run in the background so reminders fire even after you swipe the app away.',
                             style: AppTypography.caption,
                           ),
                           trailing: Icon(

@@ -113,7 +113,7 @@ void main() {
     await tester.tap(find.text('Calendar A - The North'));
     await tester.pumpAndSettle(const Duration(seconds: 3));
 
-    expect(find.text('DerbyBins'), findsOneWidget,
+    expect(find.text('Derby Bins'), findsOneWidget,
         reason: 'home page should show after calendar selection');
     expect(find.text('Black bin'), findsWidgets,
         reason: 'home should show collection info');
@@ -192,7 +192,7 @@ void main() {
     await tester.tap(find.text('DE1 1AA'));
     await tester.pumpAndSettle(const Duration(seconds: 3));
 
-    expect(find.text('DerbyBins'), findsOneWidget,
+    expect(find.text('Derby Bins'), findsOneWidget,
         reason: 'home page should show');
     expect(find.text('Black bin'), findsWidgets,
         reason: 'home should show collection info');

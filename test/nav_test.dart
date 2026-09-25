@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,8 +14,7 @@ void main() {
     CouncilApi.client = http.Client();
   });
 
-  testWidgets('app loads home after picking address',
-      (tester) async {
+  testWidgets('app loads home after picking address', (tester) async {
     SharedPreferences.setMockInitialValues({});
     await OnboardingStore.setSeen();
     CouncilApi.client = MockClient((request) async {
@@ -44,7 +43,9 @@ void main() {
             }),
             200);
       }
-      if (url.contains('council=derby') && url.contains('postcode=') && !url.contains('uprn=')) {
+      if (url.contains('council=derby') &&
+          url.contains('postcode=') &&
+          !url.contains('uprn=')) {
         return http.Response(
             jsonEncode({
               'council': {'id': 'DCC', 'name': 'Derby City Council'},
@@ -75,11 +76,13 @@ void main() {
     await tester.tap(find.text('DE1 1AA'));
     await tester.pumpAndSettle(const Duration(seconds: 3));
 
-    expect(find.text('DerbyBins'), findsOneWidget,
+    expect(find.text('Derby Bins'), findsOneWidget,
         reason: 'home page should show');
     expect(find.text('Black bin'), findsWidgets,
         reason: 'home should show collection info');
-    expect(find.text('Covers Derby City, Erewash, Amber Valley, High Peak, Derbyshire Dales, Bolsover, Chesterfield, South Derbyshire & North East Derbyshire. More councils coming soon.'),
+    expect(
+        find.text(
+            'Covers Derby City, Erewash, Amber Valley, High Peak, Derbyshire Dales, Bolsover, Chesterfield, South Derbyshire & North East Derbyshire. More councils coming soon.'),
         findsOneWidget,
         reason: 'home should show the council coverage text');
   }, timeout: const Timeout(Duration(seconds: 60)));
@@ -181,7 +184,7 @@ void main() {
     await tester.tap(find.text('Calendar A - The North'));
     await tester.pumpAndSettle(const Duration(seconds: 3));
 
-    expect(find.text('DerbyBins'), findsOneWidget,
+    expect(find.text('Derby Bins'), findsOneWidget,
         reason: 'home page should show after calendar selection');
     expect(find.text('Black bin'), findsWidgets,
         reason: 'home should show collection info');
