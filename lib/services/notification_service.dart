@@ -45,6 +45,22 @@ typedef WordingTestResult = ({
   List<WordingSample> fired
 });
 
+typedef ScheduledTestSlotResult = ({
+  int slot,
+  DateTime fireAt,
+  String title,
+  String body,
+  bool usedInexactFallback,
+  String? error,
+});
+
+typedef ScheduledTestResult = ({
+  bool permissionGranted,
+  bool exactAllowed,
+  bool usedExact,
+  List<ScheduledTestSlotResult> slots,
+});
+
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
@@ -553,6 +569,131 @@ class NotificationService {
     }
     debugPrint('[Notif] wording test fired ${fired.length} notifications');
     return (permissionGranted: permissionGranted, fired: fired);
+  }
+
+  static const List<String> _scheduledTestBinLabels = ['Black bin', 'Blue bin'];
+  static const int _scheduledTestIdBase = 950000;
+  static const String _scheduledTestPayload = 'reminder_scheduled_test';
+  static const List<Duration> _scheduledTestDelays = [
+    Duration(minutes: 2),
+    Duration(minutes: 4),
+    Duration(minutes: 6),
+  ];
+
+  static int _scheduledTestId(int slot) => _scheduledTestIdBase + slot;
+
+  static Future<void> cancelScheduledTestAlarms() async {
+    for (var slot = 0; slot < reminderSlots.length; slot++) {
+      try {
+        await _plugin.cancel(_scheduledTestId(slot));
+      } catch (e) {
+        debugPrint('[Notif] scheduled test cancel error slot=$slot: $e');
+      }
+    }
+    debugPrint('[Notif] scheduled test alarms cancelled');
+  }
+
+  static Future<ScheduledTestResult> runScheduledTest({
+    List<Duration>? delays,
+  }) async {
+    await init();
+    await cancelScheduledTestAlarms();
+
+    final permissionGranted =
+        await notificationsPermissionGranted() || await requestPermissions();
+    final exactAllowed = await exactAlarmsAllowed();
+    var mode = await _scheduleMode();
+    var usedExact = mode == AndroidScheduleMode.exactAllowWhileIdle;
+
+    final offsets = delays ?? _scheduledTestDelays;
+    final details = await _notificationDetails();
+    final now = DateTime.now();
+    final slots = <ScheduledTestSlotResult>[];
+
+    debugPrint('[Notif] scheduled test: permissionGranted=$permissionGranted '
+        'exactAllowed=$exactAllowed mode=$mode now=$now');
+
+    for (var slot = 0; slot < reminderSlots.length; slot++) {
+      final delay =
+          slot < offsets.length ? offsets[slot] : _scheduledTestDelays[slot];
+      final content = _slotContent(
+        _scheduledTestBinLabels,
+        _slotRelativeLabel(slot),
+        slot,
+      );
+      final fireAt = now.add(delay);
+      final id = _scheduledTestId(slot);
+      final tzWhen = tz.TZDateTime.from(fireAt, tz.local);
+      var usedInexactFallback = false;
+      String? error;
+
+      debugPrint('[Notif]   test schedule #$id "${content.title}" '
+          'local=$fireAt tz=${tzWhen.toIso8601String()} mode=$mode');
+
+      try {
+        await _plugin.zonedSchedule(
+          id,
+          content.title,
+          content.body,
+          tzWhen,
+          details,
+          androidScheduleMode: mode,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: _scheduledTestPayload,
+        );
+        debugPrint('[Notif]   OK #$id');
+      } on PlatformException catch (e) {
+        if (e.code == 'exact_alarms_not_permitted' &&
+            mode == AndroidScheduleMode.exactAllowWhileIdle) {
+          debugPrint('[Notif]   exact denied, retrying inexact #$id');
+          try {
+            await _plugin.zonedSchedule(
+              id,
+              content.title,
+              content.body,
+              tzWhen,
+              details,
+              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+              uiLocalNotificationDateInterpretation:
+                  UILocalNotificationDateInterpretation.absoluteTime,
+              payload: _scheduledTestPayload,
+            );
+            debugPrint('[Notif]   OK #$id (inexact)');
+            usedInexactFallback = true;
+            mode = AndroidScheduleMode.inexactAllowWhileIdle;
+            usedExact = false;
+          } catch (e2) {
+            debugPrint('[Notif]   inexact retry error #$id: $e2');
+            error = '$e2';
+          }
+        } else {
+          debugPrint('[Notif]   zonedSchedule error #$id: $e');
+          error = '${e.code}: ${e.message}';
+        }
+      } catch (e) {
+        debugPrint('[Notif]   zonedSchedule error #$id: $e');
+        error = '$e';
+      }
+
+      slots.add((
+        slot: slot,
+        fireAt: fireAt,
+        title: content.title,
+        body: content.body,
+        usedInexactFallback: usedInexactFallback,
+        error: error,
+      ));
+    }
+
+    debugPrint('[Notif] scheduled test done: ${slots.length} slots, '
+        'usedExact=$usedExact');
+    return (
+      permissionGranted: permissionGranted,
+      exactAllowed: exactAllowed,
+      usedExact: usedExact,
+      slots: slots,
+    );
   }
 
   /// Whether the device can schedule exact alarms (granted by default on

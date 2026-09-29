@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:derby_bins/models/bin_schedule.dart';
 import 'package:derby_bins/services/schedule_service.dart';
 
@@ -115,15 +115,24 @@ void main() {
             final otherPrimary = _idFor(council, bin2);
             // backup of bin should not collide with primary of another bin
             expect(primary + 1000, isNot(otherPrimary),
-                reason: 'backup($council,$bin) collides with primary($council,$bin2)');
+                reason:
+                    'backup($council,$bin) collides with primary($council,$bin2)');
           }
         }
       }
     });
 
     test('all 4 bin types × all council slugs produce unique IDs', () {
-      const councils = ['derby', 'erewash', 'ambervalley', 'highpeak',
-                        'derbyshiredales', 'bolsover', 'chesterfield', 'southderbyshire'];
+      const councils = [
+        'derby',
+        'erewash',
+        'ambervalley',
+        'highpeak',
+        'derbyshiredales',
+        'bolsover',
+        'chesterfield',
+        'southderbyshire'
+      ];
       const binTypes = ['Black bin', 'Blue bin', 'Green bin', 'Food caddy'];
       final ids = <int>{};
       for (final c in councils) {
@@ -164,7 +173,8 @@ void main() {
       expect({d1, d2, d3}.length, 3);
     });
 
-    test('slots 0..2 across the 8-day schedule are unique and int32-positive', () {
+    test('slots 0..2 across the 8-day schedule are unique and int32-positive',
+        () {
       final dates = [
         DateTime(2026, 8, 3),
         DateTime(2026, 8, 5),
@@ -204,8 +214,16 @@ void main() {
     // legacy ids mixed hash bits with slot << 29 â€” assert they never
     // overlap so the one-time migration can cancel old alarms safely.
     test('new ids never collide with legacy binLabel-hashed ids', () {
-      const councils = ['derby', 'erewash', 'ambervalley', 'highpeak',
-                        'derbyshiredales', 'bolsover', 'chesterfield', 'southderbyshire'];
+      const councils = [
+        'derby',
+        'erewash',
+        'ambervalley',
+        'highpeak',
+        'derbyshiredales',
+        'bolsover',
+        'chesterfield',
+        'southderbyshire'
+      ];
       const binTypes = ['Black bin', 'Blue bin', 'Green bin', 'Food caddy'];
       final dates = [
         DateTime(2026, 8, 3),
@@ -238,6 +256,55 @@ void main() {
       final overlap = newIds.intersection(legacyIds);
       expect(overlap, isEmpty,
           reason: 'new ids collide with legacy ids: $overlap');
+    });
+  });
+
+  group('Scheduled test alarm ids', () {
+    final testIds = [for (var slot = 0; slot < 3; slot++) 950000 + slot];
+    final wordingTestIds = [for (var slot = 0; slot < 3; slot++) 900000 + slot];
+
+    test('test ids are contiguous, unique and in their own range', () {
+      expect(testIds, [950000, 950001, 950002]);
+      expect(testIds.toSet().length, 3);
+      expect(testIds.every((id) => id >= 950000 && id <= 950002), isTrue);
+    });
+
+    test('scheduled and wording test ids never collide with each other', () {
+      expect(testIds.toSet().intersection(wordingTestIds.toSet()), isEmpty);
+    });
+
+    test('no real reminder id in 1970..2100 falls in the test range', () {
+      final testSet = testIds.toSet();
+      for (var year = 1970; year <= 2100; year++) {
+        for (var month = 1; month <= 12; month++) {
+          for (var day = 1; day <= 28; day++) {
+            final date = DateTime(year, month, day);
+            for (var slot = 0; slot < 3; slot++) {
+              final realId = _uniqueReminderId(date, slot: slot);
+              expect(
+                testSet.contains(realId),
+                isFalse,
+                reason: 'real id $realId for $date/slot$slot collides '
+                    'with a test alarm id',
+              );
+            }
+          }
+        }
+      }
+    });
+
+    test('the smallest real id is far above the largest test id', () {
+      final smallestReal = _uniqueReminderId(DateTime(1970, 1, 1), slot: 0);
+      final largestTest = testIds.reduce((a, b) => a > b ? a : b);
+      expect(smallestReal, greaterThan(largestTest));
+    });
+
+    test('real ids for the 2026-2030 app window start above 80 million', () {
+      for (final d in [DateTime(2026, 1, 1), DateTime(2030, 12, 31)]) {
+        for (var slot = 0; slot < 3; slot++) {
+          expect(_uniqueReminderId(d, slot: slot), greaterThan(80000000));
+        }
+      }
     });
   });
 
@@ -510,12 +577,12 @@ void main() {
     test('multi-bin day produces correct title/body', () {
       final collections = ['Green bin', 'Brown bin'];
       final multipleBins = collections.length > 1;
-      final binNames = collections.map((c) => c.replaceAll(' bin', '')).join(' and ');
+      final binNames =
+          collections.map((c) => c.replaceAll(' bin', '')).join(' and ');
 
       final title = multipleBins ? 'Bin day tomorrow' : 'something tomorrow';
-      final body = multipleBins
-          ? '$binNames bin goes out tomorrow.'
-          : 'something else';
+      final body =
+          multipleBins ? '$binNames bin goes out tomorrow.' : 'something else';
 
       expect(title, 'Bin day tomorrow');
       expect(body, 'Green and Brown bin goes out tomorrow.');
@@ -539,7 +606,8 @@ void main() {
         () {
       final area = _makeArea([
         _weekly(WasteStream.general, 1, DateTime(2026, 7, 27)), // every Monday
-        _weekly(WasteStream.recycling, 2, DateTime(2026, 7, 28)), // every Tuesday
+        _weekly(
+            WasteStream.recycling, 2, DateTime(2026, 7, 28)), // every Tuesday
       ]);
       final now = DateTime(2026, 8, 2, 10, 0); // Sunday
       final scheduled = _scheduledReminders(area, now);
@@ -600,15 +668,13 @@ void main() {
     });
 
     test('7am slot window is 2h', () {
-      final windowStart = _computeWindowStart(DateTime(2026, 8, 5), 7, 0,
-          offset: 0);
+      final windowStart =
+          _computeWindowStart(DateTime(2026, 8, 5), 7, 0, offset: 0);
       expect(
-          _isInWindow(DateTime(2026, 8, 5, 8, 30), windowStart,
-              windowHours: 2),
+          _isInWindow(DateTime(2026, 8, 5, 8, 30), windowStart, windowHours: 2),
           isTrue);
       expect(
-          _isInWindow(DateTime(2026, 8, 5, 10, 0), windowStart,
-              windowHours: 2),
+          _isInWindow(DateTime(2026, 8, 5, 10, 0), windowStart, windowHours: 2),
           isFalse);
     });
 
