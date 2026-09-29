@@ -83,7 +83,7 @@ class CouncilApi {
   ];
 
   /// Slugs of councils that use a calendar-based (no postcode) flow. Applied
-  /// to the fallback council list when the proxy list is unavailable.
+  /// to every council list on its way out, cached and fetched alike.
   static const Set<String> _calendarBasedSlugs = {
     'bolsover',
     'northeastderbyshire'
@@ -99,6 +99,9 @@ class CouncilApi {
                 c.calendarBased || _calendarBasedSlugs.contains(c.slug),
           ),
       ];
+
+  static const String _councilListKey = 'council_list';
+  static List<CouncilInfo> _councilListMirror = const [];
 
   static const Map<String, String> _councilWebsites = {
     'derby': 'https://www.derby.gov.uk',
@@ -116,15 +119,15 @@ class CouncilApi {
 
   /// List councils supported by the backend.
   static Future<List<CouncilInfo>> listCouncils() async {
+    await primeCouncilCache();
+    return await refreshCouncils() ?? cachedCouncils();
+  }
+
+  static List<CouncilInfo> _decodeCouncils(String body) {
     try {
-      final uri = Uri.parse('$proxyBaseUrl/bins');
-      final res = await client.get(uri, headers: _headers).timeout(_timeout);
-      if (res.statusCode != 200) return _applyCalendarFlags(_fallbackCouncils);
-      final decoded = jsonDecode(res.body);
-      if (decoded is! Map || decoded['councils'] is! List) {
-        return _applyCalendarFlags(_fallbackCouncils);
-      }
-      final list = [
+      final decoded = jsonDecode(body);
+      if (decoded is! Map || decoded['councils'] is! List) return const [];
+      return [
         for (final item in decoded['councils'])
           if (item is Map && item['slug'] != null && item['name'] != null)
             CouncilInfo(
@@ -134,11 +137,57 @@ class CouncilApi {
               calendarBased: item['calendarBased'] == true,
             ),
       ];
-      return list.isNotEmpty
-          ? _applyCalendarFlags(list)
-          : _applyCalendarFlags(_fallbackCouncils);
     } on Exception {
-      return _applyCalendarFlags(_fallbackCouncils);
+      return const [];
+    }
+  }
+
+  static Future<_StoredCouncils?> _readStoredCouncils() async {
+    final prefs = await _prefs();
+    final json = prefs.getString('${_councilListKey}_data');
+    final ts = prefs.getInt('${_councilListKey}_ts');
+    if (json == null || ts == null) return null;
+    final councils = _decodeCouncils(json);
+    if (councils.isEmpty) return null;
+    final age = DateTime.now().millisecondsSinceEpoch - ts;
+    return _StoredCouncils(councils, isStale: age > _cacheTtl.inMilliseconds);
+  }
+
+  /// Best known council list, available without any I/O. Never empty.
+  static List<CouncilInfo> cachedCouncils() => _applyCalendarFlags(
+      _councilListMirror.isNotEmpty ? _councilListMirror : _fallbackCouncils);
+
+  /// Hydrate the in-memory list from prefs so a persisted list is used in
+  /// preference to the hardcoded fallback. A stored list is used even when
+  /// older than the cache TTL.
+  static Future<List<CouncilInfo>> primeCouncilCache() async {
+    final stored = await _readStoredCouncils();
+    if (stored != null) _councilListMirror = stored.councils;
+    return cachedCouncils();
+  }
+
+  /// Fetch the council list from the proxy, skipping the network when the
+  /// stored copy is still within the cache TTL. Returns null when the fetch
+  /// fails so the caller can keep whatever it is already showing.
+  static Future<List<CouncilInfo>?> refreshCouncils() async {
+    final stored = await _readStoredCouncils();
+    if (stored != null) {
+      _councilListMirror = stored.councils;
+      if (!stored.isStale) return _applyCalendarFlags(stored.councils);
+    }
+    try {
+      final uri = Uri.parse('$proxyBaseUrl/bins');
+      final res = await client.get(uri, headers: _headers).timeout(_timeout);
+      if (res.statusCode != 200) return null;
+      final list = _decodeCouncils(res.body);
+      if (list.isEmpty) return null;
+      _councilListMirror = list;
+      try {
+        await _writeCache(_councilListKey, res.body);
+      } catch (_) {}
+      return _applyCalendarFlags(list);
+    } on Exception {
+      return null;
     }
   }
 
@@ -281,4 +330,10 @@ class _ServiceDates {
   int? dayOfWeek;
   Frequency? frequency;
   _ServiceDates(this.stream);
+}
+
+class _StoredCouncils {
+  final List<CouncilInfo> councils;
+  final bool isStale;
+  const _StoredCouncils(this.councils, {required this.isStale});
 }

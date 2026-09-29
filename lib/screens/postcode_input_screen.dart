@@ -48,6 +48,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
   bool _entranceStarted = false;
   bool _loading = false;
   List<CouncilInfo> _councils = [];
+  bool _councilsLoading = true;
   CouncilInfo? _selectedCouncil;
   String _checkingPostcode = '';
   String? _fieldError;
@@ -59,6 +60,8 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     );
+    _councils = CouncilApi.cachedCouncils();
+    _selectedCouncil = _councils.isNotEmpty ? _councils.first : null;
     _loadCouncils();
   }
 
@@ -84,13 +87,116 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
   }
 
   Future<void> _loadCouncils() async {
-    final councils = await CouncilApi.listCouncils();
-    if (mounted) {
-      setState(() {
-        _councils = councils;
-        _selectedCouncil ??= councils.isNotEmpty ? councils[0] : null;
-      });
+    try {
+      _adoptCouncils(await CouncilApi.primeCouncilCache());
+      if (!mounted) return;
+      final fresh = await CouncilApi.refreshCouncils();
+      if (!mounted) return;
+      setState(() => _councilsLoading = false);
+      if (fresh != null) _adoptCouncils(fresh);
+    } on Exception {
+      if (mounted) setState(() => _councilsLoading = false);
     }
+  }
+
+  void _retryCouncils() {
+    setState(() => _councilsLoading = true);
+    _loadCouncils();
+  }
+
+  void _adoptCouncils(List<CouncilInfo> councils) {
+    if (_sameCouncils(_councils, councils)) return;
+    setState(() {
+      _councils = councils;
+      _selectedCouncil = _resolveSelection(councils);
+    });
+  }
+
+  CouncilInfo? _resolveSelection(List<CouncilInfo> councils) {
+    if (councils.isEmpty) return null;
+    final current = _selectedCouncil;
+    if (current != null) {
+      for (final c in councils) {
+        if (c.slug == current.slug) return c;
+      }
+    }
+    return councils.first;
+  }
+
+  static bool _sameCouncils(List<CouncilInfo> a, List<CouncilInfo> b) {
+    if (a.length != b.length) return false;
+    final slugs = {for (final c in a) c.slug};
+    return !b.any((c) => !slugs.contains(c.slug));
+  }
+
+  Widget _councilSheetBody(ScrollController scrollController) {
+    if (_councils.isEmpty && _councilsLoading) {
+      return ListView.builder(
+        controller: scrollController,
+        itemCount: 6,
+        itemBuilder: (ctx, i) => const _CouncilSkeletonRow(),
+      );
+    }
+    if (_councils.isEmpty) {
+      return _CouncilLoadError(onRetry: _retryCouncils);
+    }
+    return ListView.builder(
+      controller: scrollController,
+      itemCount: _councils.length,
+      itemBuilder: (ctx, i) {
+        final c = _councils[i];
+        final selected = c == _selectedCouncil;
+        return Container(
+          margin: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+          decoration: BoxDecoration(
+            color:
+                selected ? context.binColors.primaryLight : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            child: ListTile(
+              leading: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color:
+                      selected ? context.binColors.primary : Colors.transparent,
+                  border: Border.all(
+                    color: selected
+                        ? context.binColors.primary
+                        : context.binColors.textMuted,
+                    width: 2,
+                  ),
+                ),
+                child: selected
+                    ? Icon(
+                        Icons.check,
+                        size: 14,
+                        color: Theme.of(ctx).brightness == Brightness.dark
+                            ? AppColorsDark.background
+                            : Colors.white,
+                      )
+                    : null,
+              ),
+              title: Text(c.name,
+                  style: AppTypography.title.copyWith(
+                    color: selected
+                        ? context.binColors.primary
+                        : context.binColors.textPrimary,
+                  )),
+              onTap: () {
+                setState(() => _selectedCouncil = c);
+                Navigator.of(ctx).pop();
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _pickCouncil(BuildContext context) {
@@ -125,65 +231,7 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
               const Text('Select council', style: AppTypography.h2),
               const SizedBox(height: AppSpacing.sm),
               Divider(height: 1, color: context.binColors.borderLight),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: _councils.length,
-                  itemBuilder: (ctx, i) {
-                    final c = _councils[i];
-                    final selected = c == _selectedCouncil;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? context.binColors.primaryLight
-                            : Colors.transparent,
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusMd),
-                      ),
-                      child: ListTile(
-                        leading: Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: selected
-                                ? context.binColors.primary
-                                : Colors.transparent,
-                            border: Border.all(
-                              color: selected
-                                  ? context.binColors.primary
-                                  : context.binColors.textMuted,
-                              width: 2,
-                            ),
-                          ),
-                          child: selected
-                              ? Icon(
-                                  Icons.check,
-                                  size: 14,
-                                  color: Theme.of(ctx).brightness ==
-                                          Brightness.dark
-                                      ? AppColorsDark.background
-                                      : Colors.white,
-                                )
-                              : null,
-                        ),
-                        title: Text(c.name,
-                            style: AppTypography.title.copyWith(
-                              color: selected
-                                  ? context.binColors.primary
-                                  : context.binColors.textPrimary,
-                            )),
-                        onTap: () {
-                          setState(() => _selectedCouncil = c);
-                          Navigator.of(ctx).pop();
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
+              Expanded(child: _councilSheetBody(scrollController)),
             ],
           ),
         ),
@@ -1194,6 +1242,100 @@ class _CalendarButton extends StatelessWidget {
                 'Choose your bin calendar',
                 style: AppTypography.title.copyWith(color: onPrimary),
               ),
+      ),
+    );
+  }
+}
+
+class _CouncilSkeletonRow extends StatelessWidget {
+  const _CouncilSkeletonRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    return Container(
+      margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: colors.border, width: 2),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Container(
+              height: 12,
+              decoration: BoxDecoration(
+                color: colors.surfaceTinted,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+        ],
+      ),
+    );
+  }
+}
+
+class _CouncilLoadError extends StatelessWidget {
+  final VoidCallback onRetry;
+
+  const _CouncilLoadError({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.binColors;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: colors.error.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child:
+                  Icon(Icons.cloud_off_outlined, size: 24, color: colors.error),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text('Couldn\u2019t load councils',
+                style: AppTypography.title.copyWith(color: colors.textPrimary)),
+            const SizedBox(height: AppSpacing.sm),
+            Text('Check your connection and try again.',
+                textAlign: TextAlign.center,
+                style:
+                    AppTypography.body.copyWith(color: colors.textSecondary)),
+            const SizedBox(height: AppSpacing.lg),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onRetry,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.refresh, size: 16),
+                    SizedBox(width: AppSpacing.sm),
+                    Text('Try again', style: AppTypography.title),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
