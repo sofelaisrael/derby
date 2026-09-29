@@ -39,6 +39,12 @@ void backgroundFetchHeadlessTask(HeadlessEvent event) async {
   }
 }
 
+typedef WordingSample = ({String title, String body});
+typedef WordingTestResult = ({
+  bool permissionGranted,
+  List<WordingSample> fired
+});
+
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
@@ -503,6 +509,53 @@ class NotificationService {
         ? 'Your $binNames bins are collected today.'
         : 'Your $binLabel is collected today.';
     return (title: title, body: body);
+  }
+
+  static String _slotRelativeLabel(int slot) {
+    final dayOffset = reminderSlots[slot].$3;
+    return dayOffset == 0 ? 'today' : 'tomorrow';
+  }
+
+  static const List<String> _wordingTestBinLabels = ['Black bin', 'Blue bin'];
+  static const int _wordingTestIdBase = 900000;
+
+  static WordingSample wordingTestPreview(int slot,
+      {bool multipleBins = true}) {
+    final labels = multipleBins ? _wordingTestBinLabels : const ['Black bin'];
+    return _slotContent(labels, _slotRelativeLabel(slot), slot);
+  }
+
+  static Future<WordingTestResult> runWordingTest() async {
+    if (!kDebugMode) {
+      return (permissionGranted: false, fired: const <WordingSample>[]);
+    }
+    await init();
+    final permissionGranted =
+        await notificationsPermissionGranted() || await requestPermissions();
+    debugPrint('[Notif] wording test: permissionGranted=$permissionGranted');
+    final details = await _notificationDetails();
+    final fired = <WordingSample>[];
+    for (var slot = 0; slot < reminderSlots.length; slot++) {
+      final content = _slotContent(
+        _wordingTestBinLabels,
+        _slotRelativeLabel(slot),
+        slot,
+      );
+      fired.add(content);
+      try {
+        await _plugin.show(
+          _wordingTestIdBase + slot,
+          content.title,
+          content.body,
+          details,
+          payload: 'reminder_wording_test',
+        );
+      } catch (e) {
+        debugPrint('[Notif] wording test show error slot=$slot: $e');
+      }
+    }
+    debugPrint('[Notif] wording test fired ${fired.length} notifications');
+    return (permissionGranted: permissionGranted, fired: fired);
   }
 
   /// Whether the device can schedule exact alarms (granted by default on

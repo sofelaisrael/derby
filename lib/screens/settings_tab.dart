@@ -1,6 +1,7 @@
 import '../main.dart';
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/bin_schedule.dart';
@@ -253,6 +254,110 @@ class _SettingsTabState extends State<SettingsTab> {
     }
   }
 
+  Future<void> _runNotificationWordingTest() async {
+    if (!kDebugMode) return;
+    final WordingTestResult result = await NotificationService.runWordingTest();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ctx.binColors.surfaceElevated,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: ctx.binColors.border),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
+        title: Text(
+          'Reminder wording test',
+          style: AppTypography.title.copyWith(color: ctx.binColors.textPrimary),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                result.permissionGranted
+                    ? 'Permission granted. ${result.fired.length} notifications sent.'
+                    : 'Permission NOT granted, so nothing will appear. Wording:',
+                style: AppTypography.caption.copyWith(
+                  color: ctx.binColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              for (var slot = 0; slot < result.fired.length; slot++)
+                _wordingTestSlotRow(ctx, slot, result.fired[slot]),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Close',
+              style: AppTypography.body.copyWith(color: ctx.binColors.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _wordingTestSlotRow(
+    BuildContext ctx,
+    int slot,
+    WordingSample sent,
+  ) {
+    final single = NotificationService.wordingTestPreview(
+      slot,
+      multipleBins: false,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Slot $slot · ${_slotTimeLabel(slot)}',
+            style: AppTypography.title.copyWith(
+              color: ctx.binColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Sent — "${sent.title}" / ${sent.body}',
+            style: AppTypography.body.copyWith(
+              color: ctx.binColors.textSecondary,
+            ),
+          ),
+          Text(
+            'One bin — "${single.title}" / ${single.body}',
+            style: AppTypography.body.copyWith(
+              color: ctx.binColors.textSecondary,
+            ),
+          ),
+          const Divider(height: AppSpacing.md),
+        ],
+      ),
+    );
+  }
+
+  Widget _appNameLabel() {
+    final label = Text(appName, style: AppTypography.title);
+    if (!kDebugMode) return label;
+    return GestureDetector(
+      onLongPress: _runNotificationWordingTest,
+      child: label,
+    );
+  }
+
+  String _slotTimeLabel(int slot) {
+    final (hour, minute, dayOffset) = reminderSlots[slot];
+    final time = '${hour.toString().padLeft(2, '0')}:'
+        '${minute.toString().padLeft(2, '0')}';
+    return '$time ${dayOffset == 0 ? 'collection day' : 'day before'}';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -464,7 +569,7 @@ class _SettingsTabState extends State<SettingsTab> {
                                   style: AppTypography.title),
                               const SizedBox(height: 2),
                               Text(
-                                '${weekdayNames[s.dayOfWeek - 1]} · ${frequencyLabel[s.frequency]}',
+                                '${weekdayNames[effectiveWeekday(s) - 1]} · ${frequencyLabel[s.frequency]}',
                                 style: AppTypography.caption,
                               ),
                             ],
@@ -690,7 +795,7 @@ class _SettingsTabState extends State<SettingsTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(appName, style: AppTypography.title),
+                      _appNameLabel(),
                       const SizedBox(height: AppSpacing.xs),
                       Text('Bin collection schedule',
                           style: AppTypography.caption),

@@ -201,6 +201,15 @@ class CouncilApi {
     return null;
   }
 
+  static int _anchorWeekday(Object? dayFromApi, DateTime anchorDate) {
+    final anchorWeekday = anchorDate.weekday;
+    final declaredMatchesAnchor = dayFromApi is int &&
+        dayFromApi >= DateTime.monday &&
+        dayFromApi <= DateTime.sunday &&
+        dayFromApi == anchorWeekday;
+    return declaredMatchesAnchor ? dayFromApi : anchorWeekday;
+  }
+
   List<BinSchedule> _parseCollections(List<dynamic> raw) {
     final byService = <String, _ServiceDates>{};
     for (final item in raw.cast<Map<String, dynamic>>()) {
@@ -211,7 +220,7 @@ class CouncilApi {
       if (stream == null || dateStr.isEmpty) continue;
       final date = DateTime.tryParse(dateStr);
       if (date == null) continue;
-      final dayOfWeek = (dayStr is int) ? dayStr : null;
+      final dayOfWeek = _anchorWeekday(dayStr, date);
       final freq = _frequencyFromString(freqStr);
       byService[stream.name] = _ServiceDates(stream)
         ..dayOfWeek = dayOfWeek

@@ -56,7 +56,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
     final streams = <WasteStream>[];
     for (final s in _area.schedules) {
       final d = DateTime(date.year, date.month, date.day);
-      if (d.weekday != s.dayOfWeek) continue;
+      if (d.weekday != effectiveWeekday(s)) continue;
       final interval = switch (s.frequency) {
         Frequency.weekly => 7,
         Frequency.fortnightly => 14,

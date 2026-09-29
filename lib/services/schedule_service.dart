@@ -36,9 +36,18 @@ int _diffDays(DateTime a, DateTime b) => b.difference(a).inDays;
 
 int _mod(int n, int m) => ((n % m) + m) % m;
 
+int effectiveWeekday(BinSchedule schedule) {
+  final declared = schedule.dayOfWeek;
+  final anchorWeekday = schedule.anchorDate.weekday;
+  final declaredMatchesAnchor = declared >= DateTime.monday &&
+      declared <= DateTime.sunday &&
+      declared == anchorWeekday;
+  return declaredMatchesAnchor ? declared : anchorWeekday;
+}
+
 bool _isCollectionOnDate(BinSchedule schedule, DateTime date) {
   final d = _dateOnly(date);
-  if (d.weekday != schedule.dayOfWeek) return false;
+  if (d.weekday != effectiveWeekday(schedule)) return false;
   final interval = _frequencyInterval[schedule.frequency]!;
   return _mod(_diffDays(schedule.anchorDate, d), interval) == 0;
 }
