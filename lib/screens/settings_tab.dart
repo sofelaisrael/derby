@@ -154,7 +154,7 @@ class _SettingsTabState extends State<SettingsTab> {
                             ? Colors.white.withValues(alpha: 0.9)
                             : sheetColors.primary,
                         foregroundColor:
-                            dark ? sheetColors.textPrimary : Colors.white,
+                            dark ? AppColorsDark.background : Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius:
                               BorderRadius.circular(AppSpacing.radiusMd),
