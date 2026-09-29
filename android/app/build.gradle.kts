@@ -34,7 +34,16 @@ android {
     }
 
     signingConfigs {
-        if (keystorePropertiesFile.exists()) {
+        val ciKeystorePath = System.getenv("CM_KEYSTORE_PATH")
+        val useCiSigning = System.getenv("CI").toBoolean() && ciKeystorePath != null
+        if (useCiSigning) {
+            create("release") {
+                storeFile = file(ciKeystorePath)
+                storePassword = System.getenv("CM_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("CM_KEY_ALIAS")
+                keyPassword = System.getenv("CM_KEY_PASSWORD")
+            }
+        } else if (keystorePropertiesFile.exists()) {
             create("release") {
                 storeFile = file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
@@ -46,11 +55,8 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.findByName("release")
+                ?: signingConfigs.getByName("debug")
         }
     }
 }
