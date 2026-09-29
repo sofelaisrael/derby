@@ -526,9 +526,6 @@ class NotificationService {
   }
 
   static Future<WordingTestResult> runWordingTest() async {
-    if (!kDebugMode) {
-      return (permissionGranted: false, fired: const <WordingSample>[]);
-    }
     await init();
     final permissionGranted =
         await notificationsPermissionGranted() || await requestPermissions();

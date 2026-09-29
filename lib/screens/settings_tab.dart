@@ -1,7 +1,6 @@
 import '../main.dart';
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/bin_schedule.dart';
@@ -255,7 +254,6 @@ class _SettingsTabState extends State<SettingsTab> {
   }
 
   Future<void> _runNotificationWordingTest() async {
-    if (!kDebugMode) return;
     final WordingTestResult result = await NotificationService.runWordingTest();
     if (!mounted) return;
     await showDialog<void>(
@@ -343,11 +341,9 @@ class _SettingsTabState extends State<SettingsTab> {
   }
 
   Widget _appNameLabel() {
-    final label = Text(appName, style: AppTypography.title);
-    if (!kDebugMode) return label;
     return GestureDetector(
       onLongPress: _runNotificationWordingTest,
-      child: label,
+      child: Text(appName, style: AppTypography.title),
     );
   }
 
