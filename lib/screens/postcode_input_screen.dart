@@ -159,8 +159,14 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                             ),
                           ),
                           child: selected
-                              ? const Icon(Icons.check,
-                                  size: 14, color: Colors.white)
+                              ? Icon(
+                                  Icons.check,
+                                  size: 14,
+                                  color: Theme.of(ctx).brightness ==
+                                          Brightness.dark
+                                      ? AppColorsDark.background
+                                      : Colors.white,
+                                )
                               : null,
                         ),
                         title: Text(c.name,
@@ -225,7 +231,9 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                   onPressed: () => Navigator.of(ctx).pop(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.binColors.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(ctx).brightness == Brightness.dark
+                        ? AppColorsDark.background
+                        : Colors.white,
                     padding:
                         const EdgeInsets.symmetric(vertical: AppSpacing.md),
                     shape: RoundedRectangleBorder(
@@ -233,7 +241,10 @@ class _PostcodeInputScreenState extends State<PostcodeInputScreen>
                     ),
                   ),
                   child: Text('OK',
-                      style: AppTypography.title.copyWith(color: Colors.white)),
+                      style: AppTypography.title.copyWith(
+                          color: Theme.of(ctx).brightness == Brightness.dark
+                              ? AppColorsDark.background
+                              : Colors.white)),
                 ),
               ),
             ],
@@ -1080,6 +1091,9 @@ class _SubmitButtonState extends State<_SubmitButton> {
   @override
   Widget build(BuildContext context) {
     final colors = context.binColors;
+    final onPrimary = Theme.of(context).brightness == Brightness.dark
+        ? AppColorsDark.background
+        : Colors.white;
     return GestureDetector(
       onTapDown: (_) => _setPressed(true),
       onTapUp: (_) => _setPressed(false),
@@ -1106,24 +1120,23 @@ class _SubmitButtonState extends State<_SubmitButton> {
                 ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(
+                      SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          color: onPrimary,
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Text(
                         'Checking ${widget.checking}\u2026',
-                        style:
-                            AppTypography.title.copyWith(color: Colors.white),
+                        style: AppTypography.title.copyWith(color: onPrimary),
                       ),
                     ],
                   )
                 : Text('Find my bins',
-                    style: AppTypography.title.copyWith(color: Colors.white)),
+                    style: AppTypography.title.copyWith(color: onPrimary)),
           ),
         ),
       ),
@@ -1140,6 +1153,9 @@ class _CalendarButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.binColors;
+    final onPrimary = Theme.of(context).brightness == Brightness.dark
+        ? AppColorsDark.background
+        : Colors.white;
     return SizedBox(
       width: double.infinity,
       height: 56,
@@ -1147,7 +1163,7 @@ class _CalendarButton extends StatelessWidget {
         onPressed: loading ? null : onSubmit,
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: onPrimary,
           disabledBackgroundColor: colors.primary.withValues(alpha: 0.6),
           disabledForegroundColor: Colors.white,
           elevation: 0,
@@ -1176,7 +1192,7 @@ class _CalendarButton extends StatelessWidget {
               )
             : Text(
                 'Choose your bin calendar',
-                style: AppTypography.title.copyWith(color: Colors.white),
+                style: AppTypography.title.copyWith(color: onPrimary),
               ),
       ),
     );

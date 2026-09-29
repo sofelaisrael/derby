@@ -285,7 +285,9 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: selected
-                            ? Colors.white
+                            ? (Theme.of(context).brightness == Brightness.dark
+                                ? AppColorsDark.background
+                                : Colors.white)
                             : colors.textSecondary,
                       ),
                     ),

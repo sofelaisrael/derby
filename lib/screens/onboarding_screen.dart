@@ -132,7 +132,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     onPressed: () => Navigator.of(ctx).pop(),
                     style: FilledButton.styleFrom(
                       backgroundColor: sheetColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor:
+                          dark ? AppColorsDark.background : Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(AppSpacing.radiusMd),
@@ -1284,20 +1285,24 @@ class _PrimaryButtonState extends State<_PrimaryButton> {
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
             child: widget.busy
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: Colors.white,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColorsDark.background
+                          : Colors.white,
                     ),
                   )
                 : Text(
                     widget.label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColorsDark.background
+                          : Colors.white,
                     ),
                   ),
           ),

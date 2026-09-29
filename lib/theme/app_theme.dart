@@ -226,10 +226,18 @@ class AppTheme {
       chipTheme: _chipTheme(AppColorsDark.surfaceElevated, AppColorsDark.primaryLight),
       inputDecorationTheme: _inputTheme(AppColorsDark.surface, AppColorsDark.primary, AppColorsDark.error),
       filledButtonTheme: FilledButtonThemeData(
-        style: _buttonStyle.copyWith(backgroundColor: const WidgetStatePropertyAll(AppColorsDark.primary)),
+        style: _buttonStyle.copyWith(
+          backgroundColor: const WidgetStatePropertyAll(AppColorsDark.primary),
+          foregroundColor:
+              const WidgetStatePropertyAll(AppColorsDark.background),
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: _buttonStyle.copyWith(backgroundColor: const WidgetStatePropertyAll(AppColorsDark.primary)),
+        style: _buttonStyle.copyWith(
+          backgroundColor: const WidgetStatePropertyAll(AppColorsDark.primary),
+          foregroundColor:
+              const WidgetStatePropertyAll(AppColorsDark.background),
+        ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
