@@ -13,6 +13,8 @@ function itAsync(name, fn) {
     .catch(e => { failures++; console.log(`    \u2717 ${name}`); console.log(`      ${e.message}`); });
 }
 
+async function describeAsync(name, fn) { console.log(`\n  ${name}`); await fn(); }
+
 async function run() {
   describe('Driver Registry', () => {
     const { listDrivers, getDriver } = require('../lib/drivers');
@@ -152,7 +154,7 @@ async function run() {
     });
   });
 
-  describe('Erewash driver', () => {
+  await describeAsync('Erewash driver', async () => {
     const erewash = require('../lib/drivers/erewash');
 
     it('has correct id, slug, name', () => {
@@ -169,32 +171,37 @@ async function run() {
       assert.strictEqual(typeof erewash.getCollections, 'function');
     });
 
-    it('getCollections(null) returns []', async () => {
+    await itAsync('getCollections(null) returns []', async () => {
       const result = await erewash.getCollections(null);
       assert.deepStrictEqual(result, []);
     });
 
-    it('getCollections("") returns []', async () => {
+    await itAsync('getCollections("") returns []', async () => {
       const result = await erewash.getCollections('');
       assert.deepStrictEqual(result, []);
     });
 
-    it('getCollections without postcode returns []', async () => {
+    await itAsync('getCollections without postcode returns []', async () => {
       const result = await erewash.getCollections('100023456789');
       assert.deepStrictEqual(result, []);
     });
 
-    it('lookupAddresses("") returns []', async () => {
+    await itAsync('getCollections with a non-numeric uprn returns [] without calling the site', async () => {
+      const result = await erewash.getCollections('not-a-uprn', 'DE7 4AA');
+      assert.deepStrictEqual(result, []);
+    });
+
+    await itAsync('lookupAddresses("") returns []', async () => {
       const result = await erewash.lookupAddresses('');
       assert.deepStrictEqual(result, []);
     });
 
-    it('lookupAddresses(null) returns []', async () => {
+    await itAsync('lookupAddresses(null) returns []', async () => {
       const result = await erewash.lookupAddresses(null);
       assert.deepStrictEqual(result, []);
     });
 
-    it('lookupAddresses("   ") returns []', async () => {
+    await itAsync('lookupAddresses("   ") returns []', async () => {
       const result = await erewash.lookupAddresses('   ');
       assert.deepStrictEqual(result, []);
     });

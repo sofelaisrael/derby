@@ -1,5 +1,8 @@
-const https = require('https');
-const { httpGet, httpPost, cookieJarFrom, cookieHeader } = require('./shared');
+const { httpGet, httpPost, cookieJarFrom, cookieHeader, encodeForm } = require('./shared');
+
+const BASE_URL = 'https://secure.derby.gov.uk';
+const BIND_URL = `${BASE_URL}/binday`;
+const MAX_REDIRECTS = 5;
 
 const MONTHS = {
   january: 0, february: 1, march: 2, april: 3,
@@ -26,6 +29,12 @@ const STREAM_MAP = {
   'Food waste': 'food',
 };
 
+const STREAM_BY_ALT = Object.fromEntries(
+  Object.entries(STREAM_MAP).map(([alt, stream]) => [alt.toLowerCase(), stream])
+);
+
+const IGNORED_ALTS = new Set(['no bins', 'household waste bin']);
+
 const LABELS = {
   general: 'General Waste',
   recycling: 'Recycling',
@@ -33,10 +42,17 @@ const LABELS = {
   food: 'Food Waste',
 };
 
-function parseDerbyDate(s) {
-  if (!s) return null;
-  const cleaned = s.replace(/:$/, '').trim();
-  const match = cleaned.match(/,\s+(\d{1,2})\s+(\w+)\s+(\d{4})/);
+function normalizePostcode(raw) {
+  return (raw || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function absoluteUrl(location) {
+  return location.startsWith('http') ? location : `${BASE_URL}${location}`;
+}
+
+function parseDerbyDate(text) {
+  if (!text) return null;
+  const match = text.trim().replace(/:$/, '').match(/,\s*(\d{1,2})\s+(\w+)\s+(\d{4})/);
   if (!match) return null;
   const day = parseInt(match[1], 10);
   const month = MONTHS[match[2].toLowerCase()];
@@ -54,7 +70,7 @@ function formatDate(d) {
 }
 
 function deriveFrequency(dates) {
-  if (dates.length < 2) return 'weekly';
+  if (dates.length < 2) return null;
   const gaps = [];
   for (let i = 1; i < dates.length; i++) {
     gaps.push(Math.round((dates[i] - dates[i - 1]) / 86400000));
@@ -71,46 +87,69 @@ function deriveFrequency(dates) {
   return 'twelveWeekly';
 }
 
-function extractFromBinresults(html) {
+function extractCollections(html) {
   const results = [];
-  const binresultRe = /<div[^>]*class="[^"]*\bbinresult\b[^"]*"[\s\S]*?<\/div>\s*<\/div>/gi;
-  let block;
-  while ((block = binresultRe.exec(html)) !== null) {
-    const chunk = block[0];
-    const strongMatch = chunk.match(/<strong>([\s\S]*?)<\/strong>/i);
-    const imgMatch = chunk.match(/<img[^>]*alt="([^"]*)"[^>]*>/i);
-    if (!strongMatch || !imgMatch) continue;
-    const dateText = strongMatch[1].trim();
-    const binType = imgMatch[1].trim();
-    if (!binType || binType === 'No bins') continue;
-    const date = parseDerbyDate(dateText);
+  const blocks = html.split(/<div[^>]*class="[^"]*\bbinresult\b[^"]*"[^>]*>/i);
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i].split(/<hr\b/i)[0];
+    const altMatch = block.match(/<img[^>]*\balt="([^"]*)"/i);
+    const dateMatch = block.match(/<strong>([\s\S]*?)<\/strong>/i);
+    if (!altMatch || !dateMatch) continue;
+    const binType = altMatch[1].trim();
+    if (!binType || IGNORED_ALTS.has(binType.toLowerCase())) continue;
+    const date = parseDerbyDate(dateMatch[1]);
     if (!date) continue;
     results.push({ binType, date });
   }
   return results;
 }
 
-function extractFromStrongAndImg(html) {
-  const results = [];
-  const section = html.match(/<div[^>]*class="[^"]*\bapplicationwrapper\b[^"]*"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/i);
-  const scope = section ? section[0] : html;
-
-  const dateRe = /<strong>([\s\S]*?)<\/strong>/gi;
-  const typeRe = /<img[^>]*alt="([^"]*)"[^>]*>/gi;
-  const dates = [];
-  const types = [];
+function parseAddressOptions(html) {
+  const selectMatch = html.match(/<select[^>]*(?:id|name)="SelectedUprn"[^>]*>([\s\S]*?)<\/select>/i);
+  if (!selectMatch) return [];
+  const addresses = [];
+  const optionRe = /<option\s+value="([^"]*)"[^>]*>([\s\S]*?)<\/option>/gi;
   let m;
-  while ((m = dateRe.exec(scope)) !== null) dates.push(m[1].trim());
-  while ((m = typeRe.exec(scope)) !== null) types.push(m[1].trim());
-
-  for (let i = 0; i < dates.length; i++) {
-    const binType = types[i];
-    if (!binType || binType === 'No bins' || binType === 'Household waste bin') continue;
-    const date = parseDerbyDate(dates[i]);
-    if (!date) continue;
-    results.push({ binType, date });
+  while ((m = optionRe.exec(selectMatch[1])) !== null) {
+    const uprn = m[1].trim();
+    const label = m[2].trim();
+    if (!uprn || !label || label.includes('Select premises')) continue;
+    addresses.push({ uprn, label });
   }
-  return results;
+  return addresses;
+}
+
+async function openSession(postcode) {
+  try {
+    const pageRes = await httpGet(BIND_URL);
+    if (pageRes.status !== 200) return null;
+    const tokenMatch = pageRes.body.match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/i);
+    if (!tokenMatch) return null;
+
+    const jar = cookieJarFrom(pageRes.headers);
+    const postBody = encodeForm({ Postcode: postcode, __RequestVerificationToken: tokenMatch[1] });
+    const postRes = await httpPost(BIND_URL, postBody, { Cookie: cookieHeader(jar) });
+    Object.assign(jar, cookieJarFrom(postRes.headers));
+
+    let html = postRes.body;
+    let location = postRes.headers && postRes.headers.location;
+    for (let hop = 0; location && hop < MAX_REDIRECTS; hop++) {
+      const res = await httpGet(absoluteUrl(location), { Cookie: cookieHeader(jar) });
+      Object.assign(jar, cookieJarFrom(res.headers));
+      const next = res.headers && res.headers.location;
+      if (res.status >= 300 && res.status < 400 && next) {
+        location = next;
+        continue;
+      }
+      html = res.body;
+      location = null;
+    }
+
+    return { cookie: cookieHeader(jar), addresses: parseAddressOptions(html) };
+  } catch (e) {
+    console.error(`derby session error for ${postcode}: ${e.message}`);
+    return null;
+  }
 }
 
 module.exports = {
@@ -119,37 +158,11 @@ module.exports = {
   name: 'Derby City Council',
 
   async lookupAddresses(postcode) {
-    const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, '');
+    const normalized = normalizePostcode(postcode);
     if (!normalized) return [];
     try {
-      const pageRes = await httpGet('https://secure.derby.gov.uk/binday');
-      if (pageRes.status !== 200) return [];
-      const tokenMatch = pageRes.body.match(/name="__RequestVerificationToken"[^>]*value="([^"]+)"/i);
-      if (!tokenMatch) return [];
-      const jar = cookieJarFrom(pageRes.headers);
-      const cookies = cookieHeader(jar);
-      const body = `Postcode=${encodeURIComponent(normalized)}&__RequestVerificationToken=${encodeURIComponent(tokenMatch[1])}`;
-      const postRes = await httpPost('https://secure.derby.gov.uk/binday', body, { 'Cookie': cookies });
-      let html = postRes.body;
-      if (postRes.status === 302 && postRes.headers && postRes.headers.location) {
-        const redirectUrl = postRes.headers.location.startsWith('http')
-          ? postRes.headers.location
-          : `https://secure.derby.gov.uk${postRes.headers.location}`;
-        const redirRes = await httpGet(redirectUrl, { 'Cookie': cookies });
-        html = redirRes.body;
-      }
-      const selectMatch = html.match(/<select[^>]*(?:id|name)="SelectedUprn"[^>]*>([\s\S]*?)<\/select>/i);
-      if (!selectMatch) return [];
-      const options = [];
-      const optionRe = /<option\s+value="([^"]*)"[^>]*>([\s\S]*?)<\/option>/gi;
-      let m;
-      while ((m = optionRe.exec(selectMatch[1])) !== null) {
-        const uprn = m[1].trim();
-        const label = m[2].trim();
-        if (!uprn || !label || label.includes('Select premises')) continue;
-        options.push({ uprn, label });
-      }
-      return options;
+      const session = await openSession(normalized);
+      return session ? session.addresses : [];
     } catch (e) {
       console.error(`derby lookupAddresses error: ${e.message}`);
       return [];
@@ -159,61 +172,52 @@ module.exports = {
   async getCollections(uprn, postcode) {
     if (!uprn) return [];
     try {
+      const normalized = normalizePostcode(postcode);
+      let cookie = '';
       let addressLabel = '';
-      try {
-        const addrs = await this.lookupAddresses(postcode || '');
-        const match = addrs.find(a => a.uprn === String(uprn));
-        if (match) addressLabel = match.label;
-      } catch (_) {}
-      const addrParam = addressLabel ? `?address=${encodeURIComponent(addressLabel)}` : '';
-      const url = `https://secure.derby.gov.uk/binday/BinDays/${encodeURIComponent(uprn)}${addrParam}`;
-      const result = await httpGet(url);
+
+      if (normalized) {
+        const session = await openSession(normalized);
+        if (session) {
+          cookie = session.cookie;
+          const match = session.addresses.find(a => a.uprn === String(uprn));
+          if (match) addressLabel = match.label;
+        }
+      }
+
+      const addressParam = addressLabel ? `?address=${encodeURIComponent(addressLabel)}` : '';
+      const headers = cookie ? { Cookie: cookie, Referer: BIND_URL } : undefined;
+      const result = await httpGet(`${BIND_URL}/BinDays/${encodeURIComponent(uprn)}${addressParam}`, headers);
       if (result.status !== 200) {
         throw Object.assign(new Error(`Derby API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
       }
 
-      const html = result.body;
-
-      let parsed = extractFromBinresults(html);
-      if (parsed.length === 0) {
-        parsed = extractFromStrongAndImg(html);
-      }
-      if (parsed.length === 0) return [];
-
       const byStream = {};
-
-      for (const entry of parsed) {
-        const stream = STREAM_MAP[entry.binType];
+      for (const entry of extractCollections(result.body)) {
+        const stream = STREAM_BY_ALT[entry.binType.toLowerCase()];
         if (!stream) continue;
-
-        if (!byStream[stream]) byStream[stream] = { stream, dates: [] };
         const dateStr = formatDate(entry.date);
-        if (byStream[stream].dates.some(d => formatDate(d) === dateStr)) continue;
+        if (!byStream[stream]) byStream[stream] = { dates: [], seen: new Set() };
+        if (byStream[stream].seen.has(dateStr)) continue;
+        byStream[stream].seen.add(dateStr);
         byStream[stream].dates.push(entry.date);
       }
 
-      const results = [];
-      for (const key of Object.keys(byStream)) {
-        const b = byStream[key];
-        if (b.dates.length === 0) continue;
-        b.dates.sort((a, c) => a - c);
-        const anchor = b.dates[0];
-        const freq = deriveFrequency(b.dates);
-        const nextCollections = b.dates.map(d => ({
-          date: formatDate(d),
-          stream: b.stream,
-          label: LABELS[b.stream] || b.stream,
-        }));
-        results.push({
-          stream: b.stream,
+      return Object.entries(byStream).map(([stream, bucket]) => {
+        const dates = bucket.dates.slice().sort((a, b) => a - b);
+        const anchor = dates[0];
+        return {
+          stream,
           dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
-          frequency: freq,
+          frequency: deriveFrequency(dates),
           anchorDate: formatDate(anchor),
-          nextCollections,
-        });
-      }
-
-      return results;
+          nextCollections: dates.map(d => ({
+            date: formatDate(d),
+            stream,
+            label: LABELS[stream] || stream,
+          })),
+        };
+      });
     } catch (e) {
       console.error(`derby getCollections error for uprn ${uprn}: ${e.message}`);
       return [];
