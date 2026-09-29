@@ -302,7 +302,7 @@ class NotificationService {
     try {
       if (Platform.isAndroid) {
         return await launchUrl(
-          Uri.parse('package:uk.co.derbybins.derby_bins'),
+          Uri.parse('package:uk.co.derbybins.app'),
           mode: LaunchMode.externalApplication,
         );
       }

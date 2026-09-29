@@ -16,3 +16,7 @@ build/
 **/generated_plugin_registrant.h
 **/generated_plugins.cmake
 macos/Flutter/GeneratedPluginRegistrant.swift
+# Test artifacts
+test/failures/
+test/store_screenshots/preview_*.png
+test/store_screenshots/postcode_preview_iphone.png
