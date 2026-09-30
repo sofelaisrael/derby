@@ -257,48 +257,9 @@ void main() {
       expect(overlap, isEmpty,
           reason: 'new ids collide with legacy ids: $overlap');
     });
-  });
 
-  group('Scheduled test alarm ids', () {
-    final testIds = [for (var slot = 0; slot < 3; slot++) 950000 + slot];
-    final wordingTestIds = [for (var slot = 0; slot < 3; slot++) 900000 + slot];
-
-    test('test ids are contiguous, unique and in their own range', () {
-      expect(testIds, [950000, 950001, 950002]);
-      expect(testIds.toSet().length, 3);
-      expect(testIds.every((id) => id >= 950000 && id <= 950002), isTrue);
-    });
-
-    test('scheduled and wording test ids never collide with each other', () {
-      expect(testIds.toSet().intersection(wordingTestIds.toSet()), isEmpty);
-    });
-
-    test('no real reminder id in 1970..2100 falls in the test range', () {
-      final testSet = testIds.toSet();
-      for (var year = 1970; year <= 2100; year++) {
-        for (var month = 1; month <= 12; month++) {
-          for (var day = 1; day <= 28; day++) {
-            final date = DateTime(year, month, day);
-            for (var slot = 0; slot < 3; slot++) {
-              final realId = _uniqueReminderId(date, slot: slot);
-              expect(
-                testSet.contains(realId),
-                isFalse,
-                reason: 'real id $realId for $date/slot$slot collides '
-                    'with a test alarm id',
-              );
-            }
-          }
-        }
-      }
-    });
-
-    test('the smallest real id is far above the largest test id', () {
-      final smallestReal = _uniqueReminderId(DateTime(1970, 1, 1), slot: 0);
-      final largestTest = testIds.reduce((a, b) => a > b ? a : b);
-      expect(smallestReal, greaterThan(largestTest));
-    });
-
+    // Ids are date-encoded (YYYYMMDD * 4 + slot), so every reminder the app
+    // can schedule in 2026-2030 lands in the 81 million range.
     test('real ids for the 2026-2030 app window start above 80 million', () {
       for (final d in [DateTime(2026, 1, 1), DateTime(2030, 12, 31)]) {
         for (var slot = 0; slot < 3; slot++) {

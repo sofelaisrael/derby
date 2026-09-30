@@ -39,8 +39,6 @@ void backgroundFetchHeadlessTask(HeadlessEvent event) async {
   }
 }
 
-typedef TestFireResult = ({bool ok, String? error});
-
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
@@ -424,15 +422,19 @@ class NotificationService {
     }
   }
 
-  /// Opens the system "battery optimization" app list so the user can set
-  /// Derby Bins to "Don't optimize".
+  /// Opens the "don't optimise this app" page so the user can exempt Derby
+  /// Bins. Falls back to the app's settings page if the channel is missing or
+  /// returns false, so the user always ends up somewhere useful.
   static Future<bool> openBatterySettings() async {
     try {
-      return await _batteryChannel.invokeMethod<bool>('openBatterySettings') ??
-          false;
-    } catch (_) {
-      return false;
+      final opened =
+          await _batteryChannel.invokeMethod<bool>('openBatterySettings') ??
+              false;
+      if (opened) return true;
+    } catch (e) {
+      debugPrint('[Notif] openBatterySettings channel failed: $e');
     }
+    return openAppSettings();
   }
 
   static Future<void> cancel(int id) async {
@@ -505,137 +507,6 @@ class NotificationService {
         ? 'Your $binNames bins are collected today.'
         : 'Your $binLabel is collected today.';
     return (title: title, body: body);
-  }
-
-  static String _slotRelativeLabel(int slot) {
-    final dayOffset = reminderSlots[slot].$3;
-    return dayOffset == 0 ? 'today' : 'tomorrow';
-  }
-
-  static const List<String> _wordingTestBinLabels = ['Black bin', 'Blue bin'];
-
-  static const int _scheduledTestIdBase = 950000;
-
-  static const int _singleShotNowTestId = 960000;
-  static const int _singleShotTwoMinTestId = 960001;
-  static const int _singleShotTenMinTestId = 960002;
-  static const String _singleShotTestPayload = 'reminder_single_test';
-
-  static const Map<int, int> _singleShotTimedTestIds = {
-    2: _singleShotTwoMinTestId,
-    10: _singleShotTenMinTestId,
-  };
-
-  static int _scheduledTestId(int slot) => _scheduledTestIdBase + slot;
-
-  static ({String title, String body}) _singleShotTestContent() =>
-      _slotContent(_wordingTestBinLabels, _slotRelativeLabel(0), 0);
-
-  static Future<void> _cancelTestId(int id) async {
-    try {
-      await _plugin.cancel(id);
-    } catch (e) {
-      debugPrint('[Notif] test cancel error id=$id: $e');
-    }
-  }
-
-  static String _describeError(Object e) =>
-      e is PlatformException ? '${e.code}: ${e.message}' : '$e';
-
-  static Future<void> cancelScheduledTestAlarms() async {
-    for (var slot = 0; slot < reminderSlots.length; slot++) {
-      await _cancelTestId(_scheduledTestId(slot));
-    }
-    await _cancelTestId(_singleShotNowTestId);
-    for (final id in _singleShotTimedTestIds.values) {
-      await _cancelTestId(id);
-    }
-    debugPrint('[Notif] scheduled test alarms cancelled');
-  }
-
-  static Future<TestFireResult> runSingleTestNow() async {
-    await init();
-    final permissionGranted =
-        await notificationsPermissionGranted() || await requestPermissions();
-    final content = _singleShotTestContent();
-    debugPrint('[Notif] single test now: permissionGranted=$permissionGranted '
-        '#$_singleShotNowTestId "${content.title}" / ${content.body}');
-    try {
-      await _plugin.show(
-        _singleShotNowTestId,
-        content.title,
-        content.body,
-        await _notificationDetails(),
-        payload: _singleShotTestPayload,
-      );
-    } catch (e) {
-      debugPrint('[Notif] single test show error: $e');
-      return (ok: false, error: _describeError(e));
-    }
-    return (ok: true, error: null);
-  }
-
-  static Future<TestFireResult> runSingleTestInMinutes(int minutes) async {
-    final id = _singleShotTimedTestIds[minutes];
-    if (id == null) {
-      debugPrint('[Notif] single test: no id registered for $minutes min');
-      return (ok: false, error: 'No test id registered for $minutes min');
-    }
-    await init();
-    await _cancelTestId(id);
-
-    final permissionGranted =
-        await notificationsPermissionGranted() || await requestPermissions();
-    final content = _singleShotTestContent();
-    final fireAt = DateTime.now().add(Duration(minutes: minutes));
-    final tzWhen = tz.TZDateTime.from(fireAt, tz.local);
-    final details = await _notificationDetails();
-    final mode = await _scheduleMode();
-
-    debugPrint('[Notif] single test +${minutes}min: #$id '
-        'permissionGranted=$permissionGranted fireAt=$fireAt mode=$mode');
-
-    try {
-      await _plugin.zonedSchedule(
-        id,
-        content.title,
-        content.body,
-        tzWhen,
-        details,
-        androidScheduleMode: mode,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        payload: _singleShotTestPayload,
-      );
-    } on PlatformException catch (e) {
-      if (e.code == 'exact_alarms_not_permitted' &&
-          mode == AndroidScheduleMode.exactAllowWhileIdle) {
-        debugPrint('[Notif] exact denied, retrying inexact #$id');
-        try {
-          await _plugin.zonedSchedule(
-            id,
-            content.title,
-            content.body,
-            tzWhen,
-            details,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-            uiLocalNotificationDateInterpretation:
-                UILocalNotificationDateInterpretation.absoluteTime,
-            payload: _singleShotTestPayload,
-          );
-        } catch (e2) {
-          debugPrint('[Notif] inexact retry error #$id: $e2');
-          return (ok: false, error: _describeError(e2));
-        }
-      } else {
-        debugPrint('[Notif] zonedSchedule error #$id: $e');
-        return (ok: false, error: _describeError(e));
-      }
-    } catch (e) {
-      debugPrint('[Notif] zonedSchedule error #$id: $e');
-      return (ok: false, error: _describeError(e));
-    }
-    return (ok: true, error: null);
   }
 
   /// Whether the device can schedule exact alarms (granted by default on

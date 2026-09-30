@@ -253,129 +253,6 @@ class _SettingsTabState extends State<SettingsTab> {
     }
   }
 
-  Widget _notificationTestsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionLabel('Notification tests'),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'Developer controls. "Test now" checks the wording of all three '
-          'reminders immediately. The timed ones set real alarms so you can '
-          'check that scheduled notifications actually arrive.',
-          style: AppTypography.caption.copyWith(
-            color: context.binColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        _notificationTestButton(
-          label: 'Test now',
-          icon: Icons.notifications_active_outlined,
-          filled: true,
-          onPressed: _runSingleTestNow,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _notificationTestButton(
-          label: 'Test in 2 min',
-          icon: Icons.timer_outlined,
-          onPressed: () => _runSingleTestInMinutes(2),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _notificationTestButton(
-          label: 'Test in 10 min',
-          icon: Icons.schedule_outlined,
-          onPressed: () => _runSingleTestInMinutes(10),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        SizedBox(
-          width: double.infinity,
-          child: TextButton(
-            onPressed: _cancelScheduledNotificationTests,
-            style: TextButton.styleFrom(
-              foregroundColor: context.binColors.textMuted,
-              minimumSize: const Size(0, 48),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              ),
-            ),
-            child: Text(
-              'Cancel test alarms',
-              style: AppTypography.body.copyWith(
-                color: context.binColors.textMuted,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _notificationTestButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onPressed,
-    bool filled = false,
-  }) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return SizedBox(
-      width: double.infinity,
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          backgroundColor: filled
-              ? (dark ? AppColors.primary : context.binColors.primary)
-              : context.binColors.surfaceElevated,
-          foregroundColor:
-              filled ? Colors.white : context.binColors.textPrimary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            side: filled
-                ? BorderSide.none
-                : BorderSide(color: context.binColors.border),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18),
-            const SizedBox(width: AppSpacing.sm),
-            Flexible(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _cancelScheduledNotificationTests() async {
-    await NotificationService.cancelScheduledTestAlarms();
-    if (!mounted) return;
-    _showSnack('Test alarms cancelled.');
-  }
-
-  Future<void> _runSingleTestNow() async {
-    _showTestFailure(await NotificationService.runSingleTestNow());
-  }
-
-  Future<void> _runSingleTestInMinutes(int minutes) async {
-    _showTestFailure(await NotificationService.runSingleTestInMinutes(minutes));
-  }
-
-  void _showTestFailure(TestFireResult result) {
-    if (!mounted || result.ok) return;
-    final error = result.error;
-    if (error == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
-  }
-
   Widget _appNameLabel() {
     return Text(appName, style: AppTypography.title);
   }
@@ -702,9 +579,6 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-
-              _notificationTestsSection(),
               const SizedBox(height: AppSpacing.xl),
 
               // ── Appearance ──────────────────────────
