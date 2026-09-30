@@ -39,27 +39,7 @@ void backgroundFetchHeadlessTask(HeadlessEvent event) async {
   }
 }
 
-typedef WordingSample = ({String title, String body});
-typedef WordingTestResult = ({
-  bool permissionGranted,
-  List<WordingSample> fired
-});
-
-typedef ScheduledTestSlotResult = ({
-  int slot,
-  DateTime fireAt,
-  String title,
-  String body,
-  bool usedInexactFallback,
-  String? error,
-});
-
-typedef ScheduledTestResult = ({
-  bool permissionGranted,
-  bool exactAllowed,
-  bool usedExact,
-  List<ScheduledTestSlotResult> slots,
-});
+typedef TestFireResult = ({bool ok, String? error});
 
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
@@ -533,167 +513,129 @@ class NotificationService {
   }
 
   static const List<String> _wordingTestBinLabels = ['Black bin', 'Blue bin'];
-  static const int _wordingTestIdBase = 900000;
 
-  static WordingSample wordingTestPreview(int slot,
-      {bool multipleBins = true}) {
-    final labels = multipleBins ? _wordingTestBinLabels : const ['Black bin'];
-    return _slotContent(labels, _slotRelativeLabel(slot), slot);
-  }
-
-  static Future<WordingTestResult> runWordingTest() async {
-    await init();
-    final permissionGranted =
-        await notificationsPermissionGranted() || await requestPermissions();
-    debugPrint('[Notif] wording test: permissionGranted=$permissionGranted');
-    final details = await _notificationDetails();
-    final fired = <WordingSample>[];
-    for (var slot = 0; slot < reminderSlots.length; slot++) {
-      final content = _slotContent(
-        _wordingTestBinLabels,
-        _slotRelativeLabel(slot),
-        slot,
-      );
-      fired.add(content);
-      try {
-        await _plugin.show(
-          _wordingTestIdBase + slot,
-          content.title,
-          content.body,
-          details,
-          payload: 'reminder_wording_test',
-        );
-      } catch (e) {
-        debugPrint('[Notif] wording test show error slot=$slot: $e');
-      }
-    }
-    debugPrint('[Notif] wording test fired ${fired.length} notifications');
-    return (permissionGranted: permissionGranted, fired: fired);
-  }
-
-  static const List<String> _scheduledTestBinLabels = ['Black bin', 'Blue bin'];
   static const int _scheduledTestIdBase = 950000;
-  static const String _scheduledTestPayload = 'reminder_scheduled_test';
-  static const List<Duration> _scheduledTestDelays = [
-    Duration(minutes: 2),
-    Duration(minutes: 4),
-    Duration(minutes: 6),
-  ];
+
+  static const int _singleShotNowTestId = 960000;
+  static const int _singleShotTwoMinTestId = 960001;
+  static const int _singleShotTenMinTestId = 960002;
+  static const String _singleShotTestPayload = 'reminder_single_test';
+
+  static const Map<int, int> _singleShotTimedTestIds = {
+    2: _singleShotTwoMinTestId,
+    10: _singleShotTenMinTestId,
+  };
 
   static int _scheduledTestId(int slot) => _scheduledTestIdBase + slot;
 
+  static ({String title, String body}) _singleShotTestContent() =>
+      _slotContent(_wordingTestBinLabels, _slotRelativeLabel(0), 0);
+
+  static Future<void> _cancelTestId(int id) async {
+    try {
+      await _plugin.cancel(id);
+    } catch (e) {
+      debugPrint('[Notif] test cancel error id=$id: $e');
+    }
+  }
+
+  static String _describeError(Object e) =>
+      e is PlatformException ? '${e.code}: ${e.message}' : '$e';
+
   static Future<void> cancelScheduledTestAlarms() async {
     for (var slot = 0; slot < reminderSlots.length; slot++) {
-      try {
-        await _plugin.cancel(_scheduledTestId(slot));
-      } catch (e) {
-        debugPrint('[Notif] scheduled test cancel error slot=$slot: $e');
-      }
+      await _cancelTestId(_scheduledTestId(slot));
+    }
+    await _cancelTestId(_singleShotNowTestId);
+    for (final id in _singleShotTimedTestIds.values) {
+      await _cancelTestId(id);
     }
     debugPrint('[Notif] scheduled test alarms cancelled');
   }
 
-  static Future<ScheduledTestResult> runScheduledTest({
-    List<Duration>? delays,
-  }) async {
+  static Future<TestFireResult> runSingleTestNow() async {
     await init();
-    await cancelScheduledTestAlarms();
+    final permissionGranted =
+        await notificationsPermissionGranted() || await requestPermissions();
+    final content = _singleShotTestContent();
+    debugPrint('[Notif] single test now: permissionGranted=$permissionGranted '
+        '#$_singleShotNowTestId "${content.title}" / ${content.body}');
+    try {
+      await _plugin.show(
+        _singleShotNowTestId,
+        content.title,
+        content.body,
+        await _notificationDetails(),
+        payload: _singleShotTestPayload,
+      );
+    } catch (e) {
+      debugPrint('[Notif] single test show error: $e');
+      return (ok: false, error: _describeError(e));
+    }
+    return (ok: true, error: null);
+  }
+
+  static Future<TestFireResult> runSingleTestInMinutes(int minutes) async {
+    final id = _singleShotTimedTestIds[minutes];
+    if (id == null) {
+      debugPrint('[Notif] single test: no id registered for $minutes min');
+      return (ok: false, error: 'No test id registered for $minutes min');
+    }
+    await init();
+    await _cancelTestId(id);
 
     final permissionGranted =
         await notificationsPermissionGranted() || await requestPermissions();
-    final exactAllowed = await exactAlarmsAllowed();
-    var mode = await _scheduleMode();
-    var usedExact = mode == AndroidScheduleMode.exactAllowWhileIdle;
-
-    final offsets = delays ?? _scheduledTestDelays;
+    final content = _singleShotTestContent();
+    final fireAt = DateTime.now().add(Duration(minutes: minutes));
+    final tzWhen = tz.TZDateTime.from(fireAt, tz.local);
     final details = await _notificationDetails();
-    final now = DateTime.now();
-    final slots = <ScheduledTestSlotResult>[];
+    final mode = await _scheduleMode();
 
-    debugPrint('[Notif] scheduled test: permissionGranted=$permissionGranted '
-        'exactAllowed=$exactAllowed mode=$mode now=$now');
+    debugPrint('[Notif] single test +${minutes}min: #$id '
+        'permissionGranted=$permissionGranted fireAt=$fireAt mode=$mode');
 
-    for (var slot = 0; slot < reminderSlots.length; slot++) {
-      final delay =
-          slot < offsets.length ? offsets[slot] : _scheduledTestDelays[slot];
-      final content = _slotContent(
-        _scheduledTestBinLabels,
-        _slotRelativeLabel(slot),
-        slot,
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        content.title,
+        content.body,
+        tzWhen,
+        details,
+        androidScheduleMode: mode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: _singleShotTestPayload,
       );
-      final fireAt = now.add(delay);
-      final id = _scheduledTestId(slot);
-      final tzWhen = tz.TZDateTime.from(fireAt, tz.local);
-      var usedInexactFallback = false;
-      String? error;
-
-      debugPrint('[Notif]   test schedule #$id "${content.title}" '
-          'local=$fireAt tz=${tzWhen.toIso8601String()} mode=$mode');
-
-      try {
-        await _plugin.zonedSchedule(
-          id,
-          content.title,
-          content.body,
-          tzWhen,
-          details,
-          androidScheduleMode: mode,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          payload: _scheduledTestPayload,
-        );
-        debugPrint('[Notif]   OK #$id');
-      } on PlatformException catch (e) {
-        if (e.code == 'exact_alarms_not_permitted' &&
-            mode == AndroidScheduleMode.exactAllowWhileIdle) {
-          debugPrint('[Notif]   exact denied, retrying inexact #$id');
-          try {
-            await _plugin.zonedSchedule(
-              id,
-              content.title,
-              content.body,
-              tzWhen,
-              details,
-              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-              uiLocalNotificationDateInterpretation:
-                  UILocalNotificationDateInterpretation.absoluteTime,
-              payload: _scheduledTestPayload,
-            );
-            debugPrint('[Notif]   OK #$id (inexact)');
-            usedInexactFallback = true;
-            mode = AndroidScheduleMode.inexactAllowWhileIdle;
-            usedExact = false;
-          } catch (e2) {
-            debugPrint('[Notif]   inexact retry error #$id: $e2');
-            error = '$e2';
-          }
-        } else {
-          debugPrint('[Notif]   zonedSchedule error #$id: $e');
-          error = '${e.code}: ${e.message}';
+    } on PlatformException catch (e) {
+      if (e.code == 'exact_alarms_not_permitted' &&
+          mode == AndroidScheduleMode.exactAllowWhileIdle) {
+        debugPrint('[Notif] exact denied, retrying inexact #$id');
+        try {
+          await _plugin.zonedSchedule(
+            id,
+            content.title,
+            content.body,
+            tzWhen,
+            details,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+            payload: _singleShotTestPayload,
+          );
+        } catch (e2) {
+          debugPrint('[Notif] inexact retry error #$id: $e2');
+          return (ok: false, error: _describeError(e2));
         }
-      } catch (e) {
-        debugPrint('[Notif]   zonedSchedule error #$id: $e');
-        error = '$e';
+      } else {
+        debugPrint('[Notif] zonedSchedule error #$id: $e');
+        return (ok: false, error: _describeError(e));
       }
-
-      slots.add((
-        slot: slot,
-        fireAt: fireAt,
-        title: content.title,
-        body: content.body,
-        usedInexactFallback: usedInexactFallback,
-        error: error,
-      ));
+    } catch (e) {
+      debugPrint('[Notif] zonedSchedule error #$id: $e');
+      return (ok: false, error: _describeError(e));
     }
-
-    debugPrint('[Notif] scheduled test done: ${slots.length} slots, '
-        'usedExact=$usedExact');
-    return (
-      permissionGranted: permissionGranted,
-      exactAllowed: exactAllowed,
-      usedExact: usedExact,
-      slots: slots,
-    );
+    return (ok: true, error: null);
   }
 
   /// Whether the device can schedule exact alarms (granted by default on

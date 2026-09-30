@@ -253,233 +253,6 @@ class _SettingsTabState extends State<SettingsTab> {
     }
   }
 
-  Future<void> _runNotificationWordingTest() async {
-    final WordingTestResult result = await NotificationService.runWordingTest();
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: ctx.binColors.surfaceElevated,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(color: ctx.binColors.border),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        ),
-        title: Text(
-          'Test now — wording',
-          style: AppTypography.title.copyWith(color: ctx.binColors.textPrimary),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                result.permissionGranted
-                    ? 'Permission granted. ${result.fired.length} notifications sent.'
-                    : 'Permission NOT granted, so nothing will appear. Wording:',
-                style: AppTypography.caption.copyWith(
-                  color: ctx.binColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'This checks the wording and the permission only. These arrived '
-                'instantly, so it does not prove scheduled alarms work — use '
-                '"Test in 2 min" for that.',
-                style: AppTypography.caption.copyWith(
-                  color: ctx.binColors.textMuted,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              for (var slot = 0; slot < result.fired.length; slot++)
-                _wordingTestSlotRow(ctx, slot, result.fired[slot]),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Close',
-              style: AppTypography.body.copyWith(color: ctx.binColors.primary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _runScheduledNotificationTest(Duration delay) async {
-    final ScheduledTestResult result =
-        await NotificationService.runScheduledTest(
-            delays: [delay, delay, delay]);
-    if (!mounted) return;
-    final delayLabel = '${delay.inMinutes} min';
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: ctx.binColors.surfaceElevated,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(color: ctx.binColors.border),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        ),
-        title: Text(
-          'Test in $delayLabel — alarms',
-          style: AppTypography.title.copyWith(color: ctx.binColors.textPrimary),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _scheduledTestFact(
-                ctx,
-                'Permission',
-                result.permissionGranted
-                    ? 'granted'
-                    : 'NOT granted, so nothing will appear',
-              ),
-              _scheduledTestFact(
-                ctx,
-                'Exact alarms',
-                result.exactAllowed
-                    ? 'allowed'
-                    : 'not allowed, so these may be delayed',
-              ),
-              _scheduledTestFact(
-                ctx,
-                'Scheduled with',
-                result.usedExact
-                    ? 'exact alarms'
-                    : 'inexact alarms, so these may arrive late',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              for (final slot in result.slots) _scheduledTestSlotRow(ctx, slot),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'These are test alarms, not real bin reminders, and they are '
-                'temporary. Running either timed test cancels the previous set '
-                'first, and "Cancel test alarms" below clears them now.',
-                style: AppTypography.caption.copyWith(
-                  color: ctx.binColors.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await NotificationService.cancelScheduledTestAlarms();
-              if (ctx.mounted) Navigator.of(ctx).pop();
-            },
-            child: Text(
-              'Cancel test alarms',
-              style:
-                  AppTypography.body.copyWith(color: ctx.binColors.textMuted),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Close',
-              style: AppTypography.body.copyWith(color: ctx.binColors.primary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _scheduledTestFact(BuildContext ctx, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Text(
-        '$label: $value',
-        style: AppTypography.caption.copyWith(
-          color: ctx.binColors.textSecondary,
-        ),
-      ),
-    );
-  }
-
-  Widget _scheduledTestSlotRow(BuildContext ctx, ScheduledTestSlotResult sent) {
-    final minutesAway = sent.fireAt.difference(DateTime.now()).inMinutes + 1;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Slot ${sent.slot} · fires ${_clockLabel(sent.fireAt)} '
-            '(in about $minutesAway min)',
-            style: AppTypography.title.copyWith(
-              color: ctx.binColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            sent.error != null
-                ? 'Failed — ${sent.error}'
-                : sent.usedInexactFallback
-                    ? 'Scheduled, fell back to inexact — "${sent.title}" / ${sent.body}'
-                    : 'Scheduled — "${sent.title}" / ${sent.body}',
-            style: AppTypography.body.copyWith(
-              color: ctx.binColors.textSecondary,
-            ),
-          ),
-          const Divider(height: AppSpacing.md),
-        ],
-      ),
-    );
-  }
-
-  String _clockLabel(DateTime when) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(when.hour)}:${two(when.minute)}:${two(when.second)}';
-  }
-
-  Widget _wordingTestSlotRow(
-    BuildContext ctx,
-    int slot,
-    WordingSample sent,
-  ) {
-    final single = NotificationService.wordingTestPreview(
-      slot,
-      multipleBins: false,
-    );
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Slot $slot · ${_slotTimeLabel(slot)}',
-            style: AppTypography.title.copyWith(
-              color: ctx.binColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            'Sent — "${sent.title}" / ${sent.body}',
-            style: AppTypography.body.copyWith(
-              color: ctx.binColors.textSecondary,
-            ),
-          ),
-          Text(
-            'One bin — "${single.title}" / ${single.body}',
-            style: AppTypography.body.copyWith(
-              color: ctx.binColors.textSecondary,
-            ),
-          ),
-          const Divider(height: AppSpacing.md),
-        ],
-      ),
-    );
-  }
-
   Widget _notificationTestsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,23 +272,19 @@ class _SettingsTabState extends State<SettingsTab> {
           label: 'Test now',
           icon: Icons.notifications_active_outlined,
           filled: true,
-          onPressed: () => _runNotificationWordingTest(),
+          onPressed: _runSingleTestNow,
         ),
         const SizedBox(height: AppSpacing.sm),
         _notificationTestButton(
           label: 'Test in 2 min',
           icon: Icons.timer_outlined,
-          onPressed: () => _runScheduledNotificationTest(
-            const Duration(minutes: 2),
-          ),
+          onPressed: () => _runSingleTestInMinutes(2),
         ),
         const SizedBox(height: AppSpacing.sm),
         _notificationTestButton(
           label: 'Test in 10 min',
           icon: Icons.schedule_outlined,
-          onPressed: () => _runScheduledNotificationTest(
-            const Duration(minutes: 10),
-          ),
+          onPressed: () => _runSingleTestInMinutes(10),
         ),
         const SizedBox(height: AppSpacing.xs),
         SizedBox(
@@ -592,15 +361,23 @@ class _SettingsTabState extends State<SettingsTab> {
     _showSnack('Test alarms cancelled.');
   }
 
-  Widget _appNameLabel() {
-    return Text(appName, style: AppTypography.title);
+  Future<void> _runSingleTestNow() async {
+    _showTestFailure(await NotificationService.runSingleTestNow());
   }
 
-  String _slotTimeLabel(int slot) {
-    final (hour, minute, dayOffset) = reminderSlots[slot];
-    final time = '${hour.toString().padLeft(2, '0')}:'
-        '${minute.toString().padLeft(2, '0')}';
-    return '$time ${dayOffset == 0 ? 'collection day' : 'day before'}';
+  Future<void> _runSingleTestInMinutes(int minutes) async {
+    _showTestFailure(await NotificationService.runSingleTestInMinutes(minutes));
+  }
+
+  void _showTestFailure(TestFireResult result) {
+    if (!mounted || result.ok) return;
+    final error = result.error;
+    if (error == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+  }
+
+  Widget _appNameLabel() {
+    return Text(appName, style: AppTypography.title);
   }
 
   @override
