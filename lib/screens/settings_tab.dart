@@ -253,57 +253,6 @@ class _SettingsTabState extends State<SettingsTab> {
     }
   }
 
-  Future<void> _openNotificationTests() async {
-    final choice = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: ctx.binColors.surfaceElevated,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(color: ctx.binColors.border),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        ),
-        title: Text(
-          'Notification tests',
-          style: AppTypography.title.copyWith(color: ctx.binColors.textPrimary),
-        ),
-        content: Text(
-          'Test now sends all three reminders straight away, so you can check '
-          'the wording. Test scheduled sets real alarms a couple of minutes '
-          'from now, so you can check they actually arrive on time.',
-          style:
-              AppTypography.body.copyWith(color: ctx.binColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Cancel',
-              style:
-                  AppTypography.body.copyWith(color: ctx.binColors.textMuted),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop('wording'),
-            child: Text(
-              'Test now (wording)',
-              style: AppTypography.body.copyWith(color: ctx.binColors.primary),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop('scheduled'),
-            child: Text(
-              'Test scheduled (alarms)',
-              style: AppTypography.body.copyWith(color: ctx.binColors.primary),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (!mounted) return;
-    if (choice == 'wording') await _runNotificationWordingTest();
-    if (choice == 'scheduled') await _runScheduledNotificationTest();
-  }
-
   Future<void> _runNotificationWordingTest() async {
     final WordingTestResult result = await NotificationService.runWordingTest();
     if (!mounted) return;
@@ -336,7 +285,7 @@ class _SettingsTabState extends State<SettingsTab> {
               Text(
                 'This checks the wording and the permission only. These arrived '
                 'instantly, so it does not prove scheduled alarms work — use '
-                '"Test scheduled (alarms)" for that.',
+                '"Test in 2 min" for that.',
                 style: AppTypography.caption.copyWith(
                   color: ctx.binColors.textMuted,
                 ),
@@ -360,10 +309,12 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  Future<void> _runScheduledNotificationTest() async {
+  Future<void> _runScheduledNotificationTest(Duration delay) async {
     final ScheduledTestResult result =
-        await NotificationService.runScheduledTest();
+        await NotificationService.runScheduledTest(
+            delays: [delay, delay, delay]);
     if (!mounted) return;
+    final delayLabel = '${delay.inMinutes} min';
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -373,7 +324,7 @@ class _SettingsTabState extends State<SettingsTab> {
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
         ),
         title: Text(
-          'Test scheduled — alarms',
+          'Test in $delayLabel — alarms',
           style: AppTypography.title.copyWith(color: ctx.binColors.textPrimary),
         ),
         content: SingleChildScrollView(
@@ -407,8 +358,8 @@ class _SettingsTabState extends State<SettingsTab> {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'These are test alarms, not real bin reminders, and they are '
-                'temporary. They are cancelled automatically the next time you '
-                'run this test, or with "Cancel test alarms" below.',
+                'temporary. Running either timed test cancels the previous set '
+                'first, and "Cancel test alarms" below clears them now.',
                 style: AppTypography.caption.copyWith(
                   color: ctx.binColors.textMuted,
                 ),
@@ -529,11 +480,120 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  Widget _appNameLabel() {
-    return GestureDetector(
-      onLongPress: _openNotificationTests,
-      child: Text(appName, style: AppTypography.title),
+  Widget _notificationTestsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionLabel('Notification tests'),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Developer controls. "Test now" checks the wording of all three '
+          'reminders immediately. The timed ones set real alarms so you can '
+          'check that scheduled notifications actually arrive.',
+          style: AppTypography.caption.copyWith(
+            color: context.binColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _notificationTestButton(
+          label: 'Test now',
+          icon: Icons.notifications_active_outlined,
+          filled: true,
+          onPressed: () => _runNotificationWordingTest(),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _notificationTestButton(
+          label: 'Test in 2 min',
+          icon: Icons.timer_outlined,
+          onPressed: () => _runScheduledNotificationTest(
+            const Duration(minutes: 2),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _notificationTestButton(
+          label: 'Test in 10 min',
+          icon: Icons.schedule_outlined,
+          onPressed: () => _runScheduledNotificationTest(
+            const Duration(minutes: 10),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: _cancelScheduledNotificationTests,
+            style: TextButton.styleFrom(
+              foregroundColor: context.binColors.textMuted,
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              ),
+            ),
+            child: Text(
+              'Cancel test alarms',
+              style: AppTypography.body.copyWith(
+                color: context.binColors.textMuted,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  Widget _notificationTestButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool filled = false,
+  }) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          backgroundColor: filled
+              ? (dark ? AppColors.primary : context.binColors.primary)
+              : context.binColors.surfaceElevated,
+          foregroundColor:
+              filled ? Colors.white : context.binColors.textPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            side: filled
+                ? BorderSide.none
+                : BorderSide(color: context.binColors.border),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _cancelScheduledNotificationTests() async {
+    await NotificationService.cancelScheduledTestAlarms();
+    if (!mounted) return;
+    _showSnack('Test alarms cancelled.');
+  }
+
+  Widget _appNameLabel() {
+    return Text(appName, style: AppTypography.title);
   }
 
   String _slotTimeLabel(int slot) {
@@ -865,6 +925,9 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                 ),
               ),
+              const SizedBox(height: AppSpacing.xl),
+
+              _notificationTestsSection(),
               const SizedBox(height: AppSpacing.xl),
 
               // ── Appearance ──────────────────────────
