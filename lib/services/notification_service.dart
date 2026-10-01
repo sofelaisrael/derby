@@ -39,9 +39,13 @@ void backgroundFetchHeadlessTask(HeadlessEvent event) async {
   }
 }
 
+typedef TestFireResult = ({bool ok, String? error});
+
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
+  static bool _initFailed = false;
+  static Object? _initError;
   static bool _fetchConfigured = false;
 
   static const _batteryChannel = MethodChannel('derbybins/battery');
@@ -150,10 +154,14 @@ class NotificationService {
         },
       );
       initOk = true;
-    } catch (_) {
+    } catch (e) {
       // flutter_local_notifications v18 can crash with "Missing type
       // parameter" on Android when stale notifications from a previous
       // version exist. The app works without scheduled notifications.
+      _initFailed = true;
+      _initError = e;
+      debugPrint('[Notif] INIT FAILED: plugin failed to initialise: $e. '
+          'Scheduled notifications will NOT be delivered this session.');
     }
 
     AndroidFlutterLocalNotificationsPlugin? android;
@@ -307,7 +315,8 @@ class NotificationService {
     return false;
   }
 
-  /// Start the periodic background-fetch task (~15 min intervals).
+  /// Start the periodic background-fetch task (15 min intervals, the
+  /// plugin's documented minimum).
   /// Uses `forceAlarmManager: true` for reliable firing even when
   /// the app is killed.
   static Future<void> configureBackgroundFetch() async {
@@ -347,6 +356,12 @@ class NotificationService {
   static Future<void> backgroundFetchCheck() async {
     try {
       await init();
+      if (!_initialized) {
+        debugPrint('[Notif] bgFetchCheck: bailed, plugin not initialised '
+            '(initFailed=$_initFailed, error=$_initError) '
+            '- no reminders shown');
+        return;
+      }
       final enabled = await ReminderStore.isEnabled();
       debugPrint(
           '[Notif] bgFetchCheck: enabled=$enabled now=${DateTime.now()}');
@@ -509,6 +524,98 @@ class NotificationService {
     return (title: title, body: body);
   }
 
+  static const List<String> _wordingTestBinLabels = ['Black bin', 'Blue bin'];
+
+  static const int _singleShotNowTestId = 960000;
+  static const int _singleShotTimedTestId = 960001;
+  static const String _singleShotTestPayload = 'reminder_single_test';
+
+  static ({String title, String body}) _singleShotTestContent() =>
+      _slotContent(_wordingTestBinLabels, 'tomorrow', 0);
+
+  static String _describeError(Object e) =>
+      e is PlatformException ? '${e.code}: ${e.message}' : '$e';
+
+  static Future<TestFireResult> runSingleTestNow() async {
+    await init();
+    final permissionGranted =
+        await notificationsPermissionGranted() || await requestPermissions();
+    final content = _singleShotTestContent();
+    debugPrint('[Notif] single test now: #$_singleShotNowTestId '
+        'permissionGranted=$permissionGranted "${content.title}" / '
+        '${content.body}');
+    try {
+      await _plugin.show(
+        _singleShotNowTestId,
+        content.title,
+        content.body,
+        await _notificationDetails(),
+        payload: _singleShotTestPayload,
+      );
+    } catch (e) {
+      debugPrint('[Notif] single test show error #$_singleShotNowTestId: $e');
+      return (ok: false, error: _describeError(e));
+    }
+    return (ok: true, error: null);
+  }
+
+  static Future<TestFireResult> runSingleTestInMinutes(int minutes) async {
+    await init();
+    const id = _singleShotTimedTestId;
+    final permissionGranted =
+        await notificationsPermissionGranted() || await requestPermissions();
+    final content = _singleShotTestContent();
+    final fireAt = DateTime.now().add(Duration(minutes: minutes));
+    final tzWhen = tz.TZDateTime.from(fireAt, tz.local);
+    final details = await _notificationDetails();
+    final mode = await _scheduleMode();
+
+    debugPrint('[Notif] single test +${minutes}min: #$id '
+        'permissionGranted=$permissionGranted fireAt=$fireAt mode=$mode');
+
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        content.title,
+        content.body,
+        tzWhen,
+        details,
+        androidScheduleMode: mode,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: _singleShotTestPayload,
+      );
+    } on PlatformException catch (e) {
+      if (e.code == 'exact_alarms_not_permitted' &&
+          mode == AndroidScheduleMode.exactAllowWhileIdle) {
+        debugPrint('[Notif] single test exact denied, retrying inexact #$id');
+        try {
+          await _plugin.zonedSchedule(
+            id,
+            content.title,
+            content.body,
+            tzWhen,
+            details,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+            payload: _singleShotTestPayload,
+          );
+        } catch (e2) {
+          debugPrint('[Notif] single test inexact retry error #$id: $e2');
+          return (ok: false, error: _describeError(e2));
+        }
+      } else {
+        debugPrint('[Notif] single test zonedSchedule error #$id: $e');
+        return (ok: false, error: _describeError(e));
+      }
+    } catch (e) {
+      debugPrint('[Notif] single test zonedSchedule error #$id: $e');
+      return (ok: false, error: _describeError(e));
+    }
+    return (ok: true, error: null);
+  }
+
   /// Whether the device can schedule exact alarms (granted by default on
   /// Android <= 13; user-granted on Android 14+).
   static Future<bool> exactAlarmsAllowed() async {
@@ -586,6 +693,13 @@ class NotificationService {
 
     await ReminderStore.cacheArea(area);
     await ReminderStore.cacheCouncilSlug(councilSlug);
+
+    if (!_initialized) {
+      debugPrint('[Notif] scheduleReminders: bailed, plugin not initialised '
+          '(initFailed=$_initFailed, error=$_initError) '
+          '- area cached, no alarms scheduled');
+      return;
+    }
 
     final scheduleMode = await _scheduleMode();
     _lastExact = scheduleMode == AndroidScheduleMode.exactAllowWhileIdle;

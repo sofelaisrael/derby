@@ -253,6 +253,97 @@ class _SettingsTabState extends State<SettingsTab> {
     }
   }
 
+  Widget _notificationTestsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionLabel('Notification tests'),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Developer controls. "Test now" sends one reminder notification '
+          'straight away, so you can check the wording. "Test in 2 min" sets a '
+          'real alarm, so you can check that a scheduled notification arrives '
+          'even after Derby Bins is swiped out of recents.',
+          style: AppTypography.caption.copyWith(
+            color: context.binColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _notificationTestButton(
+          label: 'Test now',
+          icon: Icons.notifications_active_outlined,
+          filled: true,
+          onPressed: _runSingleTestNow,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _notificationTestButton(
+          label: 'Test in 2 min',
+          icon: Icons.timer_outlined,
+          onPressed: () => _runSingleTestInMinutes(2),
+        ),
+      ],
+    );
+  }
+
+  Widget _notificationTestButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+    bool filled = false,
+  }) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          backgroundColor: filled
+              ? (dark ? AppColors.primary : context.binColors.primary)
+              : context.binColors.surfaceElevated,
+          foregroundColor:
+              filled ? Colors.white : context.binColors.textPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            side: filled
+                ? BorderSide.none
+                : BorderSide(color: context.binColors.border),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _runSingleTestNow() async {
+    _showTestFailure(await NotificationService.runSingleTestNow());
+  }
+
+  Future<void> _runSingleTestInMinutes(int minutes) async {
+    _showTestFailure(await NotificationService.runSingleTestInMinutes(minutes));
+  }
+
+  void _showTestFailure(TestFireResult result) {
+    if (!mounted || result.ok) return;
+    final error = result.error;
+    if (error == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+  }
+
   Widget _appNameLabel() {
     return Text(appName, style: AppTypography.title);
   }
@@ -579,6 +670,9 @@ class _SettingsTabState extends State<SettingsTab> {
                   ),
                 ),
               ),
+              const SizedBox(height: AppSpacing.xl),
+
+              _notificationTestsSection(),
               const SizedBox(height: AppSpacing.xl),
 
               // ── Appearance ──────────────────────────
