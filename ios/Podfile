@@ -1,0 +1,90 @@
+# ios/Podfile — Derby Bins
+#
+# WHY THIS FILE MUST BE COMMITTED:
+#   This project has never had a Podfile. Codemagic's documented install step
+#   `find . -name "Podfile" -execdir pod install \;` exits 0 when no Podfile is
+#   found, so a missing Podfile does not fail the build step — it fails much
+#   later at link time. Committing the Podfile makes this a deterministic step.
+
+platform :ios, '13.0'
+
+# Single source of truth: the post_install clamp must track the platform above.
+DERBY_DEPLOYMENT_TARGET = '13.0'
+
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug'   => :debug,
+  'Release' => :release,
+  'Profile' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(
+    File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__
+  )
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. " \
+          "Run `flutter pub get` before `pod install`."
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. " \
+        "Delete it and re-run `flutter pub get`."
+end
+
+require File.expand_path(
+  File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root
+)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  # background_fetch ships TSBackgroundFetch.xcframework, a statically linked
+  # binary. Plain `use_frameworks!` (dynamic linkage) aborts `pod install` with
+  # "transitive dependencies that include statically linked binaries" — see
+  # transistorsoft/flutter_background_fetch help/INSTALL-IOS.md.
+  #
+  # NOTE: this project has Flutter's Swift Package Manager integration enabled
+  # (project.pbxproj references FlutterGeneratedPluginSwiftPackage), and
+  # background_fetch 1.7.0 is SPM-capable. If SPM claims the plugin, this line
+  # is not required — verify after the first successful build by grepping
+  # ios/Podfile.lock for `background_fetch`. If absent from the lockfile, this
+  # line can be deleted. It is kept for now because removing it risks a hard
+  # `pod install` failure if the plugin resolves through CocoaPods instead,
+  # whereas leaving it in place when unnecessary is a benign linking change.
+  use_frameworks! :linkage => :static
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+
+    target.build_configurations.each do |config|
+      # Clamp every pod to the app's 13.0. The vendored add_2_calendar podspec
+      # declares `s.platform = :ios, '11.0'`, below the floor recent Xcode
+      # toolchains support cleanly.
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = DERBY_DEPLOYMENT_TARGET
+
+      # Resource bundles must never be code signed. add_2_calendar declares a
+      # `resource_bundles` entry (PrivacyInfo.xcprivacy) and background_fetch
+      # bundles its own resources. These targets contain no executable and
+      # cannot be signed with the app's distribution profile.
+      if target.respond_to?(:product_type) &&
+         target.product_type == 'com.apple.product-type.bundle'
+        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+        config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
+        config.build_settings['CODE_SIGN_IDENTITY'] = '-'
+      end
+    end
+  end
+end

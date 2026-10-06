@@ -35,3 +35,55 @@ workflows:
         script: flutter build apk --release
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
+  derby-bins-ios:
+    name: iOS TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: uk.co.derbybins.app
+      vars:
+        APP_STORE_APPLE_ID: "6817374925"
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    # No `triggering:` for v1 — manual runs only. A push-to-main trigger would
+    # publish every merge to TestFlight.
+    scripts:
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+
+      - name: Install pods
+        script: |
+          cd ios && pod install
+
+      - name: Build ipa
+        script: |
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID")
+          BUILD_NUMBER=$((${LATEST:-0} + 1))
+          echo "==> Building TestFlight build number ${BUILD_NUMBER}"
+          flutter build ipa \
+            --release \
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist="$HOME/export_options.plist"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - ios/Podfile.lock
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        submit_to_app_store: false
