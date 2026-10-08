@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Official Information Sources — Derby Bins</title>
+<meta name="description" content="Where Derby Bins gets bin collection information for each of the nine Derbyshire and Derby City councils, with links to the official sources and our independence disclaimer.">
+<link rel="canonical" href="https://derbybins.web.app/sources">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#1E6B4A">
+<link rel="icon" href="/assets/store_icon_512.png" sizes="512x512" type="image/png">
+<link rel="apple-touch-icon" href="/assets/store_icon_512.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Derby Bins">
+<meta property="og:locale" content="en_GB">
+<meta property="og:url" content="https://derbybins.web.app/sources">
+<meta property="og:title" content="Official Information Sources — Derby Bins">
+<meta property="og:description" content="Where Derby Bins gets bin collection information for each of the nine Derbyshire and Derby City councils, with links to the official sources and our independence disclaimer.">
+<link rel="stylesheet" href="/styles.css">
+<!-- Copy this script BYTE-IDENTICALLY from index.html, privacy.html, support.html
+     and 404.html: one sha256 hash then covers every page, so the CSP in
+     firebase.json can stay strict (script-src 'self' + that hash) instead of
+     'unsafe-inline'. Rewording it -- or changing a single byte, including one
+     space -- changes the hash, and the page then silently reverts to its no-JS
+     presentation: open nav, no hamburger, with nothing visible at the console
+     to say why. Full rationale in styles.css section 4. -->
+<script>document.documentElement.classList.remove('no-js')</script>
+<script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="brand" href="/">
+      <img class="brand__mark" src="/assets/store_icon_512.png" alt="" width="32" height="32">
+      <span class="brand__name">Derby Bins</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu">
+      <svg class="nav-toggle__icon" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M3 6h14M3 10h14M3 14h14"></path>
+      </svg>
+      <span>Menu</span>
+    </button>
+
+    <!-- Ships collapsed so JS users get no flash of an open panel. Why the
+         .no-js override is needed, and why it must be !important, is in
+         styles.css section 4. -->
+    <nav class="site-nav" id="site-menu" hidden>
+      <ul class="site-nav__list">
+        <li><a class="site-nav__link" href="/">Home</a></li>
+        <li><a class="site-nav__link" href="/#how-it-works">How It Works</a></li>
+        <li><a class="site-nav__link" href="/#councils">Supported Councils</a></li>
+        <li><a class="site-nav__link" href="/sources.html" aria-current="page">Sources</a></li>
+        <!-- LAUNCH FLAG: this Play URL is the correct final destination and
+             stays exactly as written so the button works the instant the
+             listing publishes. It currently returns HTTP 404 — verified
+             against a known-good control, so that is a genuine "not
+             published", not a failed fetch. Do NOT substitute another
+             destination and do NOT build a "coming soon" widget: the app is
+             real and the Play URL is the only honest target. The identical
+             URL appears on index.html (nav CTA + hero CTA) and support.html;
+             changing one without the others leaves dead buttons. (404.html is
+             the deliberate exception: its CTA points at / so a visitor who
+             lands there is never funnelled into an unpublished listing.)
+             When to deploy around it — this page before the listing, or all of
+             them together — is the site owner's call, not a technical one. -->
+        <li><a class="btn btn--primary btn--sm" data-external href="https://play.google.com/store/apps/details?id=uk.co.derbybins.app" target="_blank" rel="noopener noreferrer">Get Derby Bins<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> on Google Play (opens in a new tab)</span></a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <div class="container">
+
+    <!-- ============================================== LEDE + DISCLAIMER -->
+    <div class="section">
+      <h1 class="page-title">Official Information Sources</h1>
+
+      <!-- First element after the h1, deliberately. This page exists so a Play
+           reviewer can see, immediately, that the app is unaffiliated with
+           government AND where the data actually comes from — the
+           non-affiliation claim must never be separated from the evidence for
+           it. app.js asserts this element's textContent character for
+           character, so it must contain the sentence and nothing else. -->
+      <aside class="disclaimer" role="note" aria-label="Independence disclaimer">
+        <p class="disclaimer__text">Derby Bins is an independent utility app. It is not affiliated with, authorised by, sponsored by, or endorsed by any local council or government body.</p>
+      </aside>
+
+      <p class="page-intro">Collection information shown in Derby Bins is obtained from official local-authority websites and services. Use the links below to verify information for your area.</p>
+      <p class="page-meta">Last updated: 8 October 2026</p>
+
+      <!-- GROUPING CLAIM. Nine councils = the eight Derbyshire districts and
+           boroughs, plus Derby City Council. Two facts make that defensible and
+           both are stated rather than left for the reader to assume:
+
+             * Derby City is a UNITARY authority. It sits outside the two-tier
+               system covering the rest of Derbyshire, so "all nine councils in
+               Derbyshire" is loose language and this paragraph is the
+               correction.
+             * Derbyshire County Council does NOT publish bin collection days.
+               Waste collection is a district/borough function; the County
+               Council is not a data source for Derby Bins and is not named as
+               one anywhere on this site.
+
+           DATE-STAMPED, and the stamp must move on every update. Local
+           government reorganisation across Derbyshire is live and was paused
+           on 4 September 2026 (re-verify before each revision). A grouping
+           claim with no date on it is an unfalsifiable claim, and this is the
+           one sentence on this site a sceptical reviewer is most likely to
+           fact-check.
+
+           Do NOT write "Derbyshire County Council" into the independence
+           disclaimer. It is not a data source and not a party to any
+           processing; naming it in a data-relationship statement is a category
+           error. It is named HERE and only here, where the misconception it
+           corrects is the point.
+
+           POSITION. Sits AFTER .page-meta, not between the disclaimer aside and
+           .page-intro. It used to sit there, which put this page's only early
+           <h2> above the page's own introductory sentence: a reader met a
+           heading before they had been told what the page was for. The order is
+           now h1 -> disclaimer -> page-intro -> page-meta -> this block ->
+           the GOV.UK finder paragraph -> the nine council cards. -->
+      <div class="other-sources">
+        <h2>Which councils this covers, and why</h2>
+        <p>Derby Bins covers nine councils: Amber Valley, Bolsover, Chesterfield, Derbyshire Dales, Erewash, High Peak, North East Derbyshire and South Derbyshire, plus Derby City Council.</p>
+        <p>Derby City Council is a unitary authority. It is not part of the two-tier system that covers the rest of the county, which is why a list of "Derbyshire councils" normally reads as eight and this one reads as nine.</p>
+        <p>Derbyshire County Council does not publish bin collection days. Collecting household bins is the job of the district and borough councils listed above, and Derbyshire County Council is not a source for anything in this app.</p>
+        <p>This list reflects the councils as they stood on 8 October 2026. Local government reorganisation across Derbyshire has been proposed and was paused in September 2026, so the list may change; this page will be updated when it does.</p>
+      </div>
+    </div>
+
+    <!-- ================================================== COUNCIL SOURCES -->
+    <div class="section">
+      <p>You can check which councils are responsible for your area on GOV.UK.</p>
+      <p><a class="external-link" data-external href="https://www.gov.uk/find-local-council" target="_blank" rel="noopener noreferrer">GOV.UK: find your local council<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+
+      <!-- The id and data-source value on each card below are the app's own
+           CouncilInfo.slug values (lib/services/council_api.dart) and the
+           order of COUNCILS[] in proxy/lib/drivers/index.js. NOT a web naming
+           convention. /sources.html#derbyshiredales resolves to the card whose
+           id is that slug. app.js compares this slug set against the
+           homepage's data-council set, in that order. The attributes are
+           spelled without quotes round a placeholder here on purpose, so that a
+           plain grep for data-source= counts nine and not ten.
+
+           The URL below is written out TWICE per card -- as the href and as
+           the literal visible text -- and app.js asserts they are equal after
+           whitespace normalisation, case-sensitively. So does the
+           "Open official source" button's href. That means two of these nine
+           URLs carry significant case and path shapes that must survive
+           editing: Check_your_Bin_Day and
+           check-bin-collections.aspx. One lowercased character and the drift
+           check goes red for that council only, which is easy to misread as a
+           broken link.
+
+           derbyshiredales is the one URL with a query string. & is written
+           &amp; in BOTH the href and the visible text: in the href because
+           the document is UTF-8 HTML, and in the text because the assertion
+           compares what the browser decoded against the decoded attribute. -->
+      <div class="source-grid">
+
+        <article class="source-item" id="derby" data-source="derby">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">Derby City Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">Derby City Council's postcode page, which hands off to a bin-day search: you enter your postcode, pick your address and see your next collection.</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <p>Derby Bins reads collection dates from that bin-day search, which the council serves from secure.derby.gov.uk.</p>
+          <p class="source-item__url"><a class="external-link" data-external href="https://www.derby.gov.uk/environment-and-planning/recycling-and-waste/your-bin-collections/all-about-your-bin-day/when-is-my-bin-day" target="_blank" rel="noopener noreferrer">https://www.derby.gov.uk/environment-and-planning/recycling-and-waste/your-bin-collections/all-about-your-bin-day/when-is-my-bin-day<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">
+            <a class="btn btn--primary btn--sm" data-external href="https://www.derby.gov.uk/environment-and-planning/recycling-and-waste/your-bin-collections/all-about-your-bin-day/when-is-my-bin-day" target="_blank" rel="noopener noreferrer">Open official source<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Derby City Council (opens in a new tab)</span></a>
+            <a class="external-link" data-external href="https://www.gov.uk/find-local-council/derby" target="_blank" rel="noopener noreferrer">GOV.UK council profile<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Derby City Council (opens in a new tab)</span></a>
+          </p>
+        </article>
+
+        <article class="source-item" id="erewash" data-source="erewash">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">Erewash Borough Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">Erewash Borough Council's postcode widget, which returns your collection days, and a separate year-round calendar page listing them.</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <p>Derby Bins reads collection dates from the council's postcode widget and from its collection-dates fragment.</p>
+          <p class="source-item__url"><a class="external-link" data-external href="https://www.erewash.gov.uk/bins-and-recycling/when-my-bin-day" target="_blank" rel="noopener noreferrer">https://www.erewash.gov.uk/bins-and-recycling/when-my-bin-day<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">
+            <a class="btn btn--primary btn--sm" data-external href="https://www.erewash.gov.uk/bins-and-recycling/when-my-bin-day" target="_blank" rel="noopener noreferrer">Open official source<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Erewash Borough Council (opens in a new tab)</span></a>
+            <a class="external-link" data-external href="https://www.gov.uk/find-local-council/erewash" target="_blank" rel="noopener noreferrer">GOV.UK council profile<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Erewash Borough Council (opens in a new tab)</span></a>
+          </p>
+        </article>
+
+        <article class="source-item" id="ambervalley" data-source="ambervalley">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">Amber Valley Borough Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">Amber Valley Borough Council's address lookup, which returns your refuse and recycling round, how often it is collected, your next collections, and full-year refuse, recycling, garden and food waste calendars.</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <p>Derby Bins reads collection dates through the council's own SOAP property-lookup and collection web services, hosted at info.ambervalley.gov.uk.</p>
+          <p class="source-item__url"><a class="external-link" data-external href="https://www.ambervalley.gov.uk/rubbish-waste-and-recycling/bin-collection-dates" target="_blank" rel="noopener noreferrer">https://www.ambervalley.gov.uk/rubbish-waste-and-recycling/bin-collection-dates<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">
+            <a class="btn btn--primary btn--sm" data-external href="https://www.ambervalley.gov.uk/rubbish-waste-and-recycling/bin-collection-dates" target="_blank" rel="noopener noreferrer">Open official source<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Amber Valley Borough Council (opens in a new tab)</span></a>
+            <a class="external-link" data-external href="https://www.gov.uk/find-local-council/amber-valley" target="_blank" rel="noopener noreferrer">GOV.UK council profile<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Amber Valley Borough Council (opens in a new tab)</span></a>
+          </p>
+        </article>
+
+        <article class="source-item" id="highpeak" data-source="highpeak">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">High Peak Borough Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">High Peak Borough Council's calendar-style dashboard, showing the next collection for each of your bin types.</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <p>Derby Bins reads collection dates from the council's public bin dashboard at bins.highpeak.gov.uk, a separate host from the council's main website.</p>
+          <p class="source-item__url"><a class="external-link" data-external href="https://www.highpeak.gov.uk/hp/bins" target="_blank" rel="noopener noreferrer">https://www.highpeak.gov.uk/hp/bins<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">
+            <a class="btn btn--primary btn--sm" data-external href="https://www.highpeak.gov.uk/hp/bins" target="_blank" rel="noopener noreferrer">Open official source<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for High Peak Borough Council (opens in a new tab)</span></a>
+            <a class="external-link" data-external href="https://www.gov.uk/find-local-council/high-peak" target="_blank" rel="noopener noreferrer">GOV.UK council profile<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for High Peak Borough Council (opens in a new tab)</span></a>
+          </p>
+        </article>
+
+        <!-- THE ONE URL WITH A QUERY STRING. &amp; in the href AND in the
+             visible text. Visible text and href must decode to the same string,
+             case-sensitively. The council publishes no page of its own with
+             this information -- this self-serve form IS the entry point, and
+             the app reads the same form. -->
+        <article class="source-item" id="derbyshiredales" data-source="derbyshiredales">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">Derbyshire Dales District Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">Derbyshire Dales District Council's "Apply: when is my collection" self-service form: you enter a postcode, select your address and submit. The council publishes no equivalent page of its own, so this form is the entry point.</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <p>Derby Bins reads collection dates from that same self-serve form on selfserve.derbyshiredales.gov.uk.</p>
+          <p class="source-item__url"><a class="external-link" data-external href="https://selfserve.derbyshiredales.gov.uk/renderform.aspx?t=103&amp;k=9644C066D2168A4C21BCDA351DA2642526359DFF" target="_blank" rel="noopener noreferrer">https://selfserve.derbyshiredales.gov.uk/renderform.aspx?t=103&amp;k=9644C066D2168A4C21BCDA351DA2642526359DFF<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">
+            <a class="btn btn--primary btn--sm" data-external href="https://selfserve.derbyshiredales.gov.uk/renderform.aspx?t=103&amp;k=9644C066D2168A4C21BCDA351DA2642526359DFF" target="_blank" rel="noopener noreferrer">Open official source<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Derbyshire Dales District Council (opens in a new tab)</span></a>
+            <a class="external-link" data-external href="https://www.gov.uk/find-local-council/derbyshire-dales" target="_blank" rel="noopener noreferrer">GOV.UK council profile<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Derbyshire Dales District Council (opens in a new tab)</span></a>
+          </p>
+        </article>
+
+        <!-- AREA-BASED, NOT ADDRESS-BASED. Bolsover runs no address lookup, so
+             the "what this provides" paragraph has to say so rather than imply
+             an address search that does not exist. index.html and
+             support.html both carry the same correction for these two councils;
+             if one of the three is edited the other two must follow. -->
+        <article class="source-item" id="bolsover" data-source="bolsover">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">Bolsover District Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">Bolsover District Council publishes two annual collection calendars, Calendar A and Calendar B, each covering a named list of towns, plus a self-service "Check your bin day" form. It is area-based, not address-based.</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <p>Derby Bins reads collection dates from the council's annual calendars. For Bolsover it asks which area covers your town; it does not search for your address.</p>
+          <p class="source-item__url"><a class="external-link" data-external href="https://selfservice.bolsover.gov.uk/service/Check_your_Bin_Day" target="_blank" rel="noopener noreferrer">https://selfservice.bolsover.gov.uk/service/Check_your_Bin_Day<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">
+            <a class="btn btn--primary btn--sm" data-external href="https://selfservice.bolsover.gov.uk/service/Check_your_Bin_Day" target="_blank" rel="noopener noreferrer">Open official source<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Bolsover District Council (opens in a new tab)</span></a>
+            <a class="external-link" data-external href="https://www.gov.uk/find-local-council/bolsover" target="_blank" rel="noopener noreferrer">GOV.UK council profile<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Bolsover District Council (opens in a new tab)</span></a>
+          </p>
+        </article>
+
+        <!-- Case-sensitive URL: check-bin-collections.aspx must keep its
+             capital B and its .aspx suffix. -->
+        <article class="source-item" id="chesterfield" data-source="chesterfield">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">Chesterfield Borough Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">Chesterfield Borough Council's finder, where you enter a postcode, choose an address and see your next collection. Reasons for a missed bin appear only once you are signed in to My Chesterfield.</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <!-- NAMES THE HOST, because this page exists to name hosts. The page linked
+           below is only the human-facing entry point; the app never talks to it.
+           The driver calls anonymous Aura endpoints on a different host,
+           myaccount.chesterfield.gov.uk:
+           proxy/lib/drivers/chesterfield.js:4-5 (FWUID_URL and SEARCH_URL).
+           Both are the same council, so "the council's own lookup" was not
+           false — it was just less useful here than anywhere else on the page,
+           since the URL a reader would have to inspect to check our claim
+           above was not the URL the app hits. The same shape applies to
+           South Derbyshire (maps.southderbyshire.gov.uk, named below) and High
+           Peak (bins.highpeak.gov.uk); keep naming the host whenever the data
+           host differs from the page linked here. -->
+          <p>Derby Bins reads collection dates from the council's public postcode and address lookup, reached through the council's anonymous Aura endpoints at <strong>myaccount.chesterfield.gov.uk</strong> rather than through the page linked above.</p>
+          <p class="source-item__url"><a class="external-link" data-external href="https://www.chesterfield.gov.uk/bins-and-recycling/bin-collections/check-bin-collections.aspx" target="_blank" rel="noopener noreferrer">https://www.chesterfield.gov.uk/bins-and-recycling/bin-collections/check-bin-collections.aspx<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">
+            <a class="btn btn--primary btn--sm" data-external href="https://www.chesterfield.gov.uk/bins-and-recycling/bin-collections/check-bin-collections.aspx" target="_blank" rel="noopener noreferrer">Open official source<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Chesterfield Borough Council (opens in a new tab)</span></a>
+            <a class="external-link" data-external href="https://www.gov.uk/find-local-council/chesterfield" target="_blank" rel="noopener noreferrer">GOV.UK council profile<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for Chesterfield Borough Council (opens in a new tab)</span></a>
+          </p>
+        </article>
+
+        <article class="source-item" id="southderbyshire" data-source="southderbyshire">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">South Derbyshire District Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">South Derbyshire District Council's embedded bin widget, which returns collection dates for an address, with a downloadable calendar on the iShare "My House" portal.</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <p>Derby Bins reads collection dates from the council's iShareLive service, hosted at maps.southderbyshire.gov.uk.</p>
+          <p class="source-item__url"><a class="external-link" data-external href="https://www.southderbyshire.gov.uk/our-services/recycling-bins-and-waste/bin-collection-dates" target="_blank" rel="noopener noreferrer">https://www.southderbyshire.gov.uk/our-services/recycling-bins-and-waste/bin-collection-dates<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">
+            <a class="btn btn--primary btn--sm" data-external href="https://www.southderbyshire.gov.uk/our-services/recycling-bins-and-waste/bin-collection-dates" target="_blank" rel="noopener noreferrer">Open official source<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for South Derbyshire District Council (opens in a new tab)</span></a>
+            <a class="external-link" data-external href="https://www.gov.uk/find-local-council/south-derbyshire" target="_blank" rel="noopener noreferrer">GOV.UK council profile<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for South Derbyshire District Council (opens in a new tab)</span></a>
+          </p>
+        </article>
+
+        <!-- AREA-BASED, NOT ADDRESS-BASED, and the ONLY council whose lookup
+             touches Ordnance Survey Places -- and only to choose between the
+             North and South calendars. That is why the third-party list below
+             qualifies it as one council rather than nine. -->
+        <article class="source-item" id="northeastderbyshire" data-source="northeastderbyshire">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">North East Derbyshire District Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">North East Derbyshire District Council's published North and South collection calendars, with the villages listed for each zone. It is area-based, not address-based.</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <p>Derby Bins reads collection dates from those published calendars, and sends your postcode to Ordnance Survey Places only when it has to decide which of the two areas applies to you.</p>
+          <p class="source-item__url"><a class="external-link" data-external href="https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates" target="_blank" rel="noopener noreferrer">https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">
+            <a class="btn btn--primary btn--sm" data-external href="https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates" target="_blank" rel="noopener noreferrer">Open official source<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for North East Derbyshire District Council (opens in a new tab)</span></a>
+            <a class="external-link" data-external href="https://www.gov.uk/find-local-council/north-east-derbyshire" target="_blank" rel="noopener noreferrer">GOV.UK council profile<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> for North East Derbyshire District Council (opens in a new tab)</span></a>
+          </p>
+        </article>
+
+      </div>
+    </div>
+
+    <!-- ================================================ OTHER SOURCES -->
+    <!-- Third parties are NOT council sources and get no .source-item and no
+         slug. Grouped here because "who else does this app talk to" is a
+         different question from "whose council collects my bin". -->
+    <div class="section">
+      <div class="other-sources">
+        <h2>Other information sources</h2>
+        <ul>
+          <li>Weather information is provided by <a class="external-link" data-external href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>, using a fixed coordinate for your council area rather than your location.</li>
+          <li>Open-Meteo data is provided under the <a class="external-link" data-external href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">Creative Commons Attribution 4.0 licence<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>.</li>
+          <li><a class="external-link" data-external href="https://api.os.uk" target="_blank" rel="noopener noreferrer">Ordnance Survey Places<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a> is used by one council only — North East Derbyshire District Council — to decide which of its North and South collection calendars applies to your area. The other eight councils' address search runs entirely on the council's own website and never reaches Ordnance Survey. A postcode is sent to a public address gazetteer, not a location lookup.</li>
+          <li>Reports you submit in the app are written to a private Google spreadsheet controlled by Derby Bins. No council receives them.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ================================================== ASIDE NOTE -->
+    <!-- Wording rule for this block: a missed bin is NOT reported to the
+         council by way of Derby Bins. The app is not a council reporting
+         channel, and a Play reviewer reading a claim that an unaffiliated app
+         files reports on a resident's behalf would read it as performing a
+         service it is not authorised for. Reports come to Derby Bins; the
+         council's own waste service is where a missed bin is reported. Kept
+         free of the literal phrases the site greps for, so a reviewer running
+         a plain text search gets a clean result. -->
+    <div class="section">
+      <aside class="aside-note">
+        <h2>If a collection looks wrong</h2>
+        <p>If a collection looks wrong, use the council waste service linked above for your area to check it and to report a missed bin. Derby Bins is not a council service and cannot change a collection.</p>
+        <p>You can also tell us about a problem at <a href="mailto:contactxomo@gmail.com">contactxomo@gmail.com</a> and we will check it against the council's information.</p>
+      </aside>
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <div>
+      <a class="site-footer__brand" href="/">
+        <img class="brand__mark" src="/assets/store_icon_512.png" alt="" width="32" height="32">
+        <span>Derby Bins</span>
+      </a>
+      <p class="site-footer__disclaimer">Derby Bins is an independent utility app. It is not affiliated with, authorised by, sponsored by, or endorsed by any local council or government body.</p>
+    </div>
+    <nav class="site-footer__nav" aria-label="Footer">
+      <ul>
+        <li><a href="/privacy.html">Privacy Policy</a></li>
+        <li><a href="/sources.html">Official Information Sources</a></li>
+        <li><a href="mailto:contactxomo@gmail.com">Email us</a></li>
+        <li><a href="/support.html">Support</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

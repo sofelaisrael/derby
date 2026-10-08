@@ -1,0 +1,1341 @@
+/* =============================================================================
+   Derby Bins — public site design system
+   Brand "Derby Bins"
+
+   Static CSS. No build step. No stylesheet imports, no font-face declarations,
+   no remote asset URLs, no CDN. System font stack only. Icons are hand-authored
+   inline SVG drawn in the HTML, never fetched.
+
+   HARD RULES OBSERVED IN THIS FILE
+   - This file is a verbatim port of the proven sibling site's design system
+     (another Derbyshire-area bin app; the two share one design system). The
+     ONLY rule-level change made in the port was renaming the one hero
+     keyframes block. Every declaration below is otherwise unchanged, and that
+     includes the token block: --color-brand #1E6B4A is correct for Derby Bins
+     and is NOT a leftover from the sibling.
+   - The 17 literal hex colour tokens and the 4 gradients in section 1 are
+     verbatim from the design spec this file was ported from, and must not be
+     "improved". The typography,
+     spacing, radius, shadow and focus tokens are also verbatim EXCEPT:
+       * --header-height and --scroll-offset are ADDITIONS (the spec gave no
+         sticky-header offset, and deep links need one);
+       * --color-error/#EF4444 and the success/warning trio are ADDITIONS for
+         palette parity with the Flutter app, and are used nowhere -- see the
+         warning above;
+       * --type-body-sm (15px) is an ADDITION for dense UI text such as card
+         descriptions and hints, NOT the body size.
+     Do not change the verbatim values.
+   - No colour-mixing functions, no modern colour spaces, no container queries,
+     no relational or :has selectors, no dual-theme colour function, no nested
+     selector syntax. Android WebView 110 must parse every line of this file.
+   - No stylesheet imports, no webfont declarations, no remote asset URLs. The
+     app's privacy policy promises no tracking; the site honours it, so nothing
+     here may leave the origin.
+   - The outline shorthand is never zeroed. ONE global :focus-visible rule
+     paints every ring, reading a custom property so contexts override
+     --focus-ring-color instead of restating the shorthand. The only two other
+     rules that draw an outline are .card:focus-within (a wrapper showing its
+     focus) and .source-item:target (deep-link highlight) -- neither replaces
+     or cancels the global rule.
+   - Every transition/animation declaration lives inside the single
+     @media (prefers-reduced-motion: no-preference) block at the end of the
+     file. Base styles are completely static.
+   - Body/paragraph copy is 16px (--type-body). 15px is an app-density decision
+     and is wrong for sustained reading, but --type-body-sm (15px) is correct
+     for the short dense strings this site does use -- card descriptions, form
+     hints, footer text, empty-state copy. The rule is "long-form prose is 16px",
+     not "nothing is ever 15px".
+
+   REQUIRED INLINE SCRIPT IN EVERY PAGE'S <head> (not in this file, but it is
+   part of this contract -- see section 4 for why):
+
+     <script>document.documentElement.classList.remove('no-js')</script>
+
+   Copy it BYTE-IDENTICALLY into every page in <head>: index.html, sources.html,
+   support.html, privacy.html and 404.html. All five share ONE sha256 hash
+   because the script is byte-identical on all five, which is what lets the
+   policy stay strict -- script-src 'self' plus that one
+   hash -- instead of needing 'unsafe-inline'. Rewording it, adding a space, or
+   reordering the two statements changes the hash and forces 'unsafe-inline'.
+   Do not reword this comment into the script, and do not "improve" the script.
+   ========================================================================== */
+
+/* -----------------------------------------------------------------------------
+   1. TOKENS
+   -------------------------------------------------------------------------- */
+:root {
+  --color-brand:               #1E6B4A;
+  --color-brand-light:         #E8F5EE;
+  --color-brand-secondary:     #4F9D69;
+  --color-brand-deep:          #134A33;
+  --color-brand-hover:         #18573C;
+  --color-brand-active:        #0F3D2B;
+  --color-brand-soft:          #F2F8F5;
+
+  --color-background:          #F6F8F7;
+  --color-surface:             #FFFFFF;
+  --color-border:              #E5E7EB;
+  --color-border-strong:       #D3D8DE;
+
+  --color-text:                #18212B;
+  --color-text-secondary:      #6B7280;
+  --color-text-secondary-strong:#5B6472;
+  --color-text-muted:          #6E7683;
+
+  /* PARITY ONLY -- DEFINED, AND DELIBERATELY UNUSED ANYWHERE IN THIS FILE.
+     All three fail WCAG as body text and all three fail the 3:1 non-text
+     threshold as a thin indicator:
+       --color-success #22C55E  1.92:1 on white   (text and non-text)
+       --color-warning #F59E0B  2.15:1 on white   (text and non-text)
+       --color-error   #EF4444  3.76:1 on white   (text fails; 3:1 only at
+                                                  >=18.66px bold for text)
+     They exist so the web palette can be diffed against the app's palette
+     (lib/theme/app_colors.dart) without inventing values.
+
+     DO NOT reach for these. In particular --color-error sitting here with no
+     other comment is exactly what the next agent will grab for an empty-state
+     or error banner, and a 3.76:1 red label on white is a WCAG failure. This
+     site has no error state to speak of: an empty search result is a normal
+     outcome, and it is styled with --color-brand-soft in .council-search__empty
+     (see section 10), not with a red. Same for
+     --color-brand-secondary (#4F9D69, 3.30:1 on white) -- it is a decorative
+     accent only and must never carry text. */
+  --color-success:             #22C55E;
+  --color-warning:             #F59E0B;
+  --color-error:               #EF4444;
+
+  --gradient-brand:            linear-gradient(135deg, #2BAE66 0%, #1E6B4A 100%);
+  --gradient-brand-deep:       linear-gradient(135deg, #1E6B4A 0%, #134A33 100%);
+  --gradient-brand-vertical:   linear-gradient(180deg, #2BAE66 0%, #1E6B4A 100%);
+  --gradient-hairline:         linear-gradient(90deg, #2BAE66 0%, rgba(30,107,74,0) 100%);
+
+  /* The app's #9CA3AF text-hint is 2.54:1 on white and is deliberately NOT
+     defined here. Use --color-text-muted (or --color-text-secondary-strong,
+     see note below) instead. */
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --type-display:      clamp(2.125rem, 1.30rem + 3.60vw, 3.5rem);   /* 34 -> 56 */
+  --type-h1:          clamp(1.75rem, 1.42rem + 1.45vw, 2.25rem);   /* 28 -> 36 */
+  --type-h2:          clamp(1.375rem, 1.24rem + 0.60vw, 1.625rem); /* 22 -> 26 */
+  --type-h3:          1.25rem;
+  --type-lead:        clamp(1.0625rem, 1.02rem + 0.20vw, 1.25rem);/* 17 -> 20 */
+  --type-body:        1rem;
+  --type-body-sm:     0.9375rem;
+  /* --type-meta and --type-meta-strong are deliberately the SAME size: they are
+     a weight pair, not a size pair. Use -meta for quiet supporting text and
+     -meta-strong when that text needs to hold its own (badges, eyebrows, table
+     headers). Differentiating them by size was rejected because a 1px step is
+     invisible at 13px and only muddies the scale. */
+  --type-meta:        0.8125rem;   /* 400 weight */
+  --type-meta-strong: 0.8125rem;   /* 600 weight + 0.02em tracking */
+  --type-url:         0.8125rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+
+  --page-pad: 20px;
+  --section-gap:  clamp(3rem, 2rem + 5vw, 6rem);
+  --content-max:  1120px;
+  --prose-max:    68ch;
+
+  --radius-card:   24px;
+  --radius-hero:   30px;
+  --radius-button: 16px;
+  --radius-input:  16px;
+  --radius-chip:   999px;
+  --radius-sm:     10px;
+
+  /* Ported from the sibling site's design spec, which asked for every card to
+     use "blur: 40, spread: -8, offsetY: 12". That spec file is NOT part of this
+     repo, so the values below are taken as-is and must not be "fixed" by
+     re-deriving them: CSS box-shadow cannot express a negative spread
+     meaningfully (it erodes the shape rather than tightening a soft cast), so
+     --shadow-lg approximates it with a tight dark layer plus a wide light
+     layer. Do not add a negative spread value here. */
+  --shadow-xs: 0 1px 2px rgba(17,24,39,.04);
+  --shadow-sm: 0 1px 2px rgba(17,24,39,.04), 0 2px 8px rgba(17,24,39,.04);
+  --shadow-md: 0 2px 4px rgba(17,24,39,.04), 0 8px 24px rgba(17,24,39,.06);
+  --shadow-lg: 0 4px 8px rgba(17,24,39,.04), 0 16px 40px rgba(17,24,39,.08);
+
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-brand);
+  --focus-ring-color-dark: #FFFFFF;
+
+  /* Not in the spec token block, but required so deep links clear the sticky
+     header. Header is 64px on mobile / 72px from 900px; the offset adds a
+     little breathing room above the target. */
+  --header-height: 64px;
+  --scroll-offset: 88px;
+}
+
+/* -----------------------------------------------------------------------------
+   2. BASE
+   -------------------------------------------------------------------------- */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Smooth scrolling is applied in the motion block at the end of this file,
+     never here, so a reduced-motion reader gets an instant jump. */
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font: 400 var(--type-body)/1.65 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-wrap: break-word;
+}
+
+/* Heading type comes from the tokens HERE, once, so a plain bare <h2> written
+   by the page author looks the same as every styled heading. Resetting only
+   family/colour/margin left bare headings on UA defaults (1.5em bold, no fluid
+   clamp, no tracking, wrong leading) and left --type-h2 consumed in exactly one
+   place. Weights/leading/tracking match the documented scale.
+
+   .hero__title (--type-display) and .page-title are the fluid hero-scale
+   variants and override these by class. */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-sans);
+  color: var(--color-text);
+}
+h1 { font: 700 var(--type-h1)/1.15 var(--font-sans); letter-spacing: -0.02em; }
+h2 { font: 700 var(--type-h2)/1.2  var(--font-sans); letter-spacing: -0.012em; }
+h3 { font: 600 var(--type-h3)/1.3  var(--font-sans); letter-spacing: -0.01em; }
+/* h4-h6 are not in the type scale; h3 is the closest and keeps them sane. */
+h4, h5, h6 { font: 600 var(--type-h3)/1.3 var(--font-sans); letter-spacing: -0.01em; }
+
+p, ul, ol, dl, dd, figure, blockquote { margin: 0 0 var(--space-4); }
+p:last-child, ul:last-child, ol:last-child { margin-bottom: 0; }
+ul, ol { padding-left: var(--space-5); }
+
+img, svg, video { max-width: 100%; }
+svg { flex: none; }
+
+a { color: var(--color-brand); }
+
+/* THE single rule that paints every focus ring on the site. Because it reads a
+   custom property, contexts only override --focus-ring-color; they never repeat
+   the outline shorthand, and never cancel the ring to get their own. Do not add
+   per-component :focus-visible restatements -- that is what this rule exists to
+   prevent. */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The hidden attribute is load-bearing here: council items are grid children,
+   the search clear button is a flex child, and the mobile nav panel is a flex
+   container. Without !important their display values would win and `hidden`
+   would silently do nothing. */
+[hidden] { display: none !important; }
+
+/* Sticky-header overlap: anything that can be a fragment target must not land
+   underneath the header. */
+[id] { scroll-margin-top: var(--scroll-offset); }
+
+/* -----------------------------------------------------------------------------
+   3. LAYOUT
+   -------------------------------------------------------------------------- */
+.container {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding-inline: var(--page-pad);
+}
+
+.section {
+  padding-block: var(--section-gap);
+}
+
+/* Section modifiers. Only ones with a real job are kept; an empty rule is a
+   promise nobody checks. */
+.section--councils {
+  /* This section holds the search control AND the grid, and the search
+     already has its own bottom margin. Trim the section's own bottom padding
+     so the gap between the grid and whatever follows is not doubled. */
+  padding-bottom: calc(var(--section-gap) / 2);
+}
+
+.section--disclaimer .disclaimer { margin-bottom: 0; }
+
+.page-title {
+  margin: 0 0 var(--space-4);
+  font: 700 var(--type-h1)/1.15 var(--font-sans);
+  letter-spacing: -0.02em;
+}
+
+/* --color-text-secondary-strong rather than --color-text-secondary. The latter
+   is 4.53:1 on --color-background: it PASSES AA (4.5:1) but leaves no headroom
+   at all -- 0.03:1 of margin, which any future tweak to either colour erases.
+   This is 5.61:1. Prefer it wherever the text is real prose. */
+.page-intro {
+  max-width: var(--prose-max);
+  margin: 0 0 var(--space-6);
+  font: 400 var(--type-lead)/1.5 var(--font-sans);
+  letter-spacing: -0.01em;
+  color: var(--color-text-secondary-strong);
+}
+
+/* Spec said --color-text-muted. That token is 4.58:1 on pure white but only
+   4.30:1 on --color-background (#F6F8F7), which is the actual page colour, so
+   at 13px it would fail AA. --color-text-secondary-strong is 5.61:1 here. */
+.page-meta {
+  margin: 0;
+  font: 400 var(--type-meta)/1.45 var(--font-sans);
+  color: var(--color-text-secondary-strong);
+}
+
+/* -----------------------------------------------------------------------------
+   4. UTILITIES
+   -------------------------------------------------------------------------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Without JS the toggle cannot work, and the filter cannot work. Hide the
+   controls, never the content: no-JS readers still get all 9 councils, and the
+   nav must never be unreachable.
+
+   The panel ships COLLAPSED (the `hidden` attribute is in the HTML) so that JS
+   users get no flash of an open panel on first paint. That means no-JS has to
+   force it back open, which needs the `[hidden]` selector -- and it needs
+   !important too: the global `[hidden]` rule above is an author declaration
+   carrying !important, and !important outranks specificity outright, so a
+   higher-specificity rule without !important would still lose. Between two
+   !important declarations specificity decides: (0,3,0) here vs (0,1,0). */
+.no-js .nav-toggle { display: none; }
+.no-js .site-nav { display: flex; }
+.no-js .site-nav[hidden] { display: flex !important; }
+.no-js [data-search-region] { display: none; }
+
+/* -----------------------------------------------------------------------------
+   5. SKIP LINK
+   -------------------------------------------------------------------------- */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 200; /* must sit above .site-header (z-index: 100) */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: var(--space-2);
+  padding-inline: var(--space-5);
+  background: var(--color-brand);
+  color: #FFFFFF;
+  border-radius: var(--radius-button);
+  font: 600 var(--type-body-sm)/1 var(--font-sans);
+  text-decoration: none;
+  transform: translateY(-250%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* -----------------------------------------------------------------------------
+   6. HEADER + NAVIGATION
+   -------------------------------------------------------------------------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(246,248,247,.92);
+  border-bottom: 1px solid var(--color-border);
+}
+
+@supports not ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+  .site-header { background: var(--color-background); }
+}
+
+@supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+  .site-header {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+}
+
+.site-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  max-width: var(--content-max);
+  min-height: var(--header-height);
+  margin: 0 auto;
+  padding: var(--space-3) var(--page-pad);
+}
+
+.brand {
+  order: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  color: var(--color-text);
+  font: 700 var(--type-body)/1.2 var(--font-sans);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.brand:hover { color: var(--color-brand); }
+
+.brand__mark {
+  display: block;
+  width: 32px;
+  height: 32px;
+  color: var(--color-brand);
+}
+
+.brand__name { display: inline-block; }
+
+/* --- hamburger toggle (mobile only) ---------------------------------------- */
+.nav-toggle {
+  order: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  min-width: 44px;
+  margin-left: auto;
+  padding: 0 var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text);
+  /* Interactive control: the border is its only surface boundary, so it must
+     clear the 3:1 non-text threshold. --color-border-strong does not, and this
+     control never has its outline switched off. */
+  border: 1px solid var(--color-text-muted);
+  border-radius: var(--radius-button);
+  font: 600 var(--type-body-sm)/1 var(--font-sans);
+  cursor: pointer;
+}
+
+.nav-toggle:hover { background: var(--color-brand-light); }
+
+/* The hamburger icon is an inline SVG in the HTML (see 404.html for the exact
+   markup), styled only here. There is deliberately NO rule matching unclassed
+   child elements: this file previously had a "three-span hamburger" fallback
+   that selected any child span carrying no class attribute, which silently
+   matched the visible text label ("Menu"), turned it into an 18x2px bar, and
+   rendered the word as clipped overflowing line boxes. A styling rule must never
+   be able to match text content by accident, so any bar-style rule must be
+   opted into by class. If you ever want the three-span version, opt in
+   explicitly with .nav-toggle__bars. */
+.nav-toggle__icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+/* 180deg, not 90deg: 90deg turns three horizontal bars into three VERTICAL
+   bars, which does not read as "close" at all. */
+.nav-toggle[aria-expanded="true"] .nav-toggle__icon { transform: rotate(180deg); }
+
+/* --- nav panel (mobile: block panel below the header row) ------------------ */
+.site-nav {
+  order: 3;
+  display: flex;
+  flex: 1 0 100%;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.site-nav__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font: 600 var(--type-body)/1.4 var(--font-sans);
+  text-decoration: none;
+}
+
+.site-nav__link:hover {
+  background: rgba(30,107,74,.06);
+  color: var(--color-brand);
+}
+
+.site-nav__link[aria-current="page"] {
+  background: var(--color-brand-light);
+  color: var(--color-brand);
+}
+
+/* The in-panel CTA is full width on mobile. */
+.site-nav .btn { width: 100%; }
+
+/* -----------------------------------------------------------------------------
+   7. HERO
+   No imagery here. There are no real app screenshots, and an illustration must
+   not be passed off as one. Type, whitespace and the gradient do the work.
+   -------------------------------------------------------------------------- */
+.hero {
+  /* Overridable focus ring: a green ring on a green hero is invisible. */
+  --focus-ring-color: var(--focus-ring-color-dark);
+
+  background: var(--gradient-brand-deep);
+  color: #FFFFFF;
+  border-radius: 0 0 var(--radius-hero) var(--radius-hero);
+  padding-block: clamp(3rem, 2rem + 6vw, 5.5rem);
+}
+
+.hero__inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding-inline: var(--page-pad);
+}
+
+.hero__accent {
+  width: 4px;
+  height: 64px;
+  margin-bottom: var(--space-5);
+  /* Decorative only: --gradient-brand peaks at #2BAE66, which is 2.86:1 against
+     white and would fail. Nothing on this gradient may carry white text. */
+  background: var(--gradient-brand);
+  border-radius: var(--radius-chip);
+}
+
+.hero__title {
+  max-width: 18ch;
+  margin: 0 0 var(--space-4);
+  color: #FFFFFF;
+  font: 800 var(--type-display)/1.05 var(--font-sans);
+  letter-spacing: -0.025em;
+}
+
+.hero__lead {
+  max-width: 46ch;
+  margin: 0 0 var(--space-8);
+  color: #FFFFFF;
+  font: 400 var(--type-lead)/1.5 var(--font-sans);
+  letter-spacing: -0.01em;
+}
+
+.hero__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+/* Contextual overrides so hero CTAs stay legible on the deep gradient. No new
+   class names: the page author still uses .btn--secondary / .btn--ghost. */
+.hero .btn--ghost {
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+.hero .btn--ghost:hover { background: rgba(255,255,255,.14); }
+.hero .btn--secondary:hover { background: var(--color-brand-light); }
+
+/* -----------------------------------------------------------------------------
+   8. BUTTONS
+   .btn--primary is always a FLAT fill. Never a gradient: --gradient-brand's
+   light end is only 2.86:1 against white.
+   -------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-6);
+  border: 1px solid transparent;
+  border-radius: var(--radius-button);
+  font: 600 var(--type-body)/1 var(--font-sans);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn--sm {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  font-size: var(--type-body-sm);
+}
+
+.btn--primary {
+  background: var(--color-brand);
+  color: #FFFFFF;
+}
+
+.btn--primary:hover { background: var(--color-brand-hover); }
+.btn--primary:active { background: var(--color-brand-active); }
+
+.btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-brand);
+  /* Spec said --color-border-strong. This button is a white surface on a
+     near-white page, so the border is its only boundary and must clear 3:1.
+     #D3D8DE does not; #6E7683 is 4.58:1 against the white fill. */
+  border-color: var(--color-text-muted);
+}
+
+.btn--secondary:hover {
+  background: var(--color-brand-light);
+  border-color: var(--color-brand);
+}
+
+.btn--secondary:active { background: #D8EBE0; }
+
+.btn--ghost {
+  background: transparent;
+  color: var(--color-brand);
+}
+
+.btn--ghost:hover { background: rgba(30,107,74,.06); }
+.btn--ghost:active { background: rgba(30,107,74,.12); }
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  background: var(--color-border);
+  color: var(--color-text-secondary-strong); /* 4.83:1 on --color-border */
+  border-color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.btn--ghost:disabled,
+.btn--ghost[aria-disabled="true"] { background: transparent; }
+
+/* No .btn:focus-visible rule: the global :focus-visible in section 2 already
+   paints this ring, and restating it verbatim at higher specificity would mean
+   two places to keep in sync. See the note at that rule. */
+
+/* -----------------------------------------------------------------------------
+   9. CARDS
+   -------------------------------------------------------------------------- */
+.card {
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.card--flat { box-shadow: none; }
+.card--raised { box-shadow: var(--shadow-lg); }
+.card--outlined { box-shadow: none; border-color: var(--color-border-strong); }
+
+.card > :last-child { margin-bottom: 0; }
+
+.card:focus-within {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* -----------------------------------------------------------------------------
+   10. COUNCIL SEARCH
+
+   STRUCTURE -- the order below is load-bearing and is also enforced by app.js
+   section (c). Read both before rearranging anything:
+
+     .council-search
+       .council-search__control     <- data-search-region goes HERE, on this
+       |                              element only. Never on .council-search.
+       |   .council-search__label    <label for> the input's id
+       |   .council-search__field    position:relative; holds icon + clear
+       |     .council-search__icon
+       |     .council-search__input  type="search"
+       |     .council-search__clear  ships WITH hidden
+       |   .council-search__hint
+       |   .council-search__status   role="status"; ONE text node, never
+       |                             briefly emptied or the SR announcement
+       |                             is lost
+       .council-grid                 <- sibling of the control, NOT a child
+       |   [data-council="<slug>"]    x9, each a grid item
+       .council-search__empty         <- ships WITH hidden; sibling of the
+       |   h3                            grid and OUTSIDE data-search-region,
+       |   p  [data-empty-query]        so no-JS readers never see it
+       |   .council-search__empty-clear
+
+   Why the control must not wrap the grid: without JS, [data-search-region] is
+   display:none so no reader gets a dead filter -- but if the grid were inside
+   it, no reader would get the councils either. The grid must stay reachable
+   with JS off.
+   -------------------------------------------------------------------------- */
+.council-search { margin-bottom: var(--space-8); }
+
+.council-search__control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.council-search__label {
+  font: 600 var(--type-body-sm)/1.4 var(--font-sans);
+  color: var(--color-text);
+}
+
+.council-search__field {
+  position: relative;
+  max-width: 420px;
+}
+
+.council-search__icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 20px;
+  height: 20px;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.council-search__input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 48px 0 44px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-text-muted);
+  border-radius: var(--radius-button);
+  font: 400 var(--type-body)/1.4 var(--font-sans);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* The UA placeholder colour is far too light. Set it explicitly. */
+.council-search__input::placeholder {
+  color: var(--color-text-secondary-strong);
+  opacity: 1;
+}
+
+/* No .council-search__input:focus-visible rule -- the global one covers it. */
+
+/* Hit area is the 44x44 BOX, not the 16x16 icon: the icon is centred by flex
+   inside it, and the box is the pointer/touch target. 44x44 is a genuine
+   44x44 for touch, comfortably over WCAG 2.2 SC 2.5.8 (24x24 minimum) and it
+   meets SC 2.5.5 AAA (44x44). Geometry check: the field's height comes from
+   .council-search__input's min-height:48px, and this box sits at top:2px with
+   height:44px, so it spans y=2..46 inside 48px -- it fits without clipping and
+   without overflowing the control. The input's right padding is 48px so typed
+   text never runs under this box. */
+.council-search__clear {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-secondary-strong);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.council-search__clear:hover { background: var(--color-brand-light); color: var(--color-brand); }
+
+.council-search__clear svg {
+  width: 16px;
+  height: 16px;
+}
+
+.council-search__hint {
+  margin: 0;
+  font: 400 var(--type-body-sm)/1.6 var(--font-sans);
+  color: var(--color-text-secondary-strong);
+}
+
+.council-search__status {
+  margin: 0;
+  font: 400 var(--type-meta)/1.45 var(--font-sans);
+  color: var(--color-text-secondary-strong);
+}
+
+.council-search__empty {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+  background: var(--color-brand-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.council-search__empty p {
+  color: var(--color-text-secondary-strong);
+}
+
+.council-search__empty-clear { margin-top: var(--space-2); }
+
+/* -----------------------------------------------------------------------------
+   11. STEPS
+   1 column below 900px, 3 columns from 900px. Never 2.
+   -------------------------------------------------------------------------- */
+.steps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step { position: relative; }
+
+.step__marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--space-4);
+  background: var(--color-brand-light);
+  color: var(--color-brand);
+  border-radius: var(--radius-button);
+  font: 700 var(--type-h2)/1 var(--font-sans);
+}
+
+/* Must be an <h3>; type comes from the h3 reset in section 2. */
+.step__title {
+  margin: 0 0 var(--space-2);
+}
+
+.step__body {
+  margin: 0;
+  font: 400 var(--type-body-sm)/1.6 var(--font-sans);
+  color: var(--color-text-secondary-strong);
+}
+
+/* Desktop-only connector. Never rendered on the last step. */
+.step::after {
+  content: "";
+  display: none;
+  position: absolute;
+  top: 28px;
+  left: 56px;
+  right: calc(-1 * var(--space-8));
+  height: 1px;
+  background: var(--gradient-hairline);
+}
+
+/* -----------------------------------------------------------------------------
+   12. COUNCIL GRID
+   1 column below 720px, 2 columns from 720px. Never 3: names like
+   "North East Derbyshire District Council" wrap badly in a third.
+   -------------------------------------------------------------------------- */
+.council-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.council-item { min-width: 0; }
+
+.council-item__card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-xs);
+}
+
+.council-item__name {
+  /* Must be an <h3>; type comes from the h3 reset in section 2. */
+  margin: 0 0 var(--space-2);
+}
+
+.council-item__name-link {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.council-item__name-link:hover { color: var(--color-brand); }
+
+/* auto, so the button row sits on the baseline of the card in a 2-column
+     grid where "North East Derbyshire District Council" wraps to two lines and
+     its neighbours do not. padding-top keeps >=16px of breathing room when auto
+     resolves to 0 in a single-line card. */
+.council-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-4);
+}
+
+.council-item__details {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font: 400 var(--type-body-sm)/1.6 var(--font-sans);
+  color: var(--color-text-secondary-strong);
+}
+
+.council-item__details > :last-child { margin-bottom: 0; }
+
+/* -----------------------------------------------------------------------------
+   13. BADGE
+   Always a <span>. Never an <a> or a <button>: a badge is a state, not a
+   control, and must never be reachable by Tab.
+   -------------------------------------------------------------------------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 10px;
+  background: var(--color-brand-light);
+  color: var(--color-brand);
+  border-radius: var(--radius-chip);
+  font: 600 var(--type-meta-strong)/1.45 var(--font-sans);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* -----------------------------------------------------------------------------
+   14. EXTERNAL LINKS
+   The underline is permanent, not a hover affordance. The icon is authored in
+   HTML as inline SVG and carries .icon-external.
+   -------------------------------------------------------------------------- */
+.external-link {
+  display: inline;
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.external-link:hover { color: var(--color-brand-hover); }
+
+.icon-external {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: 4px;
+  vertical-align: -0.15em;
+}
+
+/* -----------------------------------------------------------------------------
+   15. SOURCE GRID (source transparency)
+   -------------------------------------------------------------------------- */
+.source-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source-item {
+  min-width: 0;
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-xs);
+  scroll-margin-top: var(--scroll-offset);
+}
+
+/* Deep-link highlight for /sources.html#derby. Uses the same ring custom
+   properties as the focus rules so the two can never drift apart. */
+.source-item:target {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* SOURCES PAGE STRUCTURE -- two shapes, read this before writing markup.
+
+   1. The nine COUNCIL sources each get their own .source-item, one per slug,
+      carrying data-source="<slug>" and id="<slug>". The container is a
+      div.source-grid (a <ul> here would demand <li> children, and these are
+      <article>s).
+
+        <article class="source-item" id="derby" data-source="derby">
+          <span class="source-item__label">Official council source</span>
+          <h2 class="source-item__name">Derby City Council</h2>
+          <h3 class="source-item__label-heading">What this source provides</h3>
+          <p class="source-item__provides">…</p>
+          <h3 class="source-item__label-heading">Where Derby Bins gets the data</h3>
+          <p>…</p>
+          <p class="source-item__url"><a class="external-link" data-external
+             target="_blank" rel="noopener noreferrer"
+             href="&lt;council URL&gt;">&lt;council URL&gt;<svg class="icon-external"
+             viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
+             stroke-width="1.75" aria-hidden="true" focusable="false">...</svg><span
+             class="visually-hidden"> (opens in a new tab)</span></a></p>
+          <p class="source-item__actions">…</p>
+        </article>
+
+      HEADING SHAPE -- the eyebrow is a <span>, the council name is the <h2>.
+      This is INVERTED from what an earlier version of this comment described
+      (eyebrow as <h3> with the name in a <span> inside it). Do not "correct" it
+      back. Two reasons:
+
+        * The council's readable name is the only thing in the card worth
+          navigating to, so it is the heading. An uppercase category label
+          ("Official council source", identical on all nine) is not a heading
+          and nine duplicate headings would be noise.
+        * The eyebrow must be a CATEGORY, not a name -- "Official council
+          source", the same string on all nine. Putting the council's name in
+          the eyebrow as well as the heading makes a screen reader announce it
+          twice per card, and it is the single most likely mistake here.
+
+      The two inner labels ("What this source provides" / "Where Derby Bins gets
+      the data") are real <h3>s so the outline stays navigable, styled down to
+      meta size by .source-item__label-heading so they do not compete with the
+      council name.
+
+      THE LINK TEXT IS THE LITERAL URL, spelled out, and app.js asserts
+      href === textContent for all nine. The visible address and the "Open
+      official source" button must point at the same string. Note that the
+      council URLs here are DEEP PAGE URLs (…/bindays, …/bin-collection-calendar/),
+      NOT the bare origins in the app's `_councilWebsites` map
+      (lib/services/council_api.dart, lines 106-116) -- that map only proves the
+      host is right. That map is keyed by the same slug, which is the part that
+      matters here.
+
+   2. THIRD-PARTY services (Open-Meteo, Ordnance Survey Places at api.os.uk) do NOT get their own .source-item: they are not councils, they
+      have no slug, and they are grouped inside .other-sources / .aside-note as
+      prose with ordinary .external-link anchors. There is deliberately no CSS
+      for that shape beyond those two blocks. If a future task wants a distinct
+      badge for non-council sources, add one on purpose -- do not assume one
+      exists. Note also that .badge is a <span> and never a link. */
+
+/* .source-item__label is the uppercase CATEGORY eyebrow -- a <span>, not a
+   heading, and the same string on all nine. The heading is
+   .source-item__name, the <h2> below it. See the structure note above for why
+   that is the right way round. */
+.source-item__label {
+  display: block;
+  margin: 0 0 var(--space-3);
+  color: var(--color-brand);
+  font: 600 var(--type-meta-strong)/1.45 var(--font-sans);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.source-item__name {
+  display: block;
+  color: var(--color-text);
+  font: 600 var(--type-h3)/1.3 var(--font-sans);
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.source-item__provides {
+  margin: 0;
+  font: 400 var(--type-body-sm)/1.6 var(--font-sans);
+  color: var(--color-text-secondary-strong);
+}
+
+/* Inner label above each of the two data paragraphs ("What this source
+   provides" / "Where Derby Bins gets the data"). It is a real <h3> so the
+   heading outline stays navigable, but it must NOT look like the council
+   name above it: .source-item__name already occupies --type-h3 at weight
+   600, so an unstyled h3 here would render as a second, equal-weight
+   heading and flatten the hierarchy. Meta size + uppercase is the same
+   treatment .source-item__label gets, in --color-text-secondary-strong
+   (5.61:1 on --color-surface, so it clears AA at 13px). */
+.source-item__label-heading {
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--color-text-secondary-strong);
+  font: 600 var(--type-meta-strong)/1.45 var(--font-sans);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Technical disclosure panel. The URL is never truncated — it wraps.
+   overflow-wrap:anywhere is sufficient; the legacy break-word value that used to
+   sit alongside it is deprecated and was doing nothing here. */
+.source-item__url {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-brand-soft);
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  font: 400 var(--type-url)/1.5 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.source-item__url a { overflow-wrap: anywhere; }
+
+.source-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+/* -----------------------------------------------------------------------------
+   16. DISCLAIMER
+   A standing fact, not an error state: no red, no amber. --color-brand-light
+   gives --color-text a 14.50:1 ratio, the highest-contrast surface on the
+   site, deliberately — this is the compliance statement.
+   -------------------------------------------------------------------------- */
+.disclaimer {
+  padding: var(--space-5) var(--space-6);
+  background: var(--color-brand-light);
+  color: var(--color-text);
+  border-left: 4px solid var(--color-brand);
+  border-radius: var(--radius-card);
+  font: 400 var(--type-body)/1.65 var(--font-sans);
+}
+
+.disclaimer > :last-child { margin-bottom: 0; }
+
+/* The disclaimer sentence itself. It is the whole point of the block and the
+   only thing allowed in it (app.js compares this element's textContent
+   character-for-character), so it owns its own margin rather than relying on
+   the :last-child reset above -- that way adding a sibling later cannot open
+   a gap inside the compliance statement. */
+.disclaimer__text { margin: 0; }
+
+/* -----------------------------------------------------------------------------
+   17. OTHER-SOURCES BLOCK + ASIDE NOTE
+   -------------------------------------------------------------------------- */
+.other-sources {
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-xs);
+}
+
+.other-sources > :last-child { margin-bottom: 0; }
+
+.aside-note {
+  padding: var(--space-5);
+  background: var(--color-brand-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  font: 400 var(--type-body-sm)/1.6 var(--font-sans);
+  color: var(--color-text-secondary-strong);
+}
+
+.aside-note > :last-child { margin-bottom: 0; }
+
+/* -----------------------------------------------------------------------------
+   18. FOOTER
+   No copyright year: there is no build step to keep it fresh.
+   -------------------------------------------------------------------------- */
+/* No margin-top: the last .section already contributes padding-block of
+   --section-gap, so a margin here stacked on it and doubled the gap. */
+.site-footer {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.site-footer__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-8);
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-10) var(--page-pad);
+}
+
+.site-footer__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  color: var(--color-text);
+  font: 700 var(--type-body)/1.2 var(--font-sans);
+  text-decoration: none;
+}
+
+.site-footer__brand:hover { color: var(--color-brand); }
+
+.site-footer__disclaimer {
+  margin: 0;
+  max-width: var(--prose-max);
+  font: 400 var(--type-body-sm)/1.6 var(--font-sans);
+  color: var(--color-text-secondary-strong);
+}
+
+.site-footer__nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-footer__nav li { margin: 0; }
+
+.site-footer__nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.site-footer__nav a:hover { color: var(--color-brand-hover); }
+
+/* -----------------------------------------------------------------------------
+   19. BREAKPOINTS  (mobile-first; base rules above are the mobile layout)
+   480 / 720 / 900 / 1120
+   -------------------------------------------------------------------------- */
+
+/* 480px: give cards and the footer room to breathe. */
+@media (min-width: 480px) {
+  .card,
+  .council-item__card { padding: var(--space-6); }
+  .site-footer__inner { padding-block: var(--space-12); }
+}
+
+/* 720px: two-column council grid, two-column footer. */
+@media (min-width: 720px) {
+  .council-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .site-footer__inner {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* 900px: desktop navigation, three-column steps, two-column source grid. */
+@media (min-width: 900px) {
+  :root {
+    --header-height: 72px;
+    --scroll-offset: 96px;
+  }
+
+  .site-nav {
+    order: 2;
+    flex: 0 1 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: auto;
+    padding-block: 0;
+    border-top: 0;
+  }
+
+  /* Desktop has no collapsed state: the nav is a permanent flex row. Override
+     the `hidden` the markup ships with, for JS users and no-JS users alike.
+     !important for the same reason as the .no-js rule: the global [hidden]
+     declaration is !important, so this must be too -- (0,2,0) vs (0,1,0). */
+  .site-nav[hidden] { display: flex !important; }
+
+  .site-nav__list {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .site-nav .btn { width: auto; }
+  .nav-toggle { display: none; }
+
+  .hero__actions {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8); }
+  .step:not(:last-child)::after { display: block; }
+  .step__marker { width: 56px; height: 56px; }
+
+  .source-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 1120px: content is capped at --content-max, so only vertical air changes. */
+@media (min-width: 1120px) {
+  .hero { padding-block: clamp(3.5rem, 2.5rem + 6vw, 7rem); }
+}
+
+/* -----------------------------------------------------------------------------
+   20. MOTION
+   Base styles above declare NO transition and NO animation, so a
+   prefers-reduced-motion reader gets the exact static layout with nothing to
+   override. Every animated declaration -- and the keyframes it uses -- lives
+   inside this single block.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes db-rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  html { scroll-behavior: smooth; }
+
+  .skip-link { transition: transform 160ms ease; }
+
+  .nav-toggle__icon { transition: transform 180ms ease; }
+  .site-nav__link,
+  .btn,
+  .council-search__input,
+  .council-search__clear,
+  .council-item__card,
+  .source-item { transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 200ms ease, transform 200ms ease; }
+
+  .btn:active { transform: translateY(1px); }
+
+  .hero__accent,
+  .hero__title,
+  .hero__lead,
+  .hero__actions { animation: db-rise 520ms cubic-bezier(.2,.7,.3,1) both; }
+  .hero__title  { animation-delay: 60ms; }
+  .hero__lead   { animation-delay: 120ms; }
+  .hero__actions { animation-delay: 180ms; }
+
+  /* Hover lift only where hover actually exists. */
+  @media (hover: hover) {
+    .card:hover,
+    .council-item__card:hover,
+    .source-item:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-border-strong);
+      transform: translateY(-2px);
+    }
+
+    .council-item__name-link:hover,
+    .external-link:hover,
+    .site-footer__nav a:hover { text-decoration-thickness: 2px; }
+  }
+}

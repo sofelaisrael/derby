@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Derby Bins — sitemap.
+
+  Hand-written. There is no generator and no build step on this site, so this
+  file is the single place the indexable URL list exists. Keep it by hand.
+
+  Three URLs, and they are exactly the pages that ask to be indexed:
+
+    /          index, follow   (index.html)
+    /sources   index, follow   (sources.html)
+    /support   no robots meta, so indexable by default (support.html)
+
+  Two pages are deliberately absent:
+
+    /privacy   carries <meta name="robots" content="noindex">. Listing a
+               noindex URL in a sitemap is a contradiction: it tells a crawler
+               "index this page here" on the one page that says "do not index
+               this". Google is documented as ignoring noindex pages found via
+               a sitemap, so the cost is not a penalty — it is that the sitemap
+               stops being a truthful statement of what should be indexed. That
+               matters more than usual here, because this site exists so a Play
+               reviewer can check that collection data comes from official
+               council sources; a sitemap that misreports the index surface is
+               the kind of small inaccuracy that invites a second look.
+
+    /404       is served from hosting/public/404.html, which carries
+               <meta name="robots" content="noindex, follow">, and is not a
+               real address anyway.
+
+  Paths use the CLEAN form (/sources, not /sources.html) because index.html and
+  sources.html each declare exactly that URL in their <link rel="canonical">.
+  support.html declares no canonical at all, deliberately — one there would only
+  restate the clean /support URL firebase.json already serves — so /support is a
+  choice rather than a restatement. In every case the .html URLs are rewritten
+  to the same files by firebase.json and are the same documents, so listing them
+  would be duplicate entries for no gain.
+
+  No <lastmod>. There is no build step and no deploy timestamp available here,
+  and a hand-written date nobody updates is worse than no date: crawlers treat a
+  stale or wrong <lastmod> as a signal and may re-crawl on your behalf. <lastmod>
+  is optional in the protocol; omitting it is valid.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://derbybins.web.app/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://derbybins.web.app/sources</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://derbybins.web.app/support</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>

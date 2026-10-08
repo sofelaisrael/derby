@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, follow">
+<title>Page not found — Derby Bins</title>
+<meta name="description" content="That page does not exist on the Derby Bins site.">
+<link rel="icon" href="/assets/store_icon_512.png" sizes="512x512" type="image/png">
+<link rel="apple-touch-icon" href="/assets/store_icon_512.png">
+<link rel="stylesheet" href="/styles.css">
+<!-- Copy this script BYTE-IDENTICALLY from index.html, sources.html, privacy.html
+     and support.html: one sha256 hash then covers every page, so the CSP in
+     firebase.json can stay strict (script-src 'self' + that hash) instead of
+     'unsafe-inline'. Rewording it -- or changing a single byte, including one
+     space -- changes the hash, and the page then silently reverts to its no-JS
+     presentation with nothing visible at the console to say why. Full rationale
+     in styles.css section 4. -->
+<script>document.documentElement.classList.remove('no-js')</script>
+<script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<!-- BRAND MARK AND NAME ARE THE SAME ON ALL FIVE PAGES. This page used to
+     differ: an inline SVG bin glyph and a long-form brand name, while the other
+     four pages used the PNG store icon and the short name. Two different marks
+     and two different strings on the same site is exactly the inconsistency a
+     reviewer spots, and 404 is the page they land on when a link from the Play
+     listing is dead -- the one moment the site must look like itself. So the
+     PNG and "Derby Bins" are used here too, and .brand__mark keeps its
+     `color: var(--color-brand)` rule (styles.css section 6, HEADER +
+     NAVIGATION) even though it is inert for an <img>: the rule is harmless on
+     an image element and removing it would be a stylesheet edit for no visible
+     gain. -->
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="brand" href="/">
+      <img class="brand__mark" src="/assets/store_icon_512.png" alt="" width="32" height="32">
+      <span class="brand__name">Derby Bins</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu">
+      <svg class="nav-toggle__icon" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M3 6h14M3 10h14M3 14h14"></path>
+      </svg>
+      <span>Menu</span>
+    </button>
+
+    <!-- Ships collapsed so JS users get no flash. Why the .no-js override is
+         needed, and why it must be !important, is in styles.css section 4. -->
+    <nav class="site-nav" id="site-menu" hidden>
+      <ul class="site-nav__list">
+        <li><a class="site-nav__link" href="/">Home</a></li>
+        <li><a class="site-nav__link" href="/#how-it-works">How It Works</a></li>
+        <li><a class="site-nav__link" href="/#councils">Supported Councils</a></li>
+        <li><a class="site-nav__link" href="/sources.html">Sources</a></li>
+        <!-- Nav CTA. The wording is load-bearing: it points at /, so it says
+             where it goes. "Get Derby Bins" on an internal link claims a
+             download the link cannot deliver, and a 404 page must not funnel
+             anyone into a Play listing that is not published yet. Keep it an
+             ordinary internal link: no target, no rel, no external icon, no
+             "opens in a new tab" hint. This is the ONE anchor on this site
+             without them, and it is correct because it is not external. -->
+        <li><a class="btn btn--primary btn--sm" href="/">Go to the home page</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <div class="container">
+    <div class="section">
+      <h1 class="page-title">Page not found</h1>
+      <p class="page-intro">That address does not match anything on this site. It may have moved, or the link that brought you here may be out of date.</p>
+      <p>Here is where everything lives:</p>
+      <!-- Three links, deliberately. The privacy policy is reachable from the
+           footer on every page, this one included, which is where a privacy link
+           belongs; it is deliberately NOT in the nav, and no nav on any of the
+           five pages carries a Privacy link. A fourth link in this list would
+           duplicate the footer rather than add reachability. -->
+      <ul>
+        <li><a href="/">Home</a> — what the app does and which councils it covers.</li>
+        <li><a href="/sources.html">Sources</a> — the official page and endpoint behind each of the nine councils, with the exact URLs. Third-party services are named in the app's privacy policy, not here.</li>
+        <li><a href="/support.html">Support</a> — common questions and how to reach a human.</li>
+      </ul>
+      <p><a class="btn btn--primary" href="/">Back to the home page</a></p>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <div>
+      <a class="site-footer__brand" href="/">
+        <img class="brand__mark" src="/assets/store_icon_512.png" alt="" width="32" height="32">
+        <span>Derby Bins</span>
+      </a>
+      <!-- Character-for-character the same sentence as the .disclaimer block on
+           index.html and sources.html. app.js asserts it on BOTH
+           .disclaimer and .site-footer__disclaimer, so softening it here is
+           not an option -- 404 is the page a reviewer lands on when they
+           follow a dead link from the Play listing.
+
+           This page carries NO .disclaimer aside and therefore only ONE copy
+           of the sentence. That is intentional, and it is why the "one page,
+           one brand mark" rule above matters even more here: the footer is the
+           only place on this page that says what Derby Bins is, so its mark
+           and name have to agree with the four other pages. -->
+      <p class="site-footer__disclaimer">Derby Bins is an independent utility app. It is not affiliated with, authorised by, sponsored by, or endorsed by any local council or government body.</p>
+    </div>
+    <nav class="site-footer__nav" aria-label="Footer">
+      <ul>
+        <li><a href="/privacy.html">Privacy Policy</a></li>
+        <li><a href="/sources.html">Official Information Sources</a></li>
+        <li><a href="mailto:contactxomo@gmail.com">Email us</a></li>
+        <li><a href="/support.html">Support</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

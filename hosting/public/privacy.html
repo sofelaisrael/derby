@@ -1,0 +1,369 @@
+<!-- THE CANONICAL PRIVACY POLICY. This is the policy for the Firebase-hosted
+     site, and it is the one Google Play reads. The app's Settings screen links
+     straight here: lib/screens/settings_tab.dart:48 (_privacyPolicyUrl) points
+     at https://derbybins.web.app/privacy, which firebase.json rewrites to this
+     file through its /privacy rule. That link is the reason this page has to
+     exist at all -- without it the shipped app walks a user to a 404 on a
+     compliance question. If the rewrite in firebase.json is ever removed, this
+     page stops being reachable from the app and the setting must change in the
+     same commit.
+
+     There is no second privacy page in this repo, so there is no fork to
+     document and nothing to keep in sync. Do not add a "keep in sync with"
+     note to this file unless something enforces it: an unenforced
+     synchronisation claim is worse than an acknowledged gap.
+
+     SECTIONS 3 TO 7 ARE CODE CLAIMS, NOT PROSE. They were checked against the
+     code on 8 October 2026 and must be re-checked if any of these change:
+
+       lib/services/weather_service.dart   the fixed council-area coordinate
+       lib/services/report_service.dart     the report endpoint and its fields
+       proxy/api/report.js                  accepted fields, issue types
+       proxy/api/bins.js                      the app's only address-lookup path
+       proxy/lib/drivers/*                  which council calls whom, and whom
+       pubspec.yaml                         which SDKs the app actually ships
+
+     A claim in this page that the code has stopped supporting is a false
+     disclosure, not a stale detail. Section 5 in particular ("the app contains
+     no analytics, crash-reporting or advertising SDK") is only true while
+     pubspec.yaml says so.
+
+     THREE OWNER-INPUT MARKERS sit in sections 3, 7 and 10 (the token is spelled
+     in full in each of them). Do not delete one and leave its sentence in
+     place: the marker is the only thing telling the next editor that the
+     sentence is an admitted gap rather than a decision. Either answer the
+     question or delete both together. This sentence deliberately does not
+     repeat the token, so that a plain grep for it counts exactly the three real
+     markers and not four. -->
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- noindex is correct here and only here: the footer links this page
+     directly on every page, the app's Settings screen links to it, and a
+     privacy policy is not something anyone searches for. sitemap.xml
+     deliberately omits /privacy for the same reason -- listing a noindex URL
+     in a sitemap is a contradiction. Do not copy this directive to any other
+     page: index, sources, support and 404 all carry a different, deliberate
+     index instruction. -->
+<title>Privacy Policy — Derby Bins</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/assets/store_icon_512.png" sizes="512x512" type="image/png">
+<link rel="apple-touch-icon" href="/assets/store_icon_512.png">
+<link rel="stylesheet" href="/styles.css">
+<!-- Copy this script BYTE-IDENTICALLY from index.html, sources.html,
+     support.html and 404.html: one sha256 hash then covers every page, so the
+     CSP in firebase.json can stay strict (script-src 'self' + that hash)
+     instead of 'unsafe-inline'. Rewording it -- or changing a single byte,
+     including one space -- changes the hash, and the page then silently reverts
+     to its no-JS presentation: open nav, no hamburger, with nothing visible at
+     the console to say why. Full rationale in styles.css section 4. -->
+<script>document.documentElement.classList.remove('no-js')</script>
+<script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="brand" href="/">
+      <img class="brand__mark" src="/assets/store_icon_512.png" alt="" width="32" height="32">
+      <span class="brand__name">Derby Bins</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu">
+      <svg class="nav-toggle__icon" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M3 6h14M3 10h14M3 14h14"></path>
+      </svg>
+      <span>Menu</span>
+    </button>
+
+    <!-- Ships collapsed so JS users get no flash of an open panel. Why the
+         .no-js override is needed, and why it must be !important, is in
+         styles.css section 4. app.js is loaded for exactly this nav: the
+         hamburger cannot work without it, and both initialisers are
+         null-safe on a page with no council grid and no source items. -->
+    <nav class="site-nav" id="site-menu" hidden>
+      <ul class="site-nav__list">
+        <li><a class="site-nav__link" href="/">Home</a></li>
+        <li><a class="site-nav__link" href="/#how-it-works">How It Works</a></li>
+        <li><a class="site-nav__link" href="/#councils">Supported Councils</a></li>
+        <li><a class="site-nav__link" href="/sources.html">Sources</a></li>
+        <!-- LAUNCH FLAG: byte-identical to the nav CTA on index.html,
+             sources.html and support.html, including the Play URL. It returns
+             HTTP 404 until the listing publishes, which is the correct final
+             destination and not a typo -- full note on index.html. Changing the
+             URL or dropping the button on one page leaves the site
+             inconsistent. (404.html carries a different CTA on purpose: it must
+             not funnel anyone into a listing that is not published yet.)
+
+             No aria-current anywhere in this nav. This page is deliberately
+             unreachable from the nav -- it is in the footer on every page and
+             one tap away from Settings in the app -- and marking a link the
+             reader never followed as "current" would be the only way to be
+             wrong here.
+
+             This page is noindex (see the note above), carries no description,
+             no canonical and no OG tags, and is absent from sitemap.xml. A
+             canonical would only restate the clean /privacy URL firebase.json
+             already serves. -->
+        <li><a class="btn btn--primary btn--sm" data-external href="https://play.google.com/store/apps/details?id=uk.co.derbybins.app" target="_blank" rel="noopener noreferrer">Get Derby Bins<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> on Google Play (opens in a new tab)</span></a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1" class="container">
+
+  <!-- ======================================================== LEDE + META -->
+  <div class="section">
+    <h1 class="page-title">Privacy Policy</h1>
+
+    <!-- The lede paragraph carries .page-intro, not the old .notice: the shared
+         stylesheet has no .notice, and .disclaimer is unusable here because
+         app.js asserts that element's textContent character for character
+         against the canonical independence sentence. .page-intro is the
+         documented page-level lead on sources.html and the closest thing the
+         frozen stylesheet offers. -->
+    <p class="page-intro">This policy explains what information the <strong>Derby Bins</strong> app ("the app") collects, how it is used, and the choices you have. It applies to the mobile app on iOS and Android.</p>
+    <p class="page-meta">Last updated: 8 October 2026</p>
+  </div>
+
+  <!-- ============================================== THE POLICY, 1-10 -->
+  <!-- One band, not one per numbered section: .section is the only vertical
+       rhythm the stylesheet offers, and its padding-block compounds, so ten
+       stacked .section divs would put roughly 170px of dead space between
+       every heading on a desktop viewport. Bare h2 elements carry the base
+       reset's margin-bottom and no margin-top, which is the same rhythm
+       404.html already ships with. -->
+  <div class="section">
+
+    <h2>1. Who is responsible</h2>
+    <p>The app is provided by <strong>Augustine Igharo</strong>, trading as <strong>Derby Bins</strong>. You can contact Derby Bins at <a href="mailto:contactxomo@gmail.com">contactxomo@gmail.com</a>.</p>
+    <p>Augustine Igharo is the data controller for the app: the person who decides what information is collected, what it is used for, and how long it is kept.</p>
+
+    <h2>2. What the app does</h2>
+    <p>The app shows bin collection schedules for nine councils across Derbyshire and Derby City — Derby City Council, Erewash Borough Council, Amber Valley Borough Council, High Peak Borough Council, Derbyshire Dales District Council, Bolsover District Council, Chesterfield Borough Council, South Derbyshire District Council and North East Derbyshire District Council. It also shows a short weather forecast, can send optional reminder notifications, and includes a form you can use to report a problem such as a bin that was not collected.</p>
+
+    <h2>3. Information Derby Bins collects, and why</h2>
+    <p>The app cannot work entirely on your device, because showing you your collection dates means asking the council that collects your bins. The list below is everything the app sends to us or to a third party, plus the one web address it can hand to your browser instead of to us. Nothing else leaves your device.</p>
+    <!-- NEEDS OWNER INPUT: THE LAWFUL BASIS FOR EVERY CATEGORY ABOVE IS
+         UNDECIDED. Nothing in the app asks for consent and nothing records a
+         lawful basis, so this policy currently describes WHAT is processed and
+         not WHY it is lawful. The obvious mapping is legitimate interests under
+         Art. 6(1)(f) UK GDPR for the postcode and UPRN, the weather coordinate
+         and the report form -- a user cannot expect a council's own bin
+         schedule without asking the council for it. But if consent is
+         preferred for the report form instead, a withdrawal route has to be
+         BUILT first: the form currently collects no consent and the app has no
+         privacy notice to point a consent checkbox at. Do not publish a basis
+         sentence here that the app does not implement. -->
+    <ul>
+      <li><strong>Postcode and address, to look up your schedule.</strong> When you enter your postcode and pick your address, the app sends your postcode and that address's public property identifier (a UPRN) to our server, which passes them on to the council's own online lookup. Your actual collection dates cannot be obtained any other way.</li>
+      <li><strong>Which area you are in, for two of the nine councils.</strong> Bolsover District Council and North East Derbyshire District Council publish no address-based lookup. Both publish fixed collection calendar areas covering named lists of towns, so for those two the app asks which area covers you instead of sending a postcode to be looked up.</li>
+      <li><strong>One fixed coordinate, for the weather.</strong> The app sends a latitude and longitude to Open-Meteo. Those coordinates come from a small table of council-area centre points built into the app, and they are not your location: the app requests no GPS or location permission on Android or iOS, and the coordinate does not change when you move.</li>
+      <li><strong>What you type into the Report an issue form.</strong> If you use Report an issue, you provide your name (required), your email address (required), the type of issue (required) and a description (optional). That form offers six issue types: Missing bin, Bin not collected, Bin damaged, Wrong bin collected, Collection schedule wrong, Other. Your address, council name and postcode are attached automatically from your profile rather than typed by you. The report is sent to our server and written to a private Google spreadsheet that we control, so that we can check the problem against the council's published information and reply to you. Reports are never passed to councils.</li>
+      <!-- TWO FORMS, NOT ONE. The app ships a second report screen,
+           lib/screens/report_missing_address_screen.dart, reachable from the
+           "Report missing address" button on
+           lib/screens/address_picker_screen.dart:185 whenever an address lookup
+           returns nothing. It is a separate class with its own four fields, so
+           scoping the bullet above to "Report an issue" is what keeps the six
+           types above true: this form has a seventh type that the first one does
+           not offer. Its fields are _nameCtrl (line 29, required, validator at
+           :230), _emailCtrl (line 30, required, validator at :237), _addressCtrl
+           (line 31, NO validator, so it may be sent empty) and _notesCtrl
+           (line 32, optional). The address field is PREFILLED from
+           widget.addressLabel at :44 and submitted as _addressCtrl.text at :87,
+           which is why "your address is attached automatically rather than typed
+           by you" is true of the first form and false of this one — here you can
+           type and correct it, and correcting it is the whole point of the form.
+           issueType is the constant 'Missing address' at :38, the seventh entry
+           in ALLOWED_ISSUE_TYPES (proxy/api/report.js:15-23). Both forms call
+           ReportService.submit, so both land in the same private spreadsheet. -->
+      <li><strong>What you type into the Report missing address form.</strong> When an address lookup returns nothing, the app offers you a second form, <strong>Report missing address</strong>. It asks for your name (required) and your email address (required) again, plus the address itself — prefilled from the address you were trying to find, and editable, because correcting it is the reason the form exists — and any notes (optional). Its issue type is fixed to <strong>Missing address</strong>, which is a seventh type that the Report an issue form does not offer. This form reaches the same private Google spreadsheet as the other one, and its reports are never passed to councils either.</li>
+      <!-- DO NOT COPY THE SIBLING SITE'S VERSION OF THIS BULLET BACK. That
+           policy claimed that address search goes through Ordnance Survey Places
+           for every council. That is FALSE here, and the difference is a
+           disclosure, not a wording preference: for eight of the nine councils
+           the app relays the postcode to the council's own website and no third
+           party ever sees it. Exactly one driver contacts Ordnance Survey --
+           proxy/lib/drivers/northeastderbyshire.js -- and only to choose between
+           that council's North and South calendars. Overstating third-party
+           involvement here would misrepresent our own data flow, and understating
+           the one real third-party call would hide it. Both halves of the
+           sentence below are load-bearing; keep them together. -->
+      <li><strong>Your postcode, for North East Derbyshire District Council only.</strong> That council's area is split into North and South collection calendars, so when the app has a postcode but no calendar selection it sends that postcode to Ordnance Survey Places to identify which of the two areas applies. This is one council out of nine: the other eight councils' address searches run entirely on the council's own website and never reach Ordnance Survey. A postcode is sent to a public address gazetteer, not to a location lookup.</li>
+      <!-- THE ONE FLOW WHERE PERSONAL DATA GOES STRAIGHT TO A THIRD PARTY'S URL
+           BAR. lib/screens/postcode_input_screen.dart:367-368 composes
+           https://uprn.uk/postcode/$clean from the user's own typed postcode,
+           normalised by normalizePostcode at :366, and hands it to launchUrl(
+           ..., LaunchMode.externalApplication) — i.e. the OS browser. We never
+           see it and cannot control it, which is exactly why it belongs in this
+           section and not only in section 6: a user who does not expect their
+           postcode inside a third-party URL cannot avoid it by not reading the
+           processor list. The other three launchUrl destinations carry no
+           personal data — the council's own site (settings_tab.dart:820), our
+           privacy page (settings_tab.dart:874) and GOV.UK
+           (postcode_input_screen.dart:1008) — so this is the only such flow, and
+           the button is opt-in: nothing opens until the user taps
+           "Find my UPRN on uprn.uk" (:385). -->
+      <li><strong>Your postcode, in a web address, if you ask for it.</strong> If an address lookup returns nothing, the app can offer to open <strong>uprn.uk</strong>, a public UPRN lookup site, in your browser with your postcode in the link. Nothing reaches us when you do: the app hands the web address to your device's browser and stops there. That page is outside our control, its own privacy policy applies to it, and we are not responsible for what it does with the request. Check the address on screen before you follow the link.</li>
+    </ul>
+
+    <h2>4. Information stored on your device</h2>
+    <p>Everything in this section is stored only on your device, using local app storage. None of it is sent to us:</p>
+    <ul>
+      <li>Your postcode.</li>
+      <li>The address you selected and its UPRN.</li>
+      <li>Your council name.</li>
+      <li>Your reminder settings, and which reminders have already been shown.</li>
+      <li>Your light or dark preference.</li>
+      <li>Whether you have finished onboarding.</li>
+      <li>A cached list of the councils the app supports, refreshed at most once a day.</li>
+      <li>A cached copy of your most recent collection schedule, so the app can open without a connection. The app stops using this copy once it is more than seven days old. Separately, the raw server reply to that same lookup is kept for up to 24 hours, purely so the app can avoid asking the server again inside that window — a second, shorter-timer copy of the same schedule, on your device and not on our server.</li>
+      <!-- TWO DEVICE CACHES, TWO TIMERS. The seven-day copy is the parsed
+           ScheduleCache. The 24-hour copy is raw and separate:
+           lib/services/council_api.dart:33 sets _cacheTtl = 24 hours, :41-58
+           read and write it in SharedPreferences under 'api_cache_<council>_<uprn>_data'
+           plus a '_ts' stamp, and :240 writes it after a successful /bins
+           response. Neither has ever left the device. Naming only the seven-day
+           one left a reader to reconcile "seven days" against a "24 hours"
+           that appears nowhere else on this page; this sentence says where the
+           24 hours actually comes from, and "on your device and not on our
+           server" is what keeps it distinct from the 24-hour ADDRESS cache that
+           section 7 used to (wrongly) describe. -->
+    </ul>
+    <p>Reminders are scheduled and shown by your device; they are not sent through us. The app can add a collection to your device's calendar, and can share a schedule using your device's share sheet, but only when you ask it to. To remove any of the information in this section, clear the app's storage in your device settings or delete the app.</p>
+
+    <h2>5. What Derby Bins does not collect</h2>
+    <ul>
+      <li>No advertising, and no advertising or device identifier.</li>
+      <li>No analytics, telemetry, usage measurement or crash reporting.</li>
+      <li>No account, no sign-in and no profile.</li>
+      <li>No GPS and no precise location. The app requests no location permission on Android or iOS.</li>
+      <li>No contacts, photos, camera, microphone or files.</li>
+      <li>No background monitoring.</li>
+      <li>No cookies and no tracking scripts on this website.</li>
+    </ul>
+    <p>This is not aspirational. The app contains no analytics SDK, no crash-reporting SDK, no advertising SDK and no social login, and the website sets no cookies because it loads no script capable of setting one.</p>
+
+    <h2>6. Service providers (processors)</h2>
+    <p>To make the app work, limited information passes through the following service providers. That list is every third party we know the app passes anything to, not a standing guarantee that nothing new will ever appear: where an address lookup fails, the app can hand a web address to your own browser and to a site we do not run, and that site is named here precisely because it is outside our control.</p>
+    <ul>
+      <!-- RE-VERIFY BEFORE EVERY POLICY REVISION. lib/services/council_api.dart:31
+           sets proxyBaseUrl = 'https://derby-d6e5.onrender.com', verified 8 October
+           2026, and there is no Vercel URL anywhere in the app code. If the proxy
+           is ever migrated to Vercel — proxy/vercel.json exists and would serve
+           the same api/ functions — then this bullet and this comment must both
+           change in the same commit, or the page names the wrong host. -->
+      <li><strong>Render</strong> — hosts the small server that relays council lookups and receives report submissions.</li>
+      <li><strong>The nine councils listed in section 2</strong> — receive your postcode and address identifier, and only so they can return your collection schedule. Each council's own page is linked on our <a href="/sources.html">official information sources page</a>.</li>
+      <li><strong>Open-Meteo</strong> — receives the fixed council-area coordinate described in section 3.</li>
+      <li><strong>Google Apps Script and Google Sheets</strong> — receive report submissions and store them in a private spreadsheet.</li>
+      <li><strong>Ordnance Survey Places</strong> — receives a postcode, and only for North East Derbyshire District Council, to identify which collection calendar area applies.</li>
+      <!-- NOT A PROCESSOR. We have no contract with uprn.uk, no control over its
+           servers and no visibility into its logs, so it is named here as a
+           recipient rather than dressed up as a service provider we engage. That
+           distinction is the point of the wording: calling it a processor would
+           imply terms, a sub-processor list and a lawful basis we have not
+           agreed with anyone. The flow is
+           lib/screens/postcode_input_screen.dart:367-368. -->
+      <li><strong>uprn.uk</strong> — a public UPRN lookup site the app can open in your browser with your postcode in the link, when an address lookup returns nothing. It is not a service we operate: we have no contract with it, no control over it, and no way to see what it does with the request beyond your postcode appearing in the web address. Its own privacy policy governs it, not this one.</li>
+    </ul>
+    <p>Derby Bins does not sell, rent or trade personal information, and no provider is permitted to use the information for its own purposes. What a given council does with the postcode it receives is covered by that council's own privacy notice, not by this one.</p>
+
+    <h2>7. How long information is kept</h2>
+    <p><strong>On our server.</strong> Schedule lookups are not stored: they are not written down and they are not cached. Address lookups are not stored either. They are passed to the council and returned to the app, and nothing is kept — not on disk, and not in the server's memory. There is no account, no identifier and no record of what you looked up.</p>
+    <!-- ADDRESS LOOKUPS ARE NOT CACHED, and that is what the code does, not a
+         preference. The deployment ALSO exposes a separate /addresses route
+         (proxy/api/index.js:3 imports the handler, proxy/vercel.json:4 routes
+         /addresses to it), and THAT handler does hold address results in memory
+         for up to 24 hours: proxy/api/addresses.js:25 sets the TTL, and
+         proxy/lib/shared/cache.js:1 is a plain in-memory Map with no
+         persistence, so anything it holds dies with the process.
+
+         The app never calls it. The app's only address call is
+         CouncilApi.lookupAddresses -> GET {proxyBaseUrl}/bins
+         (lib/services/council_api.dart:197), which is served by
+         proxy/api/bins.js:37 — driver.lookupAddresses(postcode), then return.
+         proxy/api/bins.js:1 imports only ../lib/drivers and never touches
+         ../lib/shared/cache. The only two proxy paths the app uses are /bins and
+         /api/report.
+
+         DO NOT "VERIFY" THE SENTENCE ABOVE AGAINST proxy/api/addresses.js. It is
+         a real handler on a real route that the app never reaches, and checking
+         against it is how the wrong 24-hour claim got here in the first place.
+         If the app is ever switched to /addresses, this sentence and the comment
+         must both change in the same commit that makes the switch. -->
+    <!-- NEEDS OWNER INPUT: THE REPORT RETENTION PERIOD IS NOT DECIDED. Pick a
+         number, then IMPLEMENT THE MATCHING DELETION RULE in the Apps Script
+         that writes to the spreadsheet, before publishing any period here. A
+         stated period with no code behind it is a promise the app does not
+         keep, and a compliance page that overstates what the software does is
+         exactly the failure this page exists to prevent. The sentence below
+         admits the gap instead of filling it, which is the correct behaviour
+         until a decision is made. -->
+    <p><strong>Report submissions.</strong> A report you send is written to the private Google spreadsheet described in section 6. How long we keep it has not been decided yet, and this policy does not state a period it cannot yet honour. Ask us and we will tell you what is currently held.</p>
+    <p><strong>On your device.</strong> Everything listed in section 4 stays on your device until you clear the app's storage or delete the app. The two time-limited items are both copies of your collection schedule: the app stops using the seven-day copy once it is more than seven days old, and the raw 24-hour copy once it is more than 24 hours old.</p>
+
+    <h2>8. Children</h2>
+    <p>Derby Bins is not directed at children and is not intended for anyone under 13. We do not knowingly collect personal information from children under 13. If a child has sent us personal information through the report form, email <a href="mailto:contactxomo@gmail.com">contactxomo@gmail.com</a> and we will delete it.</p>
+
+    <h2>9. Your rights</h2>
+    <p>Under the UK GDPR and the Data Protection Act 2018 you have the right to:</p>
+    <ul>
+      <li>ask for access to the personal information we hold about you;</li>
+      <li>ask us to correct personal information that is inaccurate;</li>
+      <li>ask us to erase personal information we hold about you;</li>
+      <li>ask us to restrict how we use your personal information;</li>
+      <li>object to our use of your personal information;</li>
+      <li>receive your personal information in a portable format.</li>
+    </ul>
+    <p>Because most of what the app knows is stored on your device and never reaches us, the quickest way to see or remove it is to clear the app's storage or delete the app. For anything we do hold — for example a report you have submitted — email <a href="mailto:contactxomo@gmail.com">contactxomo@gmail.com</a>.</p>
+    <p>You also have the right to complain to the Information Commissioner's Office (<a class="external-link" data-external href="https://ico.org.uk" target="_blank" rel="noopener noreferrer">ico.org.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>).</p>
+
+    <h2>10. Changes to this policy</h2>
+    <p>Derby Bins may update this policy. The "Last updated" date at the top of this page changes whenever it does. The version that applies to you is the one published here at the time you used the app.</p>
+    <!-- NEEDS OWNER INPUT: NOTHING ON THIS PAGE PROMISES ADVANCE NOTICE OF A
+         MATERIAL CHANGE, deliberately. There is no mailing list, no in-app
+         announcement channel and no account, so there is no route to reach a
+         user who has not reopened the app — a sentence promising 30 days'
+         notice could not be honoured by anyone. If a notification mechanism is
+         ever built, write the promise here and ship the mechanism in the same
+         commit. Do not add the undertaking on the strength of this page
+         existing. -->
+    <p>Questions about this policy? Email <a href="mailto:contactxomo@gmail.com">contactxomo@gmail.com</a>.</p>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <div>
+      <a class="site-footer__brand" href="/">
+        <img class="brand__mark" src="/assets/store_icon_512.png" alt="" width="32" height="32">
+        <span>Derby Bins</span>
+      </a>
+      <!-- Character-for-character the same sentence as the .disclaimer block on
+           index.html and sources.html, and the same .site-footer__disclaimer on
+           every other page. app.js asserts it on BOTH selectors, so paraphrasing
+           it here would warn. This page carries NO .disclaimer aside, so the
+           footer is its only copy — which is why the .disclaimer element is not
+           reused above: app.js would fail the assertion on any extra wording. -->
+      <p class="site-footer__disclaimer">Derby Bins is an independent utility app. It is not affiliated with, authorised by, sponsored by, or endorsed by any local council or government body.</p>
+    </div>
+    <nav class="site-footer__nav" aria-label="Footer">
+      <ul>
+        <li><a href="/privacy.html">Privacy Policy</a></li>
+        <li><a href="/sources.html">Official Information Sources</a></li>
+        <li><a href="mailto:contactxomo@gmail.com">Email us</a></li>
+        <li><a href="/support.html">Support</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

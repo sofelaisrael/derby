@@ -1,0 +1,92 @@
+{
+  "hosting": {
+    "public": "hosting/public",
+    "ignore": ["node_modules/**", ".git/**"],
+    // Scoped to "**" so there is no path-precedence question: every file under
+    // hosting/public gets these headers, including /sitemap.xml and /404.html,
+    // and none of them can be reached by a rewrite that skips the block.
+    //
+    // This file is parsed as CJSON by the Firebase CLI (loadCJSON), so these
+    // comments are safe. They are not valid strict JSON -- do not "tidy" them
+    // away, and do not feed this file to a plain JSON.parse consumer.
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          // THE CSP's real job is to make the privacy policy's "no tracking, no
+          // analytics, no cookies" claim mechanically true instead of a matter
+          // of reviewer discipline. Every directive below is 'self' or 'none',
+          // so a remote origin cannot be loaded by ANY directive: not a script,
+          // not a stylesheet, not a font, not an image, not an XHR/fetch/WebSocket
+          // beacon, not a plugin object. An injected <script> or an accidental
+          // CDN <script src> fails loudly at the console instead of quietly
+          // phoning home.
+          //
+          // There is deliberately NO 'unsafe-inline' in script-src or style-src.
+          // style-src 'self' is safe because the legacy inline <style> blocks and
+          // style="" attributes were all moved onto the shared styles.css; if a
+          // future edit reintroduces one, the page renders unstyled -- which is
+          // a visible bug, not a silent security downgrade, and that is the
+          // correct trade. Verify with a grep for <style, style= and javascript:
+          // over hosting/public/ before changing this line.
+          //
+          // The sha256 covers the ONE inline script every page carries:
+          //     <script>document.documentElement.classList.remove('no-js')</script>
+          // It is the base64 SHA-256 of the text BETWEEN the <script> tags, not
+          // the whole tag and not hex. All five pages (index, sources, privacy,
+          // support, 404) must keep that script byte-identical: a divergent byte
+          // is CSP-blocked on that page and the no-js class is never removed, so
+          // the page falls back to its no-JS presentation — open nav, no
+          // hamburger, no council search field — with NO visible error anywhere.
+          // That is why the hash is byte-identical to the sibling site's and
+          // must not be "improved": the script it covers contains no brand
+          // token, so the hash is brand-independent and carries over unchanged.
+          // Re-derive the hash with:
+          //     node -e "const c=require('crypto'),fs=require('fs');\
+          //       const t=fs.readFileSync('hosting/public/index.html','utf8')\
+          //         .match(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/)[1];\
+          //       console.log('sha256-'+c.createHash('sha256').update(t,'utf8').digest('base64'))"
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; script-src 'self' 'sha256-dFqnkix/KyuQ/tR3B/FYwRtcbWXrtRW7VdscV/VFsmc='; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+          },
+          // A real privacy win, not boilerplate. This site links out to nine
+          // council sites, GOV.UK and the Play Store; with no-referrer those
+          // outbound requests carry no Referer at all, so no council, and no
+          // third party reading its logs, learns which Derby Bins page a reader
+          // arrived from. It also stops this site's own URL (which contains the
+          // word "bins") leaking as a referrer anywhere.
+          { "key": "Referrer-Policy", "value": "no-referrer" },
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          // Legacy clickjacking coverage, kept alongside frame-ancestors 'none'
+          // in the CSP for browsers that predate the CSP's frame-ancestors.
+          { "key": "X-Frame-Options", "value": "DENY" }
+          // DELIBERATELY ABSENT: Strict-Transport-Security.
+          // Firebase Hosting manages TLS for the default *.web.app and
+          // *.firebaseapp.com hosts. HSTS is a promise the browser enforces for
+          // a domain for a fixed max-age, and a hand-written header here cannot
+          // be scoped or revoked by us. If it were ever wrong -- wrong max-age,
+          // wrong host, shipped before the cert is universally valid -- it can
+          // lock readers out of the compliance page they need in order to
+          // approve the app. The omission is a decision, not an oversight:
+          // Firebase already serves HTTPS only and redirects HTTP to HTTPS.
+          // Revisit only if this site is ever moved off Firebase Hosting.
+        ]
+      }
+    ],
+    "rewrites": [
+      // The /privacy rewrite is LOAD-BEARING, not tidiness: the app links users
+      // to the clean URL https://derbybins.web.app/privacy from
+      // lib/screens/settings_tab.dart:48 (_privacyPolicyUrl), and that URL
+      // currently 404s without this entry. Keep it. The .html -> .html pairs
+      // exist so both spellings resolve to the same single document, which is
+      // what lets sitemap.xml list only the clean form.
+      { "source": "/privacy", "destination": "/privacy.html" },
+      { "source": "/privacy.html", "destination": "/privacy.html" },
+      { "source": "/support", "destination": "/support.html" },
+      { "source": "/support.html", "destination": "/support.html" },
+      { "source": "/sources", "destination": "/sources.html" },
+      { "source": "/sources.html", "destination": "/sources.html" }
+    ]
+  }
+}

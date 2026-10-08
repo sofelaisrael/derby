@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Derby Bins — Bin collection days across Derbyshire and Derby City</title>
+<meta name="description" content="Independent app for bin collection days across nine Derbyshire and Derby City council areas. Collection dates, bin colours, weather and reminders.">
+<link rel="canonical" href="https://derbybins.web.app/">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#1E6B4A">
+<link rel="icon" href="/assets/store_icon_512.png" sizes="512x512" type="image/png">
+<link rel="apple-touch-icon" href="/assets/store_icon_512.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Derby Bins">
+<meta property="og:locale" content="en_GB">
+<meta property="og:url" content="https://derbybins.web.app/">
+<!-- og:title MIRRORS <title> above, character for character, on both pages that
+     carry OG tags. The short brand string is already og:site_name, so a card
+     that repeats just "Derby Bins" adds nothing next to it; a card that says
+     what the page is does. Mirror the title here and sources.html must follow
+     in the same commit. -->
+<meta property="og:title" content="Derby Bins — Bin collection days across Derbyshire and Derby City">
+<meta property="og:description" content="Independent app for bin collection days across nine Derbyshire and Derby City council areas. Collection dates, bin colours, weather and reminders.">
+<link rel="stylesheet" href="/styles.css">
+<!-- Copy this script BYTE-IDENTICALLY into sources.html, privacy.html, support.html
+     and 404.html: one sha256 hash then covers every page, so the CSP in
+     firebase.json can stay strict (script-src 'self' + that hash) instead of
+     'unsafe-inline'. Rewording it -- or changing a single byte, including one
+     space -- changes the hash, and the page then silently reverts to its no-JS
+     presentation: open nav, no hamburger, no council search field, with nothing
+     visible at the console to say why. Full rationale in styles.css section 4. -->
+<script>document.documentElement.classList.remove('no-js')</script>
+<script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="brand" href="/">
+      <img class="brand__mark" src="/assets/store_icon_512.png" alt="" width="32" height="32">
+      <span class="brand__name">Derby Bins</span>
+    </a>
+
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu">
+      <svg class="nav-toggle__icon" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" focusable="false">
+        <path d="M3 6h14M3 10h14M3 14h14"></path>
+      </svg>
+      <span>Menu</span>
+    </button>
+
+    <!-- Ships collapsed so JS users get no flash of an open panel. Why the
+         .no-js override is needed, and why it must be !important, is in
+         styles.css section 4. -->
+    <nav class="site-nav" id="site-menu" hidden>
+      <ul class="site-nav__list">
+        <li><a class="site-nav__link" href="/" aria-current="page">Home</a></li>
+        <li><a class="site-nav__link" href="#how-it-works">How It Works</a></li>
+        <li><a class="site-nav__link" href="#councils">Supported Councils</a></li>
+        <li><a class="site-nav__link" href="/sources.html">Sources</a></li>
+        <!-- LAUNCH FLAG: this Play URL is the correct final destination and
+             stays exactly as written so the button works the instant the
+             listing publishes. It currently returns HTTP 404 — verified
+             against a known-good control, so that is a genuine "not
+             published", not a failed fetch. Do NOT substitute another
+             destination and do NOT build a "coming soon" widget: the app is
+             real and the Play URL is the only honest target. The identical
+             URL appears on the hero CTA below, and on sources.html and
+             support.html; changing one without the others leaves dead
+             buttons. (404.html is the deliberate exception: its CTA points at
+             / so a visitor who lands there is never funnelled into an
+             unpublished listing.) When to deploy around it — this page before
+             the listing, or all of them together — is the site owner's call,
+             not a technical one. -->
+        <li><a class="btn btn--primary btn--sm" data-external href="https://play.google.com/store/apps/details?id=uk.co.derbybins.app" target="_blank" rel="noopener noreferrer">Get Derby Bins<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> on Google Play (opens in a new tab)</span></a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <!-- ============================================================ HERO -->
+  <!-- No imagery, deliberately. There are no real app screenshots in the repo
+       and an illustration dressed up as one would be a false claim. Type,
+       whitespace and the gradient carry this section. -->
+  <section class="hero">
+    <div class="hero__inner">
+      <div class="hero__accent" aria-hidden="true"></div>
+      <h1 class="hero__title">Never miss your bin day again.</h1>
+      <p class="hero__lead">Derby Bins makes it easy to check your upcoming bin collections across Derbyshire.</p>
+      <div class="hero__actions">
+        <!-- LAUNCH FLAG: see the full note on the nav CTA above. Same URL,
+             same 404 until the Play listing publishes. -->
+        <a class="btn btn--primary" data-external href="https://play.google.com/store/apps/details?id=uk.co.derbybins.app" target="_blank" rel="noopener noreferrer">Get Derby Bins<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> on Google Play (opens in a new tab)</span></a>
+        <a class="btn btn--ghost" href="/sources.html">Where does the data come from?</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================== HOW IT WORKS -->
+  <section class="section" id="how-it-works">
+    <div class="container">
+      <h2>How It Works</h2>
+      <ol class="steps">
+        <li class="step">
+          <div class="step__marker" aria-hidden="true">1</div>
+          <h3 class="step__title">Enter your postcode</h3>
+          <p class="step__body">Type your postcode and Derby Bins will look up the council area that collects your bins.</p>
+        </li>
+        <li class="step">
+          <div class="step__marker" aria-hidden="true">2</div>
+          <h3 class="step__title">Select your address</h3>
+          <p class="step__body">Choose your address from the list. Your address is kept on your device.</p>
+        </li>
+        <li class="step">
+          <div class="step__marker" aria-hidden="true">3</div>
+          <h3 class="step__title">See your upcoming collections</h3>
+          <p class="step__body">See which bin goes out next, when it goes out, and a short weather forecast for that day.</p>
+        </li>
+      </ol>
+      <!-- CALENDAR-BASED COUNCILS. Bolsover and North East Derbyshire do not run
+           an address lookup: both publish fixed collection calendar areas
+           (proxy/lib/drivers/bolsover.js and
+           proxy/lib/drivers/northeastderbyshire.js, both calendarBased: true,
+           and council_api.dart _calendarBasedSlugs). For those two the app
+           asks which area covers your town, which is why step 2 is not
+           literally true for everyone. -->
+      <p class="page-intro">Two of the nine councils — Bolsover District Council and North East Derbyshire District Council — do not run an address lookup. Both publish fixed collection calendar areas instead, so for those two the app asks which area covers your town rather than searching for your address.</p>
+    </div>
+  </section>
+
+  <!-- ================================================ SUPPORTED COUNCILS -->
+  <section class="section section--councils" id="councils">
+    <div class="container">
+      <h2>Supported Councils</h2>
+      <p class="page-intro">Derby Bins covers all nine councils that collect household bins across Derbyshire and Derby City: the eight districts and boroughs, plus Derby City Council itself.</p>
+
+      <!-- data-search-region is on .council-search__control ONLY, and the grid
+           is its SIBLING, so that with JS off the filter is hidden but all
+           nine councils are still readable. app.js section (c) depends on
+           this exact shape; see styles.css section 10 for the same contract
+           written on the CSS side. -->
+      <div class="council-search">
+        <div class="council-search__control" data-search-region>
+          <label class="council-search__label" for="council-search-input">Search councils</label>
+          <div class="council-search__field">
+            <span class="council-search__icon">
+              <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" focusable="false">
+                <circle cx="8.75" cy="8.75" r="5.25"></circle>
+                <path d="M12.7 12.7 17 17"></path>
+              </svg>
+            </span>
+            <input class="council-search__input" id="council-search-input" type="search" autocomplete="off" spellcheck="false" placeholder="Search by council name" aria-describedby="council-search-hint council-search-status">
+            <!-- ICON-ONLY ON PURPOSE. .council-search__clear is sized by the
+                 stylesheet as a 44x44 circle with padding:0 and the icon
+                 centred by flex (styles.css section 10), so a visible text
+                 node inside it wraps to three lines and spills out past the
+                 input's right border. The entire label therefore lives in the
+                 visually-hidden span, which leaves the accessible name exactly
+                 "Clear search — clear the council search field" while rendering
+                 nothing. Do not move the words back outside that span. -->
+            <button class="council-search__clear" type="button" hidden><span class="visually-hidden">Clear search — clear the council search field</span><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5"></path></svg></button>
+          </div>
+          <p class="council-search__hint" id="council-search-hint">Type to filter the list of nine supported council areas.</p>
+          <!-- ONE text node, never briefly emptied: app.js debounces writes
+               into this live region, and an empty intermediate frame loses the
+               announcement. -->
+          <p class="council-search__status" id="council-search-status" role="status" aria-live="polite" data-council-search-status>Showing 9 of 9 councils</p>
+        </div>
+
+        <!-- Council cards show the council's HOSTNAME, not the full URL. The
+             full https:// address is the verification affordance and it lives on
+             /sources.html, where it is the literal link text (app.js asserts
+             href === textContent there). Here, nine long URLs inside a
+             wrapping .council-item__actions flex row sit badly next to each
+             other; the hostname identifies the authority just as well, and the
+             card's own name and "View full source details" link carry the
+             reader to the spelled-out address. href is identical either way.
+
+             The href and the visible text are therefore DIFFERENT strings by
+             design, and for three councils the hostname is not even the host
+             the app reads: Derbyshire Dales resolves to selfserve.derbyshiredales.gov.uk
+             and Bolsover to selfservice.bolsover.gov.uk, while their own main
+             sites are www.derbyshiredales.gov.uk and www.bolsover.gov.uk. The
+             hostname is still the correct thing to show a reader -- it is the
+             name the council trades under -- and ?driftcheck=1 compares hrefs,
+             not visible text, so the two pages cannot disagree.
+
+             The grid is 2 columns from 720px and never 3 (styles.css section
+             12: long names wrap badly in a third). Nine cards therefore leave a
+             ragged last row. That is intentional; do not "fix" it with a ninth
+             placeholder or a stylesheet change. -->
+        <ul class="council-grid">
+          <li class="council-item" data-council="derby" data-search="derby derbyshire derby city">
+            <div class="council-item__card">
+              <h3 class="council-item__name"><a class="council-item__name-link" href="/sources.html#derby">Derby City Council</a></h3>
+              <p class="council-item__actions">
+                <span class="badge">Official source</span>
+                <a class="external-link" data-external href="https://www.derby.gov.uk/environment-and-planning/recycling-and-waste/your-bin-collections/all-about-your-bin-day/when-is-my-bin-day" target="_blank" rel="noopener noreferrer">www.derby.gov.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+                <a class="council-item__details" href="/sources.html#derby">View full source details</a>
+              </p>
+            </div>
+          </li>
+
+          <li class="council-item" data-council="erewash" data-search="erewash derbyshire borough">
+            <div class="council-item__card">
+              <h3 class="council-item__name"><a class="council-item__name-link" href="/sources.html#erewash">Erewash Borough Council</a></h3>
+              <p class="council-item__actions">
+                <span class="badge">Official source</span>
+                <a class="external-link" data-external href="https://www.erewash.gov.uk/bins-and-recycling/when-my-bin-day" target="_blank" rel="noopener noreferrer">www.erewash.gov.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+                <a class="council-item__details" href="/sources.html#erewash">View full source details</a>
+              </p>
+            </div>
+          </li>
+
+          <li class="council-item" data-council="ambervalley" data-search="ambervalley amber valley derbyshire borough">
+            <div class="council-item__card">
+              <h3 class="council-item__name"><a class="council-item__name-link" href="/sources.html#ambervalley">Amber Valley Borough Council</a></h3>
+              <p class="council-item__actions">
+                <span class="badge">Official source</span>
+                <a class="external-link" data-external href="https://www.ambervalley.gov.uk/rubbish-waste-and-recycling/bin-collection-dates" target="_blank" rel="noopener noreferrer">www.ambervalley.gov.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+                <a class="council-item__details" href="/sources.html#ambervalley">View full source details</a>
+              </p>
+            </div>
+          </li>
+
+          <li class="council-item" data-council="highpeak" data-search="highpeak high peak derbyshire borough">
+            <div class="council-item__card">
+              <h3 class="council-item__name"><a class="council-item__name-link" href="/sources.html#highpeak">High Peak Borough Council</a></h3>
+              <p class="council-item__actions">
+                <span class="badge">Official source</span>
+                <a class="external-link" data-external href="https://www.highpeak.gov.uk/hp/bins" target="_blank" rel="noopener noreferrer">www.highpeak.gov.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+                <a class="council-item__details" href="/sources.html#highpeak">View full source details</a>
+              </p>
+            </div>
+          </li>
+
+          <li class="council-item" data-council="derbyshiredales" data-search="derbyshiredales derbyshire dales derbyshire district">
+            <div class="council-item__card">
+              <h3 class="council-item__name"><a class="council-item__name-link" href="/sources.html#derbyshiredales">Derbyshire Dales District Council</a></h3>
+              <p class="council-item__actions">
+                <span class="badge">Official source</span>
+                <a class="external-link" data-external href="https://selfserve.derbyshiredales.gov.uk/renderform.aspx?t=103&amp;k=9644C066D2168A4C21BCDA351DA2642526359DFF" target="_blank" rel="noopener noreferrer">www.derbyshiredales.gov.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+                <a class="council-item__details" href="/sources.html#derbyshiredales">View full source details</a>
+              </p>
+            </div>
+          </li>
+
+          <li class="council-item" data-council="bolsover" data-search="bolsover derbyshire borough">
+            <div class="council-item__card">
+              <h3 class="council-item__name"><a class="council-item__name-link" href="/sources.html#bolsover">Bolsover District Council</a></h3>
+              <p class="council-item__actions">
+                <span class="badge">Official source</span>
+                <a class="external-link" data-external href="https://selfservice.bolsover.gov.uk/service/Check_your_Bin_Day" target="_blank" rel="noopener noreferrer">www.bolsover.gov.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+                <a class="council-item__details" href="/sources.html#bolsover">View full source details</a>
+              </p>
+            </div>
+          </li>
+
+          <li class="council-item" data-council="chesterfield" data-search="chesterfield derbyshire borough">
+            <div class="council-item__card">
+              <h3 class="council-item__name"><a class="council-item__name-link" href="/sources.html#chesterfield">Chesterfield Borough Council</a></h3>
+              <p class="council-item__actions">
+                <span class="badge">Official source</span>
+                <a class="external-link" data-external href="https://www.chesterfield.gov.uk/bins-and-recycling/bin-collections/check-bin-collections.aspx" target="_blank" rel="noopener noreferrer">www.chesterfield.gov.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+                <a class="council-item__details" href="/sources.html#chesterfield">View full source details</a>
+              </p>
+            </div>
+          </li>
+
+          <li class="council-item" data-council="southderbyshire" data-search="southderbyshire derbyshire district">
+            <div class="council-item__card">
+              <h3 class="council-item__name"><a class="council-item__name-link" href="/sources.html#southderbyshire">South Derbyshire District Council</a></h3>
+              <p class="council-item__actions">
+                <span class="badge">Official source</span>
+                <a class="external-link" data-external href="https://www.southderbyshire.gov.uk/our-services/recycling-bins-and-waste/bin-collection-dates" target="_blank" rel="noopener noreferrer">www.southderbyshire.gov.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+                <a class="council-item__details" href="/sources.html#southderbyshire">View full source details</a>
+              </p>
+            </div>
+          </li>
+
+          <li class="council-item" data-council="northeastderbyshire" data-search="northeastderbyshire derbyshire district north east">
+            <div class="council-item__card">
+              <h3 class="council-item__name"><a class="council-item__name-link" href="/sources.html#northeastderbyshire">North East Derbyshire District Council</a></h3>
+              <p class="council-item__actions">
+                <span class="badge">Official source</span>
+                <a class="external-link" data-external href="https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates" target="_blank" rel="noopener noreferrer">www.ne-derbyshire.gov.uk<svg class="icon-external" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9.25 2.75h4v4"></path><path d="M13.25 2.75 7.5 8.5"></path><path d="M12 9.5v3a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 12.5V5.25A.75.75 0 0 1 3.75 4.5h3"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+                <a class="council-item__details" href="/sources.html#northeastderbyshire">View full source details</a>
+              </p>
+            </div>
+          </li>
+        </ul>
+
+        <!-- Deliberately NOT inside data-search-region, so a no-JS reader never
+             meets it. The wording below is intentionally different from the
+             role="status" line above: two channels, two strings, so a screen
+             reader does not hear the same sentence twice. -->
+        <div class="council-search__empty" hidden>
+          <h3>No matching councils</h3>
+          <!-- Written by app.js (initSearch -> apply), which puts the normalised
+               query here in curly quotes. It SHIPS EMPTY, so it only ever reads
+               correctly because .council-search__empty itself ships hidden and
+               is revealed alongside it. It must stay inside this container: a
+               no-JS reader must not meet an empty paragraph. Order is
+               h3 -> query echo -> instructions -> clear button, which is the
+               shape styles.css section 10 documents. -->
+          <p data-empty-query></p>
+          <p>Try a different council name, or clear the search to see all nine supported council areas.</p>
+          <!-- .btn .btn--sm .btn--ghost so this uses the design system like
+               every other control; without them it rendered as an unstyled UA
+               button. Ghost, not primary: it is a quiet secondary action inside
+               a soft-tinted panel. The class stays because app.js and
+               styles.css:803 both address it by name. -->
+          <button class="btn btn--sm btn--ghost council-search__empty-clear" type="button">Clear search<span class="visually-hidden"> — show all nine councils</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================ DISCLAIMER (1 of 2) -->
+  <!-- Near the bottom of the page, as the brief intends. It used to sit directly
+       under the hero, added to satisfy a minimum that counted only .disclaimer
+       blocks; the assertion now counts the footer's repeat too, so one aside
+       plus one footer is the whole requirement. Do not duplicate this higher up
+       the page -- it fights the page's own message for no compliance gain, and
+       Google asks for the disclosure in the Play listing.
+
+       This aside holds the canonical sentence and NOTHING ELSE: app.js
+       compares .disclaimer textContent character for character, so any second
+       paragraph here is a failing assertion, not an extra disclosure.
+
+       It deliberately does NOT name Derby City Council as a special case. The
+       app genuinely reads Derby City Council's bin-day data, so a blanket "no
+       connection to any council" claim would be false, and the words "any local
+       council" already cover it. -->
+  <div class="section section--disclaimer">
+    <div class="container">
+      <aside class="disclaimer" role="note" aria-label="Independence disclaimer">
+        <p class="disclaimer__text">Derby Bins is an independent utility app. It is not affiliated with, authorised by, sponsored by, or endorsed by any local council or government body.</p>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <div>
+      <a class="site-footer__brand" href="/">
+        <img class="brand__mark" src="/assets/store_icon_512.png" alt="" width="32" height="32">
+        <span>Derby Bins</span>
+      </a>
+      <p class="site-footer__disclaimer">Derby Bins is an independent utility app. It is not affiliated with, authorised by, sponsored by, or endorsed by any local council or government body.</p>
+    </div>
+    <nav class="site-footer__nav" aria-label="Footer">
+      <ul>
+        <li><a href="/privacy.html">Privacy Policy</a></li>
+        <li><a href="/sources.html">Official Information Sources</a></li>
+        <li><a href="mailto:contactxomo@gmail.com">Email us</a></li>
+        <li><a href="/support.html">Support</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
