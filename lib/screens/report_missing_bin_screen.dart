@@ -31,7 +31,7 @@ class _ReportMissingBinScreenState extends State<ReportMissingBinScreen> {
   bool _submitted = false;
   bool _submitting = false;
 
-  // Keep in sync with ALLOWED_ISSUE_TYPES in proxy/vercel/api/report.js.
+  // Keep in sync with ALLOWED_ISSUE_TYPES in proxy/api/report.js.
   static const _issueTypes = [
     'Missing bin',
     'Bin not collected',
