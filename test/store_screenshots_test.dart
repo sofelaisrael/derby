@@ -286,7 +286,7 @@ void main() {
     await setSurface(tester, const Size(430, 932), 3.0);
     await tester.pumpWidget(MaterialApp(
       theme: AppTheme.light,
-      home: const BinGuideScreen(),
+      home: const BinGuideScreen(councilSlug: 'derby'),
     ));
     await tester.pumpAndSettle();
     await expectLater(
@@ -300,7 +300,7 @@ void main() {
     await setSurface(tester, const Size(411, 915), 3.0);
     await tester.pumpWidget(MaterialApp(
       theme: AppTheme.light,
-      home: const BinGuideScreen(),
+      home: const BinGuideScreen(councilSlug: 'derby'),
     ));
     await tester.pumpAndSettle();
     await expectLater(

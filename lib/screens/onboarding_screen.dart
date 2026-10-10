@@ -24,6 +24,41 @@ double _seg(Animation<double> c, double a, double b,
   return curve.transform((p - a) / (b - a));
 }
 
+/// Council-neutral presentation of a stream, for the onboarding art only.
+///
+/// Onboarding runs before the user has picked a council, so it cannot show any
+/// council's scheme: 8 of the 9 supported councils would be shown bins they do
+/// not use. Neutralising only the colour is worse than leaving it alone -- a
+/// grey dot next to "Blue bin" contradicts itself, and "Blue bin" is simply
+/// wrong for Bolsover, Chesterfield, NE Derbyshire and South Derbyshire -- so
+/// colour and label are neutralised together.
+///
+/// The per-stream icons are kept (bin SVG for general, then recycling / eco /
+/// restaurant) so the four remain distinguishable at a glance.
+///
+/// `CouncilScheme` is deliberately left alone: it remains the source of truth
+/// for every screen where the council is actually known.
+BinPresentation _neutralBin(BinColors colors, WasteStream stream) {
+  return BinPresentation(
+    colorLight: colors.textMuted.toARGB32(),
+    colorDark: colors.textMuted.toARGB32(),
+    label: switch (stream) {
+      WasteStream.general => 'General waste',
+      WasteStream.recycling => 'Recycling',
+      WasteStream.garden => 'Garden waste',
+      WasteStream.food => 'Food waste',
+    },
+    icon: switch (stream) {
+      WasteStream.general => null, // null falls through to the bin SVG
+      WasteStream.recycling => Icons.recycling,
+      WasteStream.garden => Icons.eco,
+      WasteStream.food => Icons.restaurant,
+    },
+    assetPath: stream == WasteStream.general ? 'assets/icons/bin.svg' : null,
+    items: const [],
+  );
+}
+
 /// First-launch welcome flow: three animated steps (the kerb, the calendar,
 /// the nudge) before the user lands in the app.
 class OnboardingScreen extends StatefulWidget {
@@ -460,7 +495,7 @@ class _StepPageState extends State<_StepPage>
       0 => (
           'YOUR STREET',
           'Your bin days,\nwithout the rota.',
-          'Black, blue, green, food caddy — which one goes out this week, for your street, at a glance.',
+          'Recycling, general waste, garden and food — which one goes out this week, for your street, at a glance.',
         ),
       1 => (
           'AT A GLANCE',
@@ -546,7 +581,7 @@ class _StepPageState extends State<_StepPage>
             errorBuilder: (context, error, stackTrace) => Center(
               child: BinIcon(
                 presentation:
-                    CouncilScheme.resolve('derby', WasteStream.general),
+                    _neutralBin(context.binColors, WasteStream.general),
                 color: Colors.white,
                 size: widget.artHeight * 0.8,
                 semanticLabel: 'Green wheelie bin illustration unavailable',
@@ -563,11 +598,6 @@ class _StepPageState extends State<_StepPage>
 
   Widget _buildCalendarArt(double w) {
     final colors = context.binColors;
-    final streams = CouncilScheme.streamsFor('derby');
-    final binColors = [
-      for (final s in streams)
-        CouncilScheme.resolve('derby', s).themed(context),
-    ];
     return SizedBox(
       width: w,
       height: widget.artHeight,
@@ -644,7 +674,8 @@ class _StepPageState extends State<_StepPage>
                               Expanded(
                                 child: _calendarDayCell(
                                   r * 7 + c + 1,
-                                  chip: _chipForDay(r * 7 + c + 1, binColors),
+                                  collected:
+                                      _collectedOnDay(r * 7 + c + 1),
                                   today: r * 7 + c + 1 == 10,
                                 ),
                               ),
@@ -662,7 +693,8 @@ class _StepPageState extends State<_StepPage>
     );
   }
 
-  Widget _calendarDayCell(int day, {Color? chip, bool today = false}) {
+  Widget _calendarDayCell(int day,
+      {bool collected = false, bool today = false}) {
     final colors = context.binColors;
     final Widget content;
     if (today) {
@@ -683,21 +715,27 @@ class _StepPageState extends State<_StepPage>
           ),
         ),
       );
-    } else if (chip != null) {
+    } else if (collected) {
+      // Neutral, not a bin colour: no council has been chosen yet. `textMuted`
+      // is the one muted neutral that stays legible against the elevated
+      // surface in both themes, and binForeground picks the matching text
+      // colour so the day number keeps AA contrast either way. The fill also
+      // separates a collection day from the `primary` "today" circle.
+      final fill = colors.textMuted;
       content = Container(
         width: 20,
         height: 20,
         decoration: BoxDecoration(
-          color: chip,
+          color: fill,
           borderRadius: BorderRadius.circular(5),
         ),
         alignment: Alignment.center,
         child: Text(
           '$day',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: binForeground(fill),
           ),
         ),
       );
@@ -720,20 +758,11 @@ class _StepPageState extends State<_StepPage>
     return Center(child: content);
   }
 
-  Color? _chipForDay(int day, List<Color> binColors) {
-    switch (day) {
-      case 3:
-        return binColors[1];
-      case 6:
-        return binColors[0];
-      case 12:
-        return binColors[3];
-      case 17:
-        return binColors[2];
-      default:
-        return null;
-    }
-  }
+  /// The illustration has no per-stream legend, so the four collection days are
+  /// drawn in the same neutral fill rather than four shades of grey: shades
+  /// would imply a distinction the viewer has no way to decode.
+  bool _collectedOnDay(int day) =>
+      day == 3 || day == 6 || day == 12 || day == 17;
 
   Widget _buildReminderArt(double w) {
     final colors = context.binColors;
@@ -821,24 +850,19 @@ class _StepPageState extends State<_StepPage>
   List<Widget> _buildChildren(BinColors colors, bool dark) {
     switch (widget.step) {
       case 0:
-        final bins = CouncilScheme.streamsFor('derby')
-            .map((s) => CouncilScheme.resolve('derby', s))
-            .toList();
+        const streams = WasteStream.values;
         return [
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: [
-              for (var i = 0; i < bins.length; i++)
+              for (var i = 0; i < streams.length; i++)
                 _Stagger(
                   controller: _controller,
                   start: 0.62 + i * 0.07,
                   end: 0.78 + i * 0.07,
                   rise: 12,
-                  child: _BinPill(
-                    color: bins[i].themed(context),
-                    label: bins[i].label,
-                  ),
+                  child: _BinPill(presentation: _neutralBin(colors, streams[i])),
                 ),
             ],
           ),
@@ -860,7 +884,7 @@ class _StepPageState extends State<_StepPage>
           _FeatureCardData(
             icon: Icons.flag_outlined,
             title: 'Missed a bin?',
-            caption: 'Flag it to your council in a couple of taps.',
+            caption: 'Tell us about it in a couple of taps.',
             stream: WasteStream.garden,
           ),
         ];
@@ -906,7 +930,10 @@ class _FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.binColors;
-    final accent = CouncilScheme.resolve('derby', data.stream).themed(context);
+    // Neutral accent: no council is known yet, and a themed bin colour here
+    // would claim a colour the user's council may not use. `textSecondary` is
+    // the app's existing neutral that stays legible on both surfaces.
+    final accent = colors.textSecondary;
     return Container(
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
@@ -969,10 +996,9 @@ class _FeatureCard extends StatelessWidget {
 }
 
 class _BinPill extends StatelessWidget {
-  final Color color;
-  final String label;
+  final BinPresentation presentation;
 
-  const _BinPill({required this.color, required this.label});
+  const _BinPill({required this.presentation});
 
   @override
   Widget build(BuildContext context) {
@@ -987,17 +1013,14 @@ class _BinPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+          BinIcon(
+            presentation: presentation,
+            color: colors.textSecondary,
+            size: 15,
           ),
           const SizedBox(width: AppSpacing.sm),
           Text(
-            label,
+            presentation.label,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,

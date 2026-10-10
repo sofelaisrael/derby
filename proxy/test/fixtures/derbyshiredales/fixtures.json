@@ -1,0 +1,52 @@
+[
+  {
+    "slug": "derbyshiredales",
+    "case": "rows-recycling-and-garden",
+    "entry": "_buildCollectionsFromPage",
+    "bodyFile": "derbyshiredales/rows-recycling-and-garden.html",
+    "bodyKind": "text",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the parser contract (one Bootstrap-style row div per collection, col-sm-5 date / col-sm-6 container). NOT a live recording. Replace with a real recording from https://selfserve.derbyshiredales.gov.uk/RenderForm when network access is available.",
+      "regression": "A single cell can name two streams. Before the fix an else-if chain resolved 'Recycling and Garden' to recycling only, dropping the garden collection entirely."
+    },
+    "expect": {
+      "streams": ["recycling", "garden"],
+      "byStream": {
+        "recycling": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" },
+        "garden": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" }
+      },
+      "labels": {
+        "recycling": "Recycling Waste",
+        "garden": "Garden Waste"
+      }
+    }
+  },
+  {
+    "slug": "derbyshiredales",
+    "case": "rows-six-distinct",
+    "entry": "_buildCollectionsFromPage",
+    "bodyFile": "derbyshiredales/rows-six-distinct.html",
+    "bodyKind": "text",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the parser contract: six consecutive rows, three distinct streams on three distinct weekdays, each collected twice a week apart. NOT a live recording. Replace with a real recording from https://selfserve.derbyshiredales.gov.uk/RenderForm when network access is available.",
+      "regression": "parseRows' row regex required a lookahead after the captured </div>, so its lazy ([\\s\\S]*?) ran past the end of row 1. Measured against that regex: a 1-row payload parsed to 0 collections, 2 rows to 1, 3 rows to 2, 4 rows to 3 -- always N-1, because the final row has no terminator to satisfy the lookahead. parseRows now splits on the row opener, so all 6 rows are read. This fixture is what proves it: three distinct streams on three distinct weekdays, each with a weekly cadence."
+    },
+    "expect": {
+      "streams": ["general", "recycling", "garden"],
+      "byStream": {
+        "general": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" },
+        "recycling": { "dayOfWeek": 2, "frequency": "weekly", "anchorDate": "2026-10-06" },
+        "garden": { "dayOfWeek": 3, "frequency": "weekly", "anchorDate": "2026-10-07" }
+      },
+      "labels": {
+        "general": "Domestic Waste",
+        "recycling": "Recycling Waste",
+        "garden": "Garden Waste"
+      }
+    }
+  }
+]

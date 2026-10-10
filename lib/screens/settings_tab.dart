@@ -577,7 +577,8 @@ class _SettingsTabState extends State<SettingsTab> {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const BinGuideScreen(),
+                        builder: (_) =>
+                            BinGuideScreen(councilSlug: widget.councilSlug),
                       ),
                     );
                   },

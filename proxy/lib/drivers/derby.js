@@ -10,28 +10,19 @@ const MONTHS = {
   september: 8, october: 9, november: 10, december: 11,
 };
 
-const STREAM_MAP = {
-  'Black bin': 'general',
-  'Black Bin': 'general',
+// Keys are already lowercased because lookups go through
+// `STREAM_BY_ALT[alt.toLowerCase()]`; storing mixed-case duplicates here would
+// be unreachable and would silently swallow any future mixed-case entry.
+const STREAM_BY_ALT = {
   'black bin': 'general',
-  'Blue bin': 'recycling',
-  'Blue Bin': 'recycling',
   'blue bin': 'recycling',
-  'Brown bin': 'garden',
-  'Brown Bin': 'garden',
   'brown bin': 'garden',
-  'Food bin': 'food',
-  'Food Bin': 'food',
   'food bin': 'food',
-  'General waste': 'general',
-  'Recycling': 'recycling',
-  'Garden waste': 'garden',
-  'Food waste': 'food',
+  'general waste': 'general',
+  'recycling': 'recycling',
+  'garden waste': 'garden',
+  'food waste': 'food',
 };
-
-const STREAM_BY_ALT = Object.fromEntries(
-  Object.entries(STREAM_MAP).map(([alt, stream]) => [alt.toLowerCase(), stream])
-);
 
 const IGNORED_ALTS = new Set(['no bins', 'household waste bin']);
 
@@ -152,10 +143,46 @@ async function openSession(postcode) {
   }
 }
 
+// Extracted from getCollections so the fixtures can drive it. This driver never
+// read the clock, so `now`/`oneYear` are unused; they are accepted only for
+// harness uniformity.
+function buildCollectionsFromHtml(html) {
+  const byStream = {};
+  for (const entry of extractCollections(html)) {
+    const stream = STREAM_BY_ALT[entry.binType.toLowerCase()];
+    if (!stream) continue;
+    const dateStr = formatDate(entry.date);
+    if (!byStream[stream]) byStream[stream] = { dates: [], seen: new Set() };
+    if (byStream[stream].seen.has(dateStr)) continue;
+    byStream[stream].seen.add(dateStr);
+    byStream[stream].dates.push(entry.date);
+  }
+
+  return Object.entries(byStream).map(([stream, bucket]) => {
+    const dates = bucket.dates.slice().sort((a, b) => a - b);
+    const anchor = dates[0];
+    return {
+      stream,
+      dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
+      frequency: deriveFrequency(dates),
+      anchorDate: formatDate(anchor),
+      nextCollections: dates.map(d => ({
+        date: formatDate(d),
+        stream,
+        label: LABELS[stream] || stream,
+      })),
+    };
+  });
+}
+
 module.exports = {
   id: 'derby',
   slug: 'derby',
   name: 'Derby City Council',
+
+  // Pure exports for the fixture-driven regression suite in test/.
+  _extractCollections: extractCollections,
+  _buildCollectionsFromHtml: buildCollectionsFromHtml,
 
   async lookupAddresses(postcode) {
     const normalized = normalizePostcode(postcode);
@@ -192,32 +219,7 @@ module.exports = {
         throw Object.assign(new Error(`Derby API returned ${result.status}`), { code: 'UPSTREAM_ERROR' });
       }
 
-      const byStream = {};
-      for (const entry of extractCollections(result.body)) {
-        const stream = STREAM_BY_ALT[entry.binType.toLowerCase()];
-        if (!stream) continue;
-        const dateStr = formatDate(entry.date);
-        if (!byStream[stream]) byStream[stream] = { dates: [], seen: new Set() };
-        if (byStream[stream].seen.has(dateStr)) continue;
-        byStream[stream].seen.add(dateStr);
-        byStream[stream].dates.push(entry.date);
-      }
-
-      return Object.entries(byStream).map(([stream, bucket]) => {
-        const dates = bucket.dates.slice().sort((a, b) => a - b);
-        const anchor = dates[0];
-        return {
-          stream,
-          dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
-          frequency: deriveFrequency(dates),
-          anchorDate: formatDate(anchor),
-          nextCollections: dates.map(d => ({
-            date: formatDate(d),
-            stream,
-            label: LABELS[stream] || stream,
-          })),
-        };
-      });
+      return buildCollectionsFromHtml(result.body);
     } catch (e) {
       console.error(`derby getCollections error for uprn ${uprn}: ${e.message}`);
       return [];

@@ -1,13 +1,44 @@
 const { httpGet, httpPost } = require('./shared');
 
-const STREAM_MAP = {
-  refuseNextDate: { stream: 'general', label: 'General Waste' },
-  recyclingNextDate: { stream: 'recycling', label: 'Recycling' },
-  greenNextDate: { stream: 'garden', label: 'Garden Waste' },
-  NextFoodDate: { stream: 'food', label: 'Food Waste' },
-  communalRefNextDate: { stream: 'general', label: 'General Waste' },
-  communalRycNextDate: { stream: 'recycling', label: 'Recycling' },
-};
+// Key candidates per stream, most-canonical first. The AVBC feed spells its
+// food field inconsistently across endpoints, so the food row accepts several
+// spellings and finally sweeps for any food/next key rather than silently
+// dropping the stream when none matches.
+const STREAM_MAP = [
+  { keys: ['refuseNextDate'], stream: 'general', label: 'General Waste' },
+  { keys: ['recyclingNextDate'], stream: 'recycling', label: 'Recycling' },
+  { keys: ['greenNextDate'], stream: 'garden', label: 'Garden Waste' },
+  {
+    keys: ['foodNextDate', 'nextFoodDate', 'NextFoodDate', 'FoodNextDate'],
+    stream: 'food',
+    label: 'Food Waste',
+    sweep: true,
+  },
+  { keys: ['communalRefNextDate'], stream: 'general', label: 'General Waste' },
+  { keys: ['communalRycNextDate'], stream: 'recycling', label: 'Recycling' },
+];
+
+function resolveDateKey(data, entry) {
+  for (const key of entry.keys) {
+    if (data[key]) return key;
+  }
+  if (!entry.sweep) return null;
+  // Last resort: any remaining key that looks like a food next-date. Excludes
+  // communal and frequency flags so only a real date field can match, and
+  // requires an ISO-shaped value: `typeof === 'string'` alone let "12/03/2026"
+  // through, and `new Date()` reads that as 3 December -- a plausible-looking
+  // but wrong collection that survives both the isNaN and the year>=2000
+  // checks downstream.
+  return Object.keys(data).find(
+    (k) => !entry.keys.includes(k)
+      && /food/i.test(k)
+      && /next/i.test(k)
+      && !/communal|com/i.test(k)
+      && !/weekly|frequency/i.test(k)
+      && typeof data[k] === 'string'
+      && /^\d{4}-\d{2}-\d{2}/.test(data[k]),
+  ) || null;
+}
 
 const SKIP_DATES = ['0001-01-01T00:00:00', '1900-01-01T00:00:00'];
 
@@ -51,6 +82,56 @@ function formatPostcode(raw) {
 const LOOKUP_URL = 'https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/GazetteerJSON.asmx/PropertyLookupFeed';
 const COLLECTION_URL = 'https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN';
 
+// Extracted verbatim from getCollections so the fixtures can drive it with a
+// fixed `now`. `oneYear` is passed in rather than read from the clock, exactly
+// as before; nothing in the date math below has changed. `now` is accepted for
+// call-shape uniformity with the other extracted builders and is unused -- this
+// driver's date expansion never looked at the current date.
+function buildCollectionsFromFeed(data, now, oneYear) {
+  const results = [];
+
+  for (const entry of STREAM_MAP) {
+    const dateKey = resolveDateKey(data, entry);
+    if (!dateKey) continue;
+    const rawDate = data[dateKey];
+    if (!rawDate || SKIP_DATES.includes(rawDate)) continue;
+    const date = new Date(rawDate);
+    if (isNaN(date.getTime()) || date.getFullYear() < 2000) continue;
+
+    const weeklyKey = dateKey === 'communalRefNextDate' || dateKey === 'communalRycNextDate'
+      ? (dateKey === 'communalRefNextDate' ? 'communalRefWeekly' : 'communalRycWeekly')
+      : 'weeklyCollection';
+    const isWeekly = data[weeklyKey];
+    const dayOffset = isWeekly ? 7 : 14;
+    const dates = [];
+    let d = new Date(date);
+    while (d <= oneYear) {
+      dates.push(new Date(d));
+      d = new Date(d.getTime() + dayOffset * 86400000);
+    }
+    if (dates.length === 0) continue;
+
+    const anchor = dates[0];
+    const freq = deriveFrequency(dates);
+    const nextCollections = dates.map(dd => ({
+      date: formatDate(dd),
+      stream: entry.stream,
+      label: entry.label,
+    })).filter(c => c.date);
+    if (nextCollections.length === 0) continue;
+
+    results.push({
+      stream: entry.stream,
+      dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
+      frequency: freq,
+      anchorDate: formatDate(anchor),
+      nextCollections,
+    });
+  }
+
+  return results;
+}
+
 module.exports = {
   id: 'ambervalley',
   slug: 'ambervalley',
@@ -90,49 +171,14 @@ module.exports = {
 
       const now = new Date();
       const oneYear = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
-      const results = [];
-
-      for (const [dateKey, mapping] of Object.entries(STREAM_MAP)) {
-        const rawDate = data[dateKey];
-        if (!rawDate || SKIP_DATES.includes(rawDate)) continue;
-        const date = new Date(rawDate);
-        if (isNaN(date.getTime()) || date.getFullYear() < 2000) continue;
-
-        const weeklyKey = dateKey === 'communalRefNextDate' || dateKey === 'communalRycNextDate'
-          ? (dateKey === 'communalRefNextDate' ? 'communalRefWeekly' : 'communalRycWeekly')
-          : 'weeklyCollection';
-        const isWeekly = data[weeklyKey];
-        const dayOffset = isWeekly ? 7 : 14;
-        const dates = [];
-        let d = new Date(date);
-        while (d <= oneYear) {
-          dates.push(new Date(d));
-          d = new Date(d.getTime() + dayOffset * 86400000);
-        }
-        if (dates.length === 0) continue;
-
-        const anchor = dates[0];
-        const freq = deriveFrequency(dates);
-        const nextCollections = dates.map(dd => ({
-          date: formatDate(dd),
-          stream: mapping.stream,
-          label: mapping.label,
-        })).filter(c => c.date);
-        if (nextCollections.length === 0) continue;
-
-        results.push({
-          stream: mapping.stream,
-          dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
-          frequency: freq,
-          anchorDate: formatDate(anchor),
-          nextCollections,
-        });
-      }
-
-      return results;
+      return buildCollectionsFromFeed(data, now, oneYear);
     } catch (e) {
       if (isTimeoutError(e)) throw new Error('Amber Valley API unreachable (may be UK-only)');
       throw e;
     }
   },
+
+  // Pure exports for the fixture-driven regression suite in test/.
+  _buildCollectionsFromFeed: buildCollectionsFromFeed,
+  _resolveDateKey: resolveDateKey,
 };

@@ -174,10 +174,10 @@ void main() {
     expect(effectiveWeekday(mismatched), DateTime.wednesday);
   });
 
-  test('Derby food stream maps to Food caddy label and colour', () {
+  test('Derby food stream maps to Green food caddy label and colour', () {
     final p = CouncilScheme.resolve('derby', WasteStream.food);
-    expect(p.label, 'Food caddy');
-    expect(p.colorLight, 0xFFF59E0B);
-    expect(p.colorDark, 0xFFFBBF24);
+    expect(p.label, 'Green food caddy');
+    expect(p.colorLight, 0xFF10B981);
+    expect(p.colorDark, 0xFF34D399);
   });
 }

@@ -32,12 +32,22 @@ function extractFormFields(html) {
   return fields;
 }
 
+// Opens a single collection row: a `row` div carrying the padding-left inline
+// style. Deliberately capture-group free so `String.split` yields the row bodies
+// without splicing in the delimiter.
+const ROW_START_RE = /<div[^>]*class="[^"]*\brow\b[^"]*"[^>]*style="[^"]*padding-left[^"]*"[^>]*>/gi;
+
 function parseRows(html) {
   const collections = [];
-  const rowRe = /<div[^>]*class="[^"]*row[^"]*"[^>]*style="[^"]*padding-left[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?=<div[^>]*class="[^"]*row|<\/div>\s*<\/div>)/gi;
-  let m;
-  while ((m = rowRe.exec(html)) !== null) {
-    const rowHtml = m[1];
+  // Split on the row opener rather than capturing up to a lookahead. The lazy
+  // `([\s\S]*?)<\/div>` variant ran past the end of row 1 looking for a
+  // terminator, swallowed the rest of the payload, and so parsed N rows as N-1
+  // collections -- and a single-row payload as none at all. Every row's own
+  // col-sm-5/col-sm-6 cells are the first such cells in its chunk, so the
+  // per-cell reads below are unaffected by the trailing rows in that chunk.
+  const rows = html.split(ROW_START_RE);
+  for (let i = 1; i < rows.length; i++) {
+    const rowHtml = rows[i];
     const dateCol = rowHtml.match(/<div[^>]*class="[^"]*col-sm-5[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
     const typeCol = rowHtml.match(/<div[^>]*class="[^"]*col-sm-6[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
     if (!dateCol || !typeCol) continue;
@@ -53,13 +63,15 @@ function parseRows(html) {
     const date = new Date(year, month, day);
     if (isNaN(date.getTime())) continue;
     const lower = rawType.toLowerCase();
-    let stream = null;
-    if (lower.includes('domestic')) stream = 'general';
-    else if (lower.includes('recycling')) stream = 'recycling';
-    else if (lower.includes('food')) stream = 'food';
-    else if (lower.includes('garden')) stream = 'garden';
-    if (!stream) continue;
-    collections.push({ date, stream });
+    // A single cell can name more than one stream ("Recycling and Garden").
+    // Match every pattern rather than stopping at the first hit.
+    const streams = [];
+    if (lower.includes('domestic')) streams.push('general');
+    if (lower.includes('recycling')) streams.push('recycling');
+    if (lower.includes('food')) streams.push('food');
+    if (lower.includes('garden')) streams.push('garden');
+    if (streams.length === 0) continue;
+    for (const stream of streams) collections.push({ date, stream });
   }
   return collections;
 }
@@ -88,10 +100,57 @@ function deriveFrequency(dates) {
   return 'twelveWeekly';
 }
 
+const LABELS = {
+  general: 'Domestic Waste',
+  recycling: 'Recycling Waste',
+  food: 'Food Waste',
+  garden: 'Garden Waste',
+};
+
+// Extracted from getCollections so the fixtures can drive it. This driver never
+// read the clock, so there is nothing to thread: `now` and `oneYear` are accepted
+// only for call-shape uniformity and are unused.
+function buildCollectionsFromRows(collections) {
+  const byStream = {};
+  for (const c of collections) {
+    if (!byStream[c.stream]) byStream[c.stream] = [];
+    const dateStr = formatDate(c.date);
+    if (byStream[c.stream].some(d => formatDate(d) === dateStr)) continue;
+    byStream[c.stream].push(c.date);
+  }
+
+  const results = [];
+  for (const [stream, dates] of Object.entries(byStream)) {
+    if (dates.length === 0) continue;
+    dates.sort((a, b) => a - b);
+    const anchor = dates[0];
+    const freq = deriveFrequency(dates);
+    const label = LABELS[stream] || stream;
+    const nextCollections = dates.map(d => ({ date: formatDate(d), stream, label }));
+    results.push({
+      stream,
+      dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
+      frequency: freq,
+      anchorDate: formatDate(anchor),
+      nextCollections,
+    });
+  }
+  return results;
+}
+
+// Single-HTML seam for the fixture harness; `now`/`oneYear` unused, see above.
+function buildCollectionsFromPage(html, now, oneYear) {
+  return buildCollectionsFromRows(parseRows(html));
+}
+
 module.exports = {
   id: 'derbyshiredales',
   slug: 'derbyshiredales',
   name: 'Derbyshire Dales District Council',
+
+  // Pure exports for the fixture-driven regression suite in test/.
+  _parseRows: parseRows,
+  _buildCollectionsFromPage: buildCollectionsFromPage,
 
   async lookupAddresses(postcode) {
     const normalized = (postcode || '').trim().toUpperCase().replace(/\s+/g, ' ');
@@ -147,31 +206,7 @@ module.exports = {
       console.error('[derbyshiredales] step2: status=%d collections=%d', r2.status, collections.length);
       if (collections.length === 0) return [];
 
-      const byStream = {};
-      for (const c of collections) {
-        if (!byStream[c.stream]) byStream[c.stream] = [];
-        const dateStr = formatDate(c.date);
-        if (byStream[c.stream].some(d => formatDate(d) === dateStr)) continue;
-        byStream[c.stream].push(c.date);
-      }
-
-      const results = [];
-      for (const [stream, dates] of Object.entries(byStream)) {
-        if (dates.length === 0) continue;
-        dates.sort((a, b) => a - b);
-        const anchor = dates[0];
-        const freq = deriveFrequency(dates);
-        const label = { general: 'Domestic Waste', recycling: 'Recycling Waste', food: 'Food Waste', garden: 'Garden Waste' }[stream] || stream;
-        const nextCollections = dates.map(d => ({ date: formatDate(d), stream, label }));
-        results.push({
-          stream,
-          dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
-          frequency: freq,
-          anchorDate: formatDate(anchor),
-          nextCollections,
-        });
-      }
-      return results;
+      return buildCollectionsFromRows(collections);
     } catch (e) { console.error('[derbyshiredales] getCollections error:', e.message); throw e; }
   },
 };

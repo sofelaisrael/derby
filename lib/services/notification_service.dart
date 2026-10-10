@@ -50,9 +50,12 @@ class NotificationService {
 
   static const _batteryChannel = MethodChannel('derbybins/battery');
 
-  /// Slot-scheme version. Bumped when reminder ids/times change so
-  /// initialize() can cancel stale alarms scheduled under an older scheme.
-  static const _slotSchemeVersion = 2;
+  // Bumped to 3 to force a one-time reminder rebuild after the per-council bin
+  // relabelling. Reminder IDs are date+slot based (see _uniqueReminderId) and
+  // are unaffected by label changes, but zonedSchedule bakes the title and body
+  // at schedule time -- so without this bump, already-queued reminders would keep
+  // firing the old bin wording for up to the 8-day scheduling horizon.
+  static const _slotSchemeVersion = 3;
 
   /// IDs that have already been delivered by the background-fetch path
   /// so they aren't re-shown every 15 minutes. Persisted to survive

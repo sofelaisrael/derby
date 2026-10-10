@@ -54,13 +54,38 @@ function deriveFrequency(dates) {
   return 'twelveWeekly';
 }
 
+// Negation guard. A line saying a collection is NOT happening must not yield a
+// collection. The adjective allowance covers the container-qualified form NED
+// uses -- "No green bin collection" -- which the previous two-word guard let
+// through as a phantom garden collection.
+const NO_COLLECTION_RE = /no (?:[a-z]+\s+)*(collection|recycling)/;
+
 function mapBinTypes(text) {
   const lower = text.toLowerCase();
-  if (lower.includes('no collection')) return [];
+  if (NO_COLLECTION_RE.test(lower)) return [];
   const streams = [];
-  if (lower.includes('black bin') || (lower.includes('black') && lower.includes('bin'))) streams.push('general');
-  if (lower.includes('burgundy') || lower.includes('green bin')) streams.push('recycling');
-  if (lower.includes('food caddy')) streams.push('food');
+
+  // Unambiguous colours first, so refuse/recycling/garden keep their leading
+  // position in a day's summary ("Black and food bins", not "food and Black
+  // bins"). NED's scheme is refuse Black / recycling Burgundy / garden Green /
+  // food Brown, so no other container can be black, burgundy or green, and a
+  // line such as "Black bin and food caddy" genuinely names two collections.
+  //
+  // GREEN is deliberately NOT gated behind a stream word. Under-detecting
+  // garden would cost a user a real collection, which is the worse failure.
+  if (lower.includes('black')) streams.push('general');
+  if (lower.includes('burgundy')) streams.push('recycling');
+  if (lower.includes('green')) streams.push('garden');
+
+  // Explicit stream words, which outrank colour words in the reverse case:
+  // NED's GARDEN bin is green, so an unprefixed "green" must not be read as
+  // recycling -- that was the original bug.
+  if (/\bgarden\b/.test(lower) || /\bgrass\b/.test(lower) || /\bgreen waste\b/.test(lower)) {
+    streams.push('garden');
+  }
+  if (/\brecycl/.test(lower)) streams.push('recycling');
+  if (lower.includes('food') || /\bcaddy\b/.test(lower)) streams.push('food');
+
   return [...new Set(streams)];
 }
 
@@ -110,7 +135,10 @@ function parseSectionHtml(sectionHtml) {
       }
       continue;
     }
-    if (text.toLowerCase().includes('no collection')) continue;
+    // Same guard as mapBinTypes (NO_COLLECTION_RE): "No recycling" is not a
+    // collection, and the `\brecycl` word match below would otherwise invent
+    // one. Shared constant so the two copies cannot drift apart.
+    if (NO_COLLECTION_RE.test(text.toLowerCase())) continue;
     if (!text.match(/(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+\d{1,2}/)) continue;
     const date = parseCollectionEntry(text, currentYear);
     if (!date) continue;
@@ -121,11 +149,61 @@ function parseSectionHtml(sectionHtml) {
   return entries;
 }
 
+const LABELS = {
+  general: 'General Waste',
+  recycling: 'Recycling',
+  garden: 'Garden Waste',
+  food: 'Food Waste',
+};
+
+// Extracted from getCollections so the fixtures can drive it with a fixed
+// `now`. `oneYear` is accepted for harness uniformity but unused: the original
+// logic has no one-year window, and none has been added here.
+function buildCollectionsFromSection(sectionHtml, now, oneYear) {
+  const allEntries = parseSectionHtml(sectionHtml);
+
+  const byStream = {};
+  const seen = new Set();
+  for (const entry of allEntries) {
+    for (const stream of entry.streams) {
+      const key = `${stream}:${formatDate(entry.date)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (!byStream[stream]) byStream[stream] = [];
+      byStream[stream].push(entry.date);
+    }
+  }
+
+  const results = [];
+  for (const [stream, dates] of Object.entries(byStream)) {
+    dates.sort((a, b) => a - b);
+    const valid = dates.filter(d => d >= now);
+    if (valid.length === 0) continue;
+    const anchor = valid[0];
+    const freq = deriveFrequency(valid);
+    const label = LABELS[stream] || stream;
+    const nextCollections = valid.map(d => ({ date: formatDate(d), stream, label }));
+    results.push({
+      stream,
+      dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
+      frequency: freq,
+      anchorDate: formatDate(anchor),
+      nextCollections,
+    });
+  }
+  return results;
+}
+
 module.exports = {
   id: 'northeastderbyshire',
   slug: 'northeastderbyshire',
   name: 'North East Derbyshire District Council',
   calendarBased: true,
+
+  // Pure exports for the fixture-driven regression suite in test/.
+  _mapBinTypes: mapBinTypes,
+  _parseSectionHtml: parseSectionHtml,
+  _buildCollectionsFromSection: buildCollectionsFromSection,
 
   async lookupAddresses(postcode) {
     return [
@@ -193,39 +271,7 @@ module.exports = {
 
       if (!sectionHtml) return [];
 
-      const allEntries = parseSectionHtml(sectionHtml);
-
-      const byStream = {};
-      const seen = new Set();
-      for (const entry of allEntries) {
-        for (const stream of entry.streams) {
-          const key = `${stream}:${formatDate(entry.date)}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          if (!byStream[stream]) byStream[stream] = [];
-          byStream[stream].push(entry.date);
-        }
-      }
-
-      const now = new Date();
-      const results = [];
-      for (const [stream, dates] of Object.entries(byStream)) {
-        dates.sort((a, b) => a - b);
-        const valid = dates.filter(d => d >= now);
-        if (valid.length === 0) continue;
-        const anchor = valid[0];
-        const freq = deriveFrequency(valid);
-        const label = { general: 'General Waste', recycling: 'Recycling', food: 'Food Waste' }[stream] || stream;
-        const nextCollections = valid.map(d => ({ date: formatDate(d), stream, label }));
-        results.push({
-          stream,
-          dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
-          frequency: freq,
-          anchorDate: formatDate(anchor),
-          nextCollections,
-        });
-      }
-      return results;
+      return buildCollectionsFromSection(sectionHtml, new Date(), null);
     } catch (e) { return []; }
   },
 };

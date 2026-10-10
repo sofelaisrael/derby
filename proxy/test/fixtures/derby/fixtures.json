@@ -1,0 +1,26 @@
+[
+  {
+    "slug": "derby",
+    "case": "binday-mixed-case-alt",
+    "entry": "_buildCollectionsFromHtml",
+    "bodyFile": "derby/binday-mixed-case-alt.html",
+    "bodyKind": "text",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the parser contract (one div.binresult per bin, img alt = container name, strong = next date). NOT a live recording. Replace with a real recording from https://secure.derby.gov.uk/binday/<UPRN> when network access is available.",
+      "regression": "STREAM_BY_ALT lowercases its keys, so the mixed-case duplicates in STREAM_MAP were unreachable and any future mixed-case key would never match. This pins the single collapsed lowercase map against a mixed-case alt value."
+    },
+    "expect": {
+      "streams": ["garden", "food"],
+      "byStream": {
+        "garden": { "dayOfWeek": 3, "frequency": "weekly", "anchorDate": "2026-10-07" },
+        "food": { "dayOfWeek": 4, "frequency": "weekly", "anchorDate": "2026-10-08" }
+      },
+      "labels": {
+        "garden": "Garden Waste",
+        "food": "Food Waste"
+      }
+    }
+  }
+]

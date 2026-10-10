@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/bin_schedule.dart';
 import '../services/bin_scheme.dart';
-import '../services/reminder_store.dart';
 import '../theme/app_colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -17,30 +16,22 @@ const _wasteNames = {
 };
 
 class BinGuideScreen extends StatefulWidget {
-  const BinGuideScreen({super.key});
+  final String councilSlug;
+
+  const BinGuideScreen({
+    super.key,
+    required this.councilSlug,
+  });
 
   @override
   State<BinGuideScreen> createState() => _BinGuideScreenState();
 }
 
 class _BinGuideScreenState extends State<BinGuideScreen> {
-  String _councilSlug = 'derby';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCouncil();
-  }
-
-  Future<void> _loadCouncil() async {
-    final slug = await ReminderStore.getCachedCouncilSlug();
-    if (mounted && slug != null) setState(() => _councilSlug = slug);
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.binColors;
-    final streams = CouncilScheme.streamsFor(_councilSlug);
+    final streams = CouncilScheme.streamsFor(widget.councilSlug);
     return Scaffold(
       backgroundColor: colors.background,
       body: ScreenBackground(
@@ -93,7 +84,7 @@ class _BinGuideScreenState extends State<BinGuideScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     for (final stream in streams) ...[
                       Builder(builder: (context) {
-                        final p = CouncilScheme.resolve(_councilSlug, stream);
+                        final p = CouncilScheme.resolve(widget.councilSlug, stream);
                         return Column(
                           children: [
                             _BinSection(

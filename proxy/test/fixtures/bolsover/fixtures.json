@@ -1,0 +1,30 @@
+[
+  {
+    "slug": "bolsover",
+    "case": "calendar-october-2026",
+    "entry": "_buildCollectionsFromCalendarPage",
+    "bodyFile": "bolsover/calendar-october-2026.html",
+    "bodyKind": "text",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the parser contract (one <table> per month, first column is the bin name). NOT a live recording. Replace with a real recording from https://www.bolsover.gov.uk/waste-bins-recycling/bin-calendar-a when network access is available.",
+      "regression": "The 'Brown' row is Bolsover's 23L food caddy, live since 30 Mar 2026. mapBinType had no food branch, so it returned null and the whole stream vanished. The other three rows pin the existing black/burgundy/green classifications."
+    },
+    "expect": {
+      "streams": ["general", "recycling", "garden", "food"],
+      "byStream": {
+        "general": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" },
+        "recycling": { "dayOfWeek": 2, "frequency": "weekly", "anchorDate": "2026-10-06" },
+        "garden": { "dayOfWeek": 3, "frequency": "weekly", "anchorDate": "2026-10-07" },
+        "food": { "dayOfWeek": 4, "frequency": "weekly", "anchorDate": "2026-10-08" }
+      },
+      "labels": {
+        "general": "General Waste",
+        "recycling": "Recycling",
+        "garden": "Garden Waste",
+        "food": "Food Waste"
+      }
+    }
+  }
+]

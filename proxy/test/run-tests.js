@@ -611,6 +611,427 @@ async function run() {
     });
   }
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Driver regression fixtures.
+  //
+  // Before this block the suite asserted a two-field stub from a mocked driver
+  // and never executed a parser, which is why the stream-parsing bugs shipped.
+  // Every case below drives a real driver's pure export with a fixed `now`, so
+  // nothing reads the clock.
+  //
+  // Each envelope's `source.regression` states what the bug was. These cannot be
+  // run RED against the pre-fix drivers: the `_`-prefixed pure exports they call
+  // did not exist then, so reverting the drivers yields "TypeError: not a
+  // function" rather than a real assertion failure. The expectations encode the
+  // correct post-fix behaviour; the regressions are recorded, not demonstrated.
+  //
+  // All bodies are synthetic minimal inputs, not council recordings. See
+  // test/fixtures/index.js for why, and for the URLs to replace them with.
+  // ───────────────────────────────────────────────────────────────────────────
+  await describeAsync('Council fixtures', async () => {
+    const { SLUGS, CASES, runFixture } = require('./fixtures');
+    const { listDrivers } = require('../lib/drivers');
+
+    it('every covered slug is a real driver', () => {
+      const known = new Set(listDrivers().map((d) => d.slug));
+      for (const slug of SLUGS) {
+        assert.ok(known.has(slug), `${slug} has fixtures but is not a registered driver`);
+      }
+    });
+
+    it('every covered slug has at least one fixture', () => {
+      for (const slug of SLUGS) {
+        const cases = CASES.filter((c) => c.slug === slug);
+        assert.ok(cases.length > 0, `${slug} has no fixtures`);
+      }
+    });
+
+    it('fixture case names are unique per slug', () => {
+      const seen = new Set();
+      for (const c of CASES) {
+        const key = `${c.slug}/${c.case}`;
+        assert.ok(!seen.has(key), `duplicate fixture ${key}`);
+        seen.add(key);
+      }
+    });
+
+    it('every fixture is labelled as a synthetic input', () => {
+      for (const c of CASES) {
+        assert.strictEqual(c.source && c.source.kind, 'synthetic',
+          `${c.slug}/${c.case} must declare source.kind`);
+        assert.ok(c.source.note && c.source.note.length > 0,
+          `${c.slug}/${c.case} must carry a source.note`);
+      }
+    });
+
+    it('every collection group carries exactly the four wire fields', () => {
+      const required = ['stream', 'dayOfWeek', 'frequency', 'anchorDate'];
+      for (const c of CASES) {
+        for (const group of runFixture(c)) {
+          for (const field of required) {
+            assert.ok(field in group, `${c.slug}/${c.case}: group missing ${field}`);
+          }
+          assert.ok(!('colour' in group),
+            `${c.slug}/${c.case}: wire contract must not gain a colour field`);
+        }
+      }
+    });
+
+    for (const envelope of CASES) {
+      await itAsync(`${envelope.slug}/${envelope.case}`, async () => {
+        const collections = runFixture(envelope);
+        const byName = new Map(collections.map((g) => [g.stream, g]));
+        const want = envelope.expect;
+
+        assert.deepStrictEqual(collections.map((g) => g.stream), want.streams,
+          `streams differ (expected ${JSON.stringify(want.streams)})`);
+
+        for (const [stream, expected] of Object.entries(want.byStream || {})) {
+          const group = byName.get(stream);
+          assert.ok(group, `missing group ${stream}`);
+          assert.strictEqual(group.dayOfWeek, expected.dayOfWeek, `${stream} dayOfWeek`);
+          assert.strictEqual(group.frequency, expected.frequency, `${stream} frequency`);
+          assert.strictEqual(group.anchorDate, expected.anchorDate, `${stream} anchorDate`);
+          assert.ok(Array.isArray(group.nextCollections) && group.nextCollections.length > 0,
+            `${stream} has no nextCollections`);
+        }
+
+        for (const [stream, label] of Object.entries(want.labels || {})) {
+          const group = byName.get(stream);
+          assert.ok(group, `missing group ${stream}`);
+          assert.strictEqual(group.nextCollections[0].label, label, `${stream} label`);
+        }
+      });
+    }
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // The fixed stream-parsing bugs, asserted directly against the pure mappers so
+  // a failure points at the classification rather than at a parsed fixture.
+  //
+  // NOTE ON RED-BEFORE: the four bugs below are real and were confirmed from the
+  // driver diff, but this suite cannot demonstrate RED against the pre-fix
+  // drivers. Every case here (and in test/fixtures/) calls a `_`-prefixed pure
+  // export that does not exist on the original drivers, so reverting the driver
+  // changes yields "TypeError: not a function" rather than a meaningful
+  // assertion failure. Each test therefore states the OLD and NEW expectation in
+  // its name or comment so the regression intent is legible without a red run.
+  // ───────────────────────────────────────────────────────────────────────────
+  describe('Stream classification', () => {
+    const av = require('../lib/drivers/ambervalley');
+    const ned = require('../lib/drivers/northeastderbyshire');
+    const bol = require('../lib/drivers/bolsover');
+    const ddd = require('../lib/drivers/derbyshiredales');
+    const derby = require('../lib/drivers/derby');
+
+    // ── AVBC ────────────────────────────────────────────────────────────────
+    // The AVBC food field name is not publicly documented.
+    it('ambervalley resolves foodNextDate', () => {
+      assert.strictEqual(av._resolveDateKey({ foodNextDate: '2026-10-07' },
+        { keys: ['foodNextDate'], sweep: true }), 'foodNextDate');
+    });
+
+    it('ambervalley resolves nextFoodDate', () => {
+      assert.strictEqual(av._resolveDateKey({ nextFoodDate: '2026-10-07' },
+        { keys: ['foodNextDate', 'nextFoodDate'], sweep: true }), 'nextFoodDate');
+    });
+
+    it('ambervalley sweeps an undocumented food spelling', () => {
+      assert.strictEqual(av._resolveDateKey({ wibbleFoodNextDate: '2026-10-07' },
+        { keys: ['foodNextDate', 'nextFoodDate'], sweep: true }), 'wibbleFoodNextDate');
+    });
+
+    it('ambervalley does not sweep a communal or frequency flag', () => {
+      const entry = { keys: ['foodNextDate'], sweep: true };
+      assert.strictEqual(
+        av._resolveDateKey({ communalFoodNextDate: '2026-10-07' }, entry), null);
+      assert.strictEqual(
+        av._resolveDateKey({ foodWeekly: 'true' }, entry), null);
+    });
+
+    it('ambervalley does not sweep a non-date value', () => {
+      assert.strictEqual(
+        av._resolveDateKey({ foodNextDateCount: 3 },
+          { keys: [], sweep: true }), null);
+    });
+
+    // FIX 5. OLD: the sweep returned 'foodCollectionNextDate' for the
+    // ambiguous string below, and `new Date('12/03/2026')` is 3 December --
+    // passing isNaN and getFullYear() < 2000, so a wrong food collection
+    // shipped. NEW: rejected for not being ISO-shaped.
+    it('ambervalley sweep rejects a non-ISO ambiguous date string (old: accepted as 3 December)', () => {
+      const entry = { keys: ['foodNextDate', 'nextFoodDate'], sweep: true };
+      assert.strictEqual(
+        av._resolveDateKey({ foodCollectionNextDate: '12/03/2026' }, entry), null);
+      // Same key, ISO value: still swept.
+      assert.strictEqual(
+        av._resolveDateKey({ foodCollectionNextDate: '2026-12-03T00:00:00' }, entry),
+        'foodCollectionNextDate');
+      // The .NET default sentinel is ISO-shaped, so it is still caught by the
+      // year >= 2000 guard in buildCollectionsFromFeed rather than the sweep.
+      assert.strictEqual(
+        av._resolveDateKey({ foodCollectionNextDate: '0001-01-01T00:00:00' }, entry),
+        'foodCollectionNextDate');
+    });
+
+    it('ambervalley returns null for a stream with no date field', () => {
+      assert.strictEqual(av._resolveDateKey({}, { keys: ['refuseNextDate'] }), null);
+    });
+
+    // ── NED ─────────────────────────────────────────────────────────────────
+    // NED's garden bin is green.
+    it('ned maps "Green bin" to garden', () => {
+      assert.deepStrictEqual(ned._mapBinTypes('Green bin'), ['garden']);
+    });
+
+    it('ned maps "Burgundy recycling" to recycling once', () => {
+      assert.deepStrictEqual(ned._mapBinTypes('Burgundy recycling'), ['recycling']);
+    });
+
+    it('ned maps "Black bin" to general', () => {
+      assert.deepStrictEqual(ned._mapBinTypes('Black bin'), ['general']);
+    });
+
+    it('ned maps "Brown food caddy" to food', () => {
+      assert.deepStrictEqual(ned._mapBinTypes('Brown food caddy'), ['food']);
+    });
+
+    it('ned maps an explicit garden word to garden even when green', () => {
+      assert.deepStrictEqual(ned._mapBinTypes('Green garden bin'), ['garden']);
+    });
+
+    // FIX 1. OLD: 'Black bin and food caddy' returned ['food'] -- the food
+    // match filled `streams`, so the gated black rule was skipped and the
+    // refuse collection was lost. The pre-per-council code returned
+    // ['general','food']. NEW: black is unambiguous for NED (refuse Black,
+    // recycling Burgundy, garden Green, food Brown) so it is not gated, and
+    // the unambiguous colours are pushed ABOVE the stream-word block so the
+    // pre-fix order is restored.
+    it('ned keeps refuse when black is paired with food (old: dropped refuse)', () => {
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Monday 5th October - Black bin and food caddy'),
+        ['general', 'food']);
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Black bin and garden'), ['general', 'garden']);
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Black and Burgundy bins'), ['general', 'recycling']);
+    });
+
+    // FIX C. Green is unambiguous for NED and is never recycling, so it must not
+    // be gated on `streams.length === 0`. OLD: 'Green bin and food caddy'
+    // returned ['food'] -- the garden collection was silently lost, and
+    // under-detecting garden costs a user a real collection.
+    it('ned keeps garden when green is paired with another stream (old: dropped garden)', () => {
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Green bin and food caddy'), ['garden', 'food']);
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Green bin'), ['garden']);
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Green garden bin'), ['garden']);
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Green waste'), ['garden']);
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Grass cuttings bin'), ['garden']);
+      // Green still never resolves to recycling.
+      assert.ok(!ned._mapBinTypes('Green bin').includes('recycling'));
+      assert.ok(!ned._mapBinTypes('Green bin and food caddy').includes('recycling'));
+    });
+
+    // FIX C, negation. The two-word guard /no (collection|recycling)/ did not
+    // match the container-qualified 'No green bin collection', so the line
+    // produced a phantom ['garden'] collection. This was ALREADY the behaviour
+    // before the green gate was removed, so the phantom is pre-existing rather
+    // than introduced here -- which is exactly why it is pinned rather than
+    // assumed away. NO_COLLECTION_RE now allows intervening adjectives.
+    it('ned returns [] for a negated container-qualified line (old: phantom garden)', () => {
+      assert.deepStrictEqual(ned._mapBinTypes('No green bin collection'), []);
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Monday 5th October - No green bin collection'), []);
+      assert.deepStrictEqual(ned._mapBinTypes('No black bin collection'), []);
+      assert.deepStrictEqual(ned._mapBinTypes('No burgundy recycling'), []);
+      // The two original guard cases still hold.
+      assert.deepStrictEqual(ned._mapBinTypes('No collection this week'), []);
+      assert.deepStrictEqual(ned._mapBinTypes('No recycling'), []);
+    });
+
+    it('ned parseSectionHtml drops a negated container-qualified line', () => {
+      const html = [
+        '<p>Monday 5th October - No green bin collection</p>',
+        '<p>Tuesday 6th October - Black bin</p>',
+      ].join('\n');
+      const entries = ned._parseSectionHtml(html);
+      assert.strictEqual(entries.length, 1, 'only the real collection survives');
+      assert.deepStrictEqual(entries[0].streams, ['general']);
+    });
+
+    // RESIDUAL, deliberately left visible rather than silently fixed: a
+    // line-scoped food negation ("Green bin - no food") still yields
+    // ['garden','food'], because a blanket /no ... food/ guard would return []
+    // and lose the garden collection too. Bolsover's driver has the scoped
+    // narrowing; NED's does not. Fixing it needs a scoped negation, which is a
+    // separate change from this one. Pinned so it cannot be mistaken for
+    // working behaviour.
+    //
+    // NOT A REAL-WORLD RISK -- do not "fix" this into a regression. NED's live
+    // page writes collections as whole-week noun lists plus a whole-week
+    // negation, e.g.:
+    //   "Monday 3rd to Friday 7th August: Black Bin and Food Caddy collections."
+    //   "Monday 10th to Friday 14th August: Burgundy, Green Bin and Food Caddy collections."
+    //   "Monday 31st August: Bank Holiday, No collections"
+    // The ONLY negation form NED publishes is the whole-week "No collections",
+    // which NO_COLLECTION_RE in lib/drivers/northeastderbyshire.js already
+    // handles. NED never writes per-bin negations ("no green bin", "no food"),
+    // so this residual is unreachable with real data. The test stays to
+    // document the parser's limit, not because a user can currently hit it.
+    it('ned does not yet scope a food negation (known residual)', () => {
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Green bin - no food'), ['garden', 'food']);
+    });
+
+    // FIX 6. OLD: the guard was `includes('no collection')` only, so
+    // "No recycling" fell through to the `\brecycl` word match and produced a
+    // collection that does not exist. The pre-per-council code returned [].
+    it('ned returns [] for "no collection"', () => {
+      assert.deepStrictEqual(ned._mapBinTypes('No collection this week'), []);
+    });
+
+    it('ned returns [] for "no recycling" (old: returned [\'recycling\'])', () => {
+      assert.deepStrictEqual(
+        ned._mapBinTypes('Thursday 5th March - No recycling'), []);
+      assert.deepStrictEqual(ned._mapBinTypes('No recycling'), []);
+    });
+
+    // FIX 6, mirrored at parseSectionHtml:124 -- the section-level skip had the
+    // same one-sided check, so the entry reached mapBinTypes at all.
+    it('ned parseSectionHtml drops both "no collection" and "no recycling" lines', () => {
+      const html = [
+        '<p>Monday 5th October - No collection</p>',
+        '<p>Thursday 5th March - No recycling</p>',
+        '<p>Friday 9th October - Black bin</p>',
+      ].join('\n');
+      const entries = ned._parseSectionHtml(html);
+      assert.strictEqual(entries.length, 1, 'only the real collection survives');
+      assert.deepStrictEqual(entries[0].streams, ['general']);
+    });
+
+    // ── Bolsover ────────────────────────────────────────────────────────────
+    // Bolsover's brown 23L food caddy.
+    it('bolsover maps "Brown" to food', () => {
+      assert.strictEqual(bol._mapBinType('Brown'), 'food');
+    });
+
+    it('bolsover maps black/burgundy/green to general/recycling/garden', () => {
+      assert.strictEqual(bol._mapBinType('Black'), 'general');
+      assert.strictEqual(bol._mapBinType('Burgundy'), 'recycling');
+      assert.strictEqual(bol._mapBinType('Green'), 'garden');
+    });
+
+    it('bolsover lets an explicit food label beat a green colour match', () => {
+      assert.strictEqual(bol._mapBinType('Green food caddy'), 'food');
+    });
+
+    // FIX 7. OLD: `t.includes('food')` ran first and unscoped, so
+    // "Green bin - no food" routed to food and lost the garden collection.
+    // NEW: garden is checked first and food needs a container noun.
+    it('bolsover maps "Green bin - no food" to garden (old: routed to food)', () => {
+      assert.strictEqual(bol._mapBinType('Green bin - no food'), 'garden');
+      assert.strictEqual(bol._mapBinType('Garden bin'), 'garden');
+      // The narrowing still accepts the real food spellings.
+      assert.strictEqual(bol._mapBinType('Food caddy'), 'food');
+      assert.strictEqual(bol._mapBinType('Food waste'), 'food');
+      assert.strictEqual(bol._mapBinType('Food bin'), 'food');
+      assert.strictEqual(bol._mapBinType('Brown'), 'food');
+    });
+
+    it('bolsover returns null for an unknown token', () => {
+      assert.strictEqual(bol._mapBinType('Wheelie'), null);
+      assert.strictEqual(bol._mapBinType(''), null);
+      assert.strictEqual(bol._mapBinType(null), null);
+    });
+
+    // ── Derbyshire Dales ────────────────────────────────────────────────────
+    // A cell naming two streams.
+    const dddRow = (date, type) =>
+      '<div class="row" style="padding-left:15px">' +
+      `<div class="col-sm-5">${date}</div>` +
+      `<div class="col-sm-6">${type}</div>` +
+      '</div>';
+
+    it('derbyshire dales maps "Recycling and Garden" to both streams', () => {
+      const rows = ddd._parseRows(dddRow('Monday 5 October, 2026', 'Recycling and Garden'));
+      assert.deepStrictEqual(rows.map((r) => r.stream), ['recycling', 'garden']);
+    });
+
+    // FIX 3. OLD: the row regex's lazy `([\s\S]*?)</div>` ran past the end of
+    // row 1 looking for its lookahead terminator, so it parsed N rows as N-1
+    // collections and a single-row payload as none at all. NEW: parseRows
+    // splits on the row opener, so one row is enough.
+    it('derbyshire dales parses a SINGLE row (old: parsed nothing)', () => {
+      const rows = ddd._parseRows(dddRow('Monday 5 October, 2026', 'Domestic Waste'));
+      assert.strictEqual(rows.length, 1);
+      assert.deepStrictEqual(rows.map((r) => r.stream), ['general']);
+      assert.strictEqual(ddd._parseRows(dddRow('Monday 5 October, 2026', 'Recycling')).length, 1);
+    });
+
+    // FIX 3, multi-row: every row must be read, not every row but the last.
+    it('derbyshire dales parses ALL N rows (old: N-1, dropping the last)', () => {
+      for (const n of [1, 2, 3, 4, 5]) {
+        const html = Array.from({ length: n }, (_, i) =>
+          dddRow(`Monday ${5 + i} October, 2026`, 'Domestic Waste')).join('\n');
+        assert.strictEqual(ddd._parseRows(html).length, n, `${n} rows`);
+      }
+    });
+
+    // A single date per stream used to make deriveFrequency's `length < 2`
+    // short-circuit report fortnightly for what are weekly collections.
+    it('derbyshire dales reports weekly once every row is read (old: fortnightly)', () => {
+      const html = [
+        dddRow('Monday 5 October, 2026', 'Recycling'),
+        dddRow('Monday 12 October, 2026', 'Recycling'),
+      ].join('\n');
+      const groups = ddd._buildCollectionsFromPage(html, new Date('2026-10-01T00:00:00'), null);
+      assert.strictEqual(groups.length, 1);
+      assert.strictEqual(groups[0].frequency, 'weekly');
+      assert.strictEqual(groups[0].nextCollections.length, 2);
+    });
+
+    it('derbyshire dales drops a cell naming no known stream', () => {
+      const rows = ddd._parseRows(dddRow('Monday 5 October, 2026', 'Bulky Waste'));
+      assert.deepStrictEqual(rows, []);
+    });
+
+    // ── Derby ───────────────────────────────────────────────────────────────
+    // INVARIANT, not a regression test: the old
+    // `Object.fromEntries(...toLowerCase())` already collapsed case, so these
+    // two passed before the change too. They pin the single collapsed map.
+    it('derby resolves alts case-insensitively', () => {
+      const groups = derby._buildCollectionsFromHtml(
+        '<div class="binresult"><img alt="Brown Bin"><strong>Wednesday, 7 October 2026</strong></div>' +
+        '<div class="binresult"><img alt="Brown Bin"><strong>Wednesday, 14 October 2026</strong></div>');
+      assert.deepStrictEqual(groups.map((g) => g.stream), ['garden']);
+      assert.strictEqual(groups[0].nextCollections[0].label, 'Garden Waste');
+    });
+
+    it('derby resolves every documented alt regardless of case', () => {
+      // A key that is not already lowercase could never be reached through
+      // `STREAM_BY_ALT[alt.toLowerCase()]`.
+      const html = Object.entries({
+        'Black Bin': 'general', 'Blue Bin': 'recycling', 'Brown Bin': 'garden',
+        'Food Bin': 'food', 'General waste': 'general', 'Recycling': 'recycling',
+        'Garden waste': 'garden', 'Food waste': 'food',
+      }).map(([alt]) =>
+        `<div class="binresult"><img alt="${alt}"><strong>Wednesday, 7 October 2026</strong></div>`).join('');
+      const groups = derby._buildCollectionsFromHtml(html);
+      assert.deepStrictEqual(groups.map((g) => g.stream).sort(),
+        ['food', 'garden', 'general', 'recycling']);
+    });
+
+    it('derby still ignores the no-bins placeholder', () => {
+      assert.deepStrictEqual(derby._extractCollections(
+        '<div class="binresult"><img alt="No bins"><strong>Wednesday, 7 October 2026</strong></div>'), []);
+    });
+  });
+
   console.log(`\n  ${passes} passed, ${failures} failed\n`);
   process.exit(failures > 0 ? 1 : 0);
 }

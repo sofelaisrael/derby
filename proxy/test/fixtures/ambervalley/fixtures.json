@@ -1,0 +1,110 @@
+[
+  {
+    "slug": "ambervalley",
+    "case": "feed-food-next-date",
+    "entry": "_buildCollectionsFromFeed",
+    "bodyFile": "ambervalley/feed-food-next-date.json",
+    "bodyKind": "json",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the driver contract. NOT a live recording. Replace with a real recording from https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN when network access is available.",
+      "regression": "AVBC spells its food date field inconsistently. Before the fix the driver only looked for `NextFoodDate`, so this feed produced no food stream at all."
+    },
+    "expect": {
+      "streams": ["general", "recycling", "garden", "food"],
+      "byStream": {
+        "general": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" },
+        "recycling": { "dayOfWeek": 4, "frequency": "weekly", "anchorDate": "2026-10-01" },
+        "garden": { "dayOfWeek": 2, "frequency": "weekly", "anchorDate": "2026-10-06" },
+        "food": { "dayOfWeek": 3, "frequency": "weekly", "anchorDate": "2026-10-07" }
+      },
+      "labels": {
+        "general": "General Waste",
+        "recycling": "Recycling",
+        "garden": "Garden Waste",
+        "food": "Food Waste"
+      }
+    }
+  },
+  {
+    "slug": "ambervalley",
+    "case": "feed-next-food-date",
+    "entry": "_buildCollectionsFromFeed",
+    "bodyFile": "ambervalley/feed-next-food-date.json",
+    "bodyKind": "json",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the driver contract. NOT a live recording. Replace with a real recording from https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN when network access is available.",
+      "regression": "Proves tolerance rather than a single rename: the driver must accept several food-field spellings, because the AVBC field name is not publicly documented."
+    },
+    "expect": {
+      "streams": ["general", "recycling", "garden", "food"],
+      "byStream": {
+        "general": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" },
+        "recycling": { "dayOfWeek": 4, "frequency": "weekly", "anchorDate": "2026-10-01" },
+        "garden": { "dayOfWeek": 2, "frequency": "weekly", "anchorDate": "2026-10-06" },
+        "food": { "dayOfWeek": 3, "frequency": "weekly", "anchorDate": "2026-10-07" }
+      },
+      "labels": {
+        "general": "General Waste",
+        "recycling": "Recycling",
+        "garden": "Garden Waste",
+        "food": "Food Waste"
+      }
+    }
+  },
+  {
+    "slug": "ambervalley",
+    "case": "feed-food-not-in-rollout",
+    "entry": "_buildCollectionsFromFeed",
+    "bodyFile": "ambervalley/feed-food-not-in-rollout.json",
+    "bodyKind": "json",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the driver contract. NOT a live recording. Replace with a real recording from https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN when network access is available.",
+      "regression": "Guards the patch against fabricating a food stream for properties outside the phased roll-out: AVBC sends the .NET default date, which must stay suppressed."
+    },
+    "expect": {
+      "streams": ["general", "recycling", "garden"],
+      "byStream": {
+        "general": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" },
+        "recycling": { "dayOfWeek": 4, "frequency": "weekly", "anchorDate": "2026-10-01" },
+        "garden": { "dayOfWeek": 2, "frequency": "weekly", "anchorDate": "2026-10-06" }
+      },
+      "labels": {
+        "general": "General Waste",
+        "recycling": "Recycling",
+        "garden": "Garden Waste"
+      }
+    }
+  },
+  {
+    "slug": "ambervalley",
+    "case": "feed-food-ambiguous-date",
+    "entry": "_buildCollectionsFromFeed",
+    "bodyFile": "ambervalley/feed-food-ambiguous-date.json",
+    "bodyKind": "json",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the driver contract. NOT a live recording. Replace with a real recording from https://info.ambervalley.gov.uk/WebServices/AVBCFeeds/WasteCollectionJSON.asmx/GetCollectionDetailsByUPRN when network access is available.",
+      "regression": "The sweep only checked `typeof data[k] === 'string'`, so '12/03/2026' matched. `new Date('12/03/2026')` is 3 December, and that survives both the isNaN check and `getFullYear() < 2000` in buildCollectionsFromFeed -- a real, wrong food collection shipping to users. The sweep now also requires an ISO-shaped value. (The pre-existing 'feed-food-not-in-rollout' case only covers a string sentinel on a KNOWN key, and 'foodNextDateCount: 3' is a number, so neither exercised this path.)"
+    },
+    "expect": {
+      "streams": ["general", "recycling", "garden"],
+      "byStream": {
+        "general": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" },
+        "recycling": { "dayOfWeek": 4, "frequency": "weekly", "anchorDate": "2026-10-01" },
+        "garden": { "dayOfWeek": 2, "frequency": "weekly", "anchorDate": "2026-10-06" }
+      },
+      "labels": {
+        "general": "General Waste",
+        "recycling": "Recycling",
+        "garden": "Garden Waste"
+      }
+    }
+  }
+]

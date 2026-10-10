@@ -72,8 +72,24 @@ function parseCalendarPage(html) {
 
 function mapBinType(type) {
   const t = (type || '').toLowerCase();
+  if (!t) return null;
+
+  // Stream words first, most specific wins. Bolsover's GREEN bin is the garden
+  // bin, so the garden rule is checked before food: a cell reading
+  // "Green bin - no food" must land on garden, not be captured by a bare
+  // "food" substring. Food therefore requires a container noun
+  // ("food caddy" / "food bin" / "food waste") or "caddy"; mapBinType only ever
+  // sees parseCalendarPage cell text (parentheses stripped, split on "/"), so
+  // it cannot pick up prose such as Bolsover's FAQ phrase "use their brown bin".
+  if (t.includes('garden') || t.includes('grass')) return 'garden';
+  if (/food\s*(caddy|bin|waste)|caddy/.test(t)) return 'food';
+
   if (t.includes('black')) return 'general';
   if (t.includes('burgundy')) return 'recycling';
+
+  // Colour fallbacks. Brown is the 23L food caddy introduced 30 Mar 2026;
+  // green is the (winter-suspended) garden bin.
+  if (t.includes('brown')) return 'food';
   if (t.includes('green')) return 'garden';
   return null;
 }
@@ -99,11 +115,64 @@ function deriveFrequency(dates) {
   return 'twelveWeekly';
 }
 
+const LABELS = {
+  general: 'General Waste',
+  recycling: 'Recycling',
+  garden: 'Garden Waste',
+  food: 'Food Waste',
+};
+
+// Single-HTML seam for the fixture harness. `oneYear` is accepted for call-shape
+// uniformity but unused: the original logic has no one-year window, and none has
+// been added here.
+function buildCollectionsFromCalendarPage(html, now, oneYear) {
+  return buildCollectionsFromEntries(parseCalendarPage(html), now);
+}
+
+// Extracted from getCollections so it can be driven with a fixed `now`.
+function buildCollectionsFromEntries(allEntries, now) {
+  const byStream = {};
+  const seen = new Set();
+  for (const entry of allEntries) {
+    const stream = mapBinType(entry.binType);
+    if (!stream) continue;
+    const key = `${stream}:${formatDate(entry.date)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (!byStream[stream]) byStream[stream] = [];
+    byStream[stream].push(entry.date);
+  }
+
+  const results = [];
+  for (const [stream, dates] of Object.entries(byStream)) {
+    dates.sort((a, b) => a - b);
+    const valid = dates.filter(d => d >= now);
+    if (valid.length === 0) continue;
+    const anchor = valid[0];
+    const freq = deriveFrequency(valid);
+    const label = LABELS[stream] || stream;
+    const nextCollections = valid.map(d => ({ date: formatDate(d), stream, label }));
+    results.push({
+      stream,
+      dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
+      frequency: freq,
+      anchorDate: formatDate(anchor),
+      nextCollections,
+    });
+  }
+  return results;
+}
+
 module.exports = {
   id: 'bolsover',
   slug: 'bolsover',
   name: 'Bolsover District Council',
   calendarBased: true,
+
+  // Pure exports for the fixture-driven regression suite in test/.
+  _parseCalendarPage: parseCalendarPage,
+  _mapBinType: mapBinType,
+  _buildCollectionsFromCalendarPage: buildCollectionsFromCalendarPage,
 
   async lookupAddresses(postcode) {
     return [
@@ -125,37 +194,7 @@ module.exports = {
         allEntries.push(...entries);
       }
 
-      const byStream = {};
-      const seen = new Set();
-      for (const entry of allEntries) {
-        const stream = mapBinType(entry.binType);
-        if (!stream) continue;
-        const key = `${stream}:${formatDate(entry.date)}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        if (!byStream[stream]) byStream[stream] = [];
-        byStream[stream].push(entry.date);
-      }
-
-      const now = new Date();
-      const results = [];
-      for (const [stream, dates] of Object.entries(byStream)) {
-        dates.sort((a, b) => a - b);
-        const valid = dates.filter(d => d >= now);
-        if (valid.length === 0) continue;
-        const anchor = valid[0];
-        const freq = deriveFrequency(valid);
-        const label = { general: 'General Waste', recycling: 'Recycling', garden: 'Garden Waste' }[stream] || stream;
-        const nextCollections = valid.map(d => ({ date: formatDate(d), stream, label }));
-        results.push({
-          stream,
-          dayOfWeek: anchor.getDay() === 0 ? 7 : anchor.getDay(),
-          frequency: freq,
-          anchorDate: formatDate(anchor),
-          nextCollections,
-        });
-      }
-      return results;
+      return buildCollectionsFromEntries(allEntries, new Date());
     } catch (e) { return []; }
   },
 };

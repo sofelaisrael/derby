@@ -1,0 +1,120 @@
+[
+  {
+    "slug": "northeastderbyshire",
+    "case": "section-green-bin",
+    "entry": "_buildCollectionsFromSection",
+    "bodyFile": "northeastderbyshire/section-green-bin.html",
+    "bodyKind": "text",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the parser contract (one <p> per collection entry). NOT a live recording. Replace with a real recording from https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates when network access is available.",
+      "regression": "NED's garden bin genuinely is green. Before the fix the driver read a bare 'green bin' as recycling, so garden collections were silently miscategorised and every downstream day was wrong."
+    },
+    "expect": {
+      "streams": ["garden"],
+      "byStream": {
+        "garden": { "dayOfWeek": 2, "frequency": "weekly", "anchorDate": "2026-10-06" }
+      },
+      "labels": {
+        "garden": "Garden Waste"
+      }
+    }
+  },
+  {
+    "slug": "northeastderbyshire",
+    "case": "section-three-streams",
+    "entry": "_buildCollectionsFromSection",
+    "bodyFile": "northeastderbyshire/section-three-streams.html",
+    "bodyKind": "text",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the parser contract (one <p> per collection entry). NOT a live recording. Replace with a real recording from https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates when network access is available.",
+      "regression": "Black, burgundy and food caddy must keep their existing classifications after the garden fix."
+    },
+    "expect": {
+      "streams": ["general", "recycling", "food"],
+      "byStream": {
+        "general": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" },
+        "recycling": { "dayOfWeek": 2, "frequency": "weekly", "anchorDate": "2026-10-06" },
+        "food": { "dayOfWeek": 3, "frequency": "weekly", "anchorDate": "2026-10-07" }
+      },
+      "labels": {
+        "general": "General Waste",
+        "recycling": "Recycling",
+        "food": "Food Waste"
+      }
+    }
+  },
+  {
+    "slug": "northeastderbyshire",
+    "case": "section-black-and-food",
+    "entry": "_buildCollectionsFromSection",
+    "bodyFile": "northeastderbyshire/section-black-and-food.html",
+    "bodyKind": "text",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the parser contract (one <p> per collection entry, several streams named in a single line). NOT a live recording. Replace with a real recording from https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates when network access is available.",
+      "regression": "ONE <p> naming TWO streams. mapBinTypes used to gate the black-bin (refuse) rule behind `streams.length === 0`, so 'Black bin and food caddy' matched food, the gate was skipped, and the refuse collection vanished. The pre-per-council code returned ['general','food']; the gated version returned ['food'] only. Membership is the fix; the order is now restored to the pre-fix ['general','food'] because the unambiguous colours are pushed above the stream-word block."
+    },
+    "expect": {
+      "streams": ["general", "food"],
+      "byStream": {
+        "general": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" },
+        "food": { "dayOfWeek": 1, "frequency": "weekly", "anchorDate": "2026-10-05" }
+      },
+      "labels": {
+        "general": "General Waste",
+        "food": "Food Waste"
+      }
+    }
+  },
+  {
+    "slug": "northeastderbyshire",
+    "case": "section-green-and-food",
+    "entry": "_buildCollectionsFromSection",
+    "bodyFile": "northeastderbyshire/section-green-and-food.html",
+    "bodyKind": "text",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the parser contract (one <p> per collection entry, two streams named in a single line). NOT a live recording. Replace with a real recording from https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates when network access is available.",
+      "regression": "Green was gated behind `streams.length === 0`, so the food caddy match on this line skipped the gate and the garden half was lost: 'Green bin and food caddy' returned ['food'] only. Under-detecting garden costs a user a real collection, which is worse than the reverse error, so green is no longer gated. Green is unambiguous for NED (refuse Black / recycling Burgundy / garden Green / food Brown) and is never recycling. Order is ['garden','food'] so the day's summary reads 'Green and food bins'."
+    },
+    "expect": {
+      "streams": ["garden", "food"],
+      "byStream": {
+        "garden": { "dayOfWeek": 4, "frequency": "weekly", "anchorDate": "2026-10-08" },
+        "food": { "dayOfWeek": 4, "frequency": "weekly", "anchorDate": "2026-10-08" }
+      },
+      "labels": {
+        "garden": "Garden Waste",
+        "food": "Food Waste"
+      }
+    }
+  },
+  {
+    "slug": "northeastderbyshire",
+    "case": "section-no-green-collection",
+    "entry": "_buildCollectionsFromSection",
+    "bodyFile": "northeastderbyshire/section-no-green-collection.html",
+    "bodyKind": "text",
+    "now": "2026-10-01T00:00:00",
+    "source": {
+      "kind": "synthetic",
+      "note": "Synthetic minimal input shaped to the parser contract: one NEGATED line that carries a real date, plus one real collection so a phantom would be visible in the stream list rather than hidden by an empty result. NOT a live recording. Replace with a real recording from https://www.ne-derbyshire.gov.uk/bins-and-recycling/bin-collection-dates when network access is available.",
+      "regression": "The two-word guard /no (collection|recycling)/ did not match the container-qualified 'No green bin collection', so the line produced a phantom ['garden'] collection on a date where no garden bin was due. This was reachable BEFORE the green gate was removed as well -- the old code also returned ['garden'] here -- so it is a pre-existing bug, not one introduced by ungating green. NO_COLLECTION_RE now allows intervening adjectives. A real Black bin line sits alongside it so the negation is what decides the stream list."
+    },
+    "expect": {
+      "streams": ["general"],
+      "byStream": {
+        "general": { "dayOfWeek": 2, "frequency": "fortnightly", "anchorDate": "2026-10-06" }
+      },
+      "labels": {
+        "general": "General Waste"
+      }
+    }
+  }
+]
