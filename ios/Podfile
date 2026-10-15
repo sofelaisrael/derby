@@ -6,10 +6,10 @@
 #   found, so a missing Podfile does not fail the build step — it fails much
 #   later at link time. Committing the Podfile makes this a deterministic step.
 
-platform :ios, '13.0'
+platform :ios, '15.0'
 
 # Single source of truth: the post_install clamp must track the platform above.
-DERBY_DEPLOYMENT_TARGET = '13.0'
+DERBY_DEPLOYMENT_TARGET = '15.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
@@ -70,7 +70,7 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
 
     target.build_configurations.each do |config|
-      # Clamp every pod to the app's 13.0. The vendored add_2_calendar podspec
+      # Clamp every pod to the app's 15.0. The vendored add_2_calendar podspec
       # declares `s.platform = :ios, '11.0'`, below the floor recent Xcode
       # toolchains support cleanly.
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = DERBY_DEPLOYMENT_TARGET
