@@ -43,6 +43,8 @@ workflows:
     environment:
       vars:
         APP_STORE_APPLE_ID: "6817374925"
+      groups:
+        - app_store_credentials
       flutter: stable
       xcode: latest
       cocoapods: default
